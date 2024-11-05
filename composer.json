@@ -1,0 +1,9 @@
+{
+    "name": "dxpr/ckeditor_ai_assist",
+    "description": "CKEditor 5 module for Ai Assist.",
+    "type": "drupal-module",
+    "keywords": ["Drupal"],
+    "license": "GPL-2.0+",
+    "minimum-stability": "dev",
+    "require": {}
+}

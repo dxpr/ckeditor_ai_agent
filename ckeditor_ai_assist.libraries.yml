@@ -1,0 +1,12 @@
+aiassist:
+  js:
+    js/build/aiassist.js: { preprocess: false, minified: true }
+  css:
+    theme:
+      css/style.css: { }
+  dependencies:
+    - core/ckeditor5
+aiassist.admin:
+  css:
+    theme:
+      css/aiassist.admin.css: { }

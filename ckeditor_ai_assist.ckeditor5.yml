@@ -1,0 +1,15 @@
+ckeditor_ai_assist_ai_assist:
+  ckeditor5:
+    plugins:
+      - aiassist.AiAssist
+  drupal:
+    label: Ai assist
+    library: ckeditor_ai_assist/aiassist
+    admin_library: ckeditor_ai_assist/aiassist.admin
+    toolbar_items:
+      aiassist:
+        label: Ai assist
+    elements:
+      - <inline-slash class="ck-slash"></inline-slash>
+      - <p>
+      - <div>

@@ -1,0 +1,31 @@
+{
+  "name": "ckeditor-ai-assist",
+  "version": "1.0.0",
+  "description": "CKEditor 5 Ai assist integration",
+  "author": "",
+  "license": "GPL-2.0-or-later",
+  "scripts": {
+    "watch": "webpack --config webpack.config.js --mode development --watch",
+    "build": "webpack --config webpack.config.js"
+  },
+  "devDependencies": {
+    "@ckeditor/ckeditor5-dev-build-tools": "^43.0.0",
+    "@ckeditor/ckeditor5-inspector": ">=4.1.0",
+    "@ckeditor/ckeditor5-package-tools": "^2.1.0",
+    "@types/sbd": "^1.0.5",
+    "ckeditor5": "latest",
+    "css-loader": "^6.8.1",
+    "postcss-loader": "^7.3.3",
+    "raw-loader": "^4.0.2",
+    "style-loader": "^3.3.3",
+    "terser-webpack-plugin": "^5.2.0",
+    "webpack": "^5.51.1",
+    "webpack-cli": "^4.4.0"
+  },
+  "dependencies": {
+    "@ckeditor/ckeditor5-utils": "^43.0.0",
+    "sbd": "^1.0.19",
+    "file-loader": "^6.2.0",
+    "url-loader": "^4.1.1"
+  }
+}
