@@ -10,7 +10,7 @@ customizable styling to suit any project's design needs.
 
 Requirements
 ------------
-- Drupal 10
+- Drupal 10.4+ or 11
 - CKEditor 5
 
 Features
@@ -21,21 +21,23 @@ Features
 Installation
 ------------
 1. **Install & Enable the Module:**
-   Ensure the module is installed and enabled within your Drupal setup.
+- Ensure the module is installed and enabled within your Drupal setup.
 
-2. **Setup Dependencies:**
-- Navigate to the project directory.
-- Run `npm install` to install all required packages.
-
-3. **Development Mode:**
-- Run `npm run watch` to monitor and compile file changes in real-time.
-
-4. **Production Build:**
-- Run `npm run build` to compile and optimize for production.
-
-5. **Configure CKEditor:**
+2. **Configure CKEditor:**
 - Go to **Administration > Configuration > Content authoring > Text formats
   and editors** (`admin/config/content/formats`).
 - Edit the settings for your desired text format (typically Full HTML).
 - Drag and drop the "AI Assist" button into the CKEditor toolbar to make it
   available for content editors.
+
+Development
+-----------
+1. **Setup Dependencies:**
+- Navigate to the project directory.
+- Run `npm install` to install all required packages.
+
+2. **Development Mode:**
+- Run `npm run watch` to monitor and compile file changes in real-time.
+
+3. **Production Build:**
+- Run `npm run build` to compile and optimize for production.
