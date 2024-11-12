@@ -9,7 +9,3 @@ ckeditor_ai_assist_ai_assist:
     toolbar_items:
       aiassist:
         label: Ai assist
-    elements:
-      - <inline-slash class="ck-slash"></inline-slash>
-      - <p>
-      - <div>
