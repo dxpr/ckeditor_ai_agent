@@ -1,6 +1,9 @@
 aiassist:
   js:
-    js/build/aiassist.js: { preprocess: false, minified: true }
+    js/build/ai-assist.js: { preprocess: false, minified: true }
+    js/build/translations/es.js: { preprocess: false, minified: true }
+    js/build/translations/hi.js: { preprocess: false, minified: true }
+    js/build/translations/nl.js: { preprocess: false, minified: true }
   css:
     theme:
       css/style.css: { }
