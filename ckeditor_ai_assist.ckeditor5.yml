@@ -9,3 +9,5 @@ ckeditor_ai_assist_ai_assist:
     toolbar_items:
       aiassist:
         label: Ai assist
+    elements:
+      - <p>
