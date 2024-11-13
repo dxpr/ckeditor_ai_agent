@@ -1,8 +1,8 @@
 # Contributing Guidelines
 
-## Commit Message Convention
+## Commit Standards
 
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for our commit messages.
+We follow [Conventional Commits](https://www.conventionalcommits.org/) for all commit messages and PR titles.
 
 ### Format 
 

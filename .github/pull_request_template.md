@@ -21,7 +21,7 @@ For example: Fix #123.
 <!--- Put an `x` in all the boxes that apply: -->
 
 - [ ] I have read the [CONTRIBUTING.md](https://github.com/dxpr/ckeditor_ai_assist/blob/1.0.x/CONTRIBUTING.md) document.
-- [ ] My PR title follows the conventional commit format.
-- [ ] My commit messages follow the contributing standards.
+- [ ] My PR title follows [Conventional Commits](https://www.conventionalcommits.org/).
+- [ ] My commit messages follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [ ] My code follows the coding standards and style of this project.
 - [ ] My code contains no changes that are outside the scope of the issue.
