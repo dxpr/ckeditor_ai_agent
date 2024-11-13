@@ -6,14 +6,19 @@
   "license": "GPL-2.0-or-later",
   "scripts": {
     "watch": "webpack --config webpack.config.js --mode development --watch",
-    "build": "webpack --config webpack.config.js"
+    "build": "webpack --config webpack.config.js",
+    "prepare": "husky",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "devDependencies": {
     "@ckeditor/ckeditor5-dev-build-tools": "^43.0.0",
     "@ckeditor/ckeditor5-inspector": ">=4.1.0",
     "@ckeditor/ckeditor5-package-tools": "^2.1.0",
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
     "@types/sbd": "^1.0.5",
     "ckeditor5": "latest",
+    "husky": "^9.1.6",
     "terser-webpack-plugin": "^5.2.0",
     "webpack": "^5.51.1",
     "webpack-cli": "^4.4.0"
