@@ -5,8 +5,6 @@
  * Contains ckeditor_ai_assist.module.
  */
 
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\editor\Entity\Editor;
 use Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition;
 
 /**
@@ -16,21 +14,27 @@ function ckeditor_ai_assist_ckeditor5_plugin_info_alter(array &$plugin_definitio
   if (isset($plugin_definitions['ckeditor_ai_assist_ai_assist'])) {
     /** @var \Drupal\ckeditor_ai_assist\AiAssistConfigurationManager $config_manager */
     $config_manager = \Drupal::service('ckeditor_ai_assist.configuration_manager');
-    
+
     /** @var \Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition $definition */
     $definition = $plugin_definitions['ckeditor_ai_assist_ai_assist'];
     $plugin_config = $definition->toArray();
-    
-    // Get existing config or initialize empty array
+
+    // Get existing config or initialize empty array.
     $config = $plugin_config['ckeditor5']['config'] ?? [];
-    
-    // Merge with our configuration
-    $config = array_merge($config, $config_manager->getCKEditorConfig());
-    
-    // Update the plugin configuration
+
+    // Get the current editor entity from the route.
+    $editor = NULL;
+    if ($route_match = \Drupal::routeMatch()) {
+      $editor = $route_match->getParameter('editor');
+    }
+
+    // Merge with our configuration.
+    $config = array_merge($config, $config_manager->getCKEditorConfig($editor));
+
+    // Update the plugin configuration.
     $plugin_config['ckeditor5']['config'] = $config;
-    
-    // Create new definition with updated config
+
+    // Create new definition with updated config.
     $plugin_definitions['ckeditor_ai_assist_ai_assist'] = new CKEditor5PluginDefinition($plugin_config);
   }
-} 
+}
