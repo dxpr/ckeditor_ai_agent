@@ -34,7 +34,6 @@ class AiAssistSettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('API Key'),
       '#default_value' => $config->get('api_key'),
-      '#required' => TRUE,
       '#maxlength' => 512,
       '#description' => $this->t('Enter your AI API key.'),
     ];
@@ -52,13 +51,14 @@ class AiAssistSettingsForm extends ConfigFormBase {
         'gpt-3' => $this->t('GPT-3'),
         'kavya-m1' => $this->t('Kavya M1'),
       ],
+      '#description' => $this->t('Select AI model.'),
     ];
 
     $form['endpoint_url'] = [
       '#type' => 'url',
       '#title' => $this->t('Endpoint URL'),
       '#default_value' => $config->get('endpoint_url') ?: 'https://kavya.dxpr.com/v1/chat/completions',
-      '#required' => TRUE,
+      '#description' => $this->t('Enter the endpoint URL.'),
     ];
 
     $form['temperature'] = [
@@ -77,6 +77,7 @@ class AiAssistSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('timeout_duration') ?: 45000,
       '#min' => 1000,
       '#step' => 1000,
+      '#description' => $this->t('Set the timeout duration in milliseconds.'),
     ];
 
     $form['max_tokens'] = [
@@ -85,6 +86,7 @@ class AiAssistSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('max_tokens') ?: 4096,
       '#min' => 1,
       '#max' => 128000,
+      '#description' => $this->t('Maximum number of tokens to generate.'),
     ];
 
     $form['retry_attempts'] = [
@@ -92,18 +94,29 @@ class AiAssistSettingsForm extends ConfigFormBase {
       '#title' => $this->t('Retry Attempts'),
       '#default_value' => $config->get('retry_attempts') ?: 1,
       '#min' => 0,
+      '#description' => $this->t('Number of retry attempts.'),
     ];
 
     $form['debug_mode'] = [
-      '#type' => 'checkbox',
+      '#type' => 'select',
       '#title' => $this->t('Debug Mode'),
-      '#default_value' => $config->get('debug_mode') ?: FALSE,
+      '#default_value' => $config->get('debug_mode') ? '1' : '0',
+      '#options' => [
+        '0' => $this->t('Disabled'),
+        '1' => $this->t('Enabled'),
+      ],
+      '#description' => $this->t('Enable debug mode for troubleshooting.'),
     ];
 
     $form['stream_content'] = [
-      '#type' => 'checkbox',
+      '#type' => 'select',
       '#title' => $this->t('Stream Content'),
-      '#default_value' => $config->get('stream_content') ?: TRUE,
+      '#default_value' => $config->get('stream_content') ? '1' : '0',
+      '#options' => [
+        '0' => $this->t('Disabled'),
+        '1' => $this->t('Enabled'),
+      ],
+      '#description' => $this->t('Enable streaming of AI responses.'),
     ];
 
     return parent::buildForm($form, $form_state);
@@ -117,7 +130,7 @@ class AiAssistSettingsForm extends ConfigFormBase {
 
     // Validate temperature range.
     $temperature = $form_state->getValue('temperature');
-    if ($temperature < 0 || $temperature > 2) {
+    if ($temperature !== '' && ($temperature < 0 || $temperature > 2)) {
       $form_state->setErrorByName('temperature', $this->t('Temperature must be between 0 and 2.'));
     }
   }
