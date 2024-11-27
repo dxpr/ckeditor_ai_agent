@@ -1,0 +1,7 @@
+ckeditor_ai_assist.settings:
+  path: '/admin/config/content/ckeditor-ai-assist'
+  defaults:
+    _form: '\Drupal\ckeditor_ai_assist\Form\AiAssistSettingsForm'
+    _title: 'CKEditor AI Assist Settings'
+  requirements:
+    _permission: 'administer ckeditor ai assist' 
