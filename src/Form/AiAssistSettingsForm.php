@@ -35,6 +35,7 @@ class AiAssistSettingsForm extends ConfigFormBase {
       '#title' => $this->t('API Key'),
       '#default_value' => $config->get('api_key'),
       '#required' => TRUE,
+      '#maxlength' => 512,
       '#description' => $this->t('Enter your AI API key.'),
     ];
 
