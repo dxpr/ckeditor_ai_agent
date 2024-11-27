@@ -2,10 +2,22 @@ ckeditor_ai_assist_ai_assist:
   ckeditor5:
     plugins:
       - aiassist.AiAssist
+    config:
+      aiAssist:
+        # Default configuration values
+        model: 'gpt-4o'
+        endpointUrl: 'https://kavya.dxpr.com/v1/chat/completions'
+        temperature: 0.7
+        maxTokens: 4096
+        timeoutDuration: 45000
+        retryAttempts: 1
+        debugMode: false
+        streamContent: true
   drupal:
     label: Ai assist
     library: ckeditor_ai_assist/aiassist
     admin_library: ckeditor_ai_assist/aiassist.admin
+    class: Drupal\ckeditor_ai_assist\Plugin\CKEditor5Plugin\AiAssist
     toolbar_items:
       aiassist:
         label: Ai assist
