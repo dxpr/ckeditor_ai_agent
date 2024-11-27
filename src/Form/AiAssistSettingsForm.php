@@ -4,8 +4,6 @@ namespace Drupal\ckeditor_ai_assist\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Config\ConfigFactoryInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Configure CKEditor AI Assist settings.
@@ -37,7 +35,7 @@ class AiAssistSettingsForm extends ConfigFormBase {
       '#title' => $this->t('API Key'),
       '#default_value' => $config->get('api_key'),
       '#required' => TRUE,
-      '#description' => $this->t('Enter your AI API key'),
+      '#description' => $this->t('Enter your AI API key.'),
     ];
 
     $form['model'] = [
@@ -45,13 +43,13 @@ class AiAssistSettingsForm extends ConfigFormBase {
       '#title' => $this->t('AI Model'),
       '#default_value' => $config->get('model') ?: 'gpt-4o',
       '#options' => [
-        'gpt-3' => 'GPT-3',
-        'gpt-3.5-turbo' => 'GPT-3.5 Turbo',
-        'gpt-4' => 'GPT-4',
-        'gpt-4o' => 'GPT-4o',
-        'gpt-4-turbo' => 'GPT-4 Turbo',
-        'gpt-4o-mini' => 'GPT-4o Mini',
-        'kavya-m1' => 'Kavya M1',
+        'gpt-4o' => $this->t('GPT-4o'),
+        'gpt-4o-mini' => $this->t('GPT-4o Mini'),
+        'gpt-4-turbo' => $this->t('GPT-4 Turbo'),
+        'gpt-4' => $this->t('GPT-4'),
+        'gpt-3.5-turbo' => $this->t('GPT-3.5 Turbo'),
+        'gpt-3' => $this->t('GPT-3'),
+        'kavya-m1' => $this->t('Kavya M1'),
       ],
     ];
 
@@ -69,7 +67,7 @@ class AiAssistSettingsForm extends ConfigFormBase {
       '#min' => 0,
       '#max' => 2,
       '#step' => 0.1,
-      '#description' => $this->t('Controls randomness in responses (0-2)'),
+      '#description' => $this->t('Controls randomness in responses (0-2).'),
     ];
 
     $form['timeout_duration'] = [
@@ -115,8 +113,8 @@ class AiAssistSettingsForm extends ConfigFormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
-    
-    // Validate temperature range
+
+    // Validate temperature range.
     $temperature = $form_state->getValue('temperature');
     if ($temperature < 0 || $temperature > 2) {
       $form_state->setErrorByName('temperature', $this->t('Temperature must be between 0 and 2.'));
@@ -141,4 +139,5 @@ class AiAssistSettingsForm extends ConfigFormBase {
 
     parent::submitForm($form, $form_state);
   }
-} 
+
+}
