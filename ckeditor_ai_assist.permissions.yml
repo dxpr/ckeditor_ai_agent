@@ -1,0 +1,4 @@
+administer ckeditor ai assist:
+  title: 'Administer CKEditor AI Assist'
+  description: 'Configure CKEditor AI Assist settings'
+  restrict access: TRUE 
