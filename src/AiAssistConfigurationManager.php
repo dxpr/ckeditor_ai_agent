@@ -44,7 +44,7 @@ class AiAssistConfigurationManager {
       'aiAssist' => [
         'apiKey' => $global_config->get('api_key'),
         'model' => $global_config->get('model') ?: 'gpt-4o',
-        'endpointUrl' => $global_config->get('endpoint_url') ?: 'https://kavya.dxpr.com/v1/chat/completions',
+        'endpointUrl' => $global_config->get('endpoint_url') ?: 'https://api.openai.com/v1/chat/completions',
         'temperature' => $global_config->get('temperature') ?? 0.7,
         'maxTokens' => $global_config->get('max_tokens') ?? 4096,
         'timeOutDuration' => $global_config->get('timeout_duration') ?? 45000,

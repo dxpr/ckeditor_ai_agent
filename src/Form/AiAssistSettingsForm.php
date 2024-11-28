@@ -57,7 +57,7 @@ class AiAssistSettingsForm extends ConfigFormBase {
     $form['endpoint_url'] = [
       '#type' => 'url',
       '#title' => $this->t('Endpoint URL'),
-      '#default_value' => $config->get('endpoint_url') ?: 'https://kavya.dxpr.com/v1/chat/completions',
+      '#default_value' => $config->get('endpoint_url') ?: 'https://api.openai.com/v1/chat/completions',
       '#description' => $this->t('Enter the endpoint URL.'),
     ];
 
