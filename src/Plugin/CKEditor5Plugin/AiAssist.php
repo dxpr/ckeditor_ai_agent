@@ -168,14 +168,19 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
    * {@inheritdoc}
    */
   public function getDynamicPluginConfig(array $static_plugin_config, EditorInterface $editor): array {
+    // Get global settings
+    $global_config = \Drupal::config('ckeditor_ai_assist.settings');
+    
+    // Build config with global fallbacks
     return [
       'aiAssist' => [
-        'apiKey' => $this->configuration['api_key'],
-        'model' => $this->configuration['model'],
-        'temperature' => $this->configuration['temperature'],
-        'maxTokens' => $this->configuration['max_tokens'],
-        'debugMode' => $this->configuration['debug_mode'],
-        'streamContent' => $this->configuration['stream_content'],
+        'apiKey' => $this->configuration['api_key'] ?? $global_config->get('api_key'),
+        'model' => $this->configuration['model'] ?? $global_config->get('model'),
+        'endpointUrl' => $global_config->get('endpoint_url') ?: 'https://api.openai.com/v1/chat/completions',
+        'temperature' => $this->configuration['temperature'] ?? $global_config->get('temperature'),
+        'maxTokens' => $this->configuration['max_tokens'] ?? $global_config->get('max_tokens'),
+        'debugMode' => $this->configuration['debug_mode'] ?? $global_config->get('debug_mode'),
+        'streamContent' => $this->configuration['stream_content'] ?? $global_config->get('stream_content'),
       ],
     ];
   }
