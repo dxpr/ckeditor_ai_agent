@@ -1,6 +1,6 @@
 name: CKEditor Ai Assist
 type: module
-description: CKEditor 5 module for Ai Assist
+description: AI integration for CKEditor 5
 package: CKEditor 5
 core_version_requirement: ^10.3 || ^11
 dependencies:
