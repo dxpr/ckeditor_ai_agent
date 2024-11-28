@@ -39,7 +39,7 @@ class AiAssistConfigurationManager {
   public function getCkEditorConfig(?Editor $editor = NULL): array {
     $global_config = $this->configFactory->get('ckeditor_ai_assist.settings');
 
-    // Start with default configuration
+    // Start with default configuration.
     $config = [
       'aiAssist' => [
         'apiKey' => $global_config->get('api_key'),
@@ -54,11 +54,11 @@ class AiAssistConfigurationManager {
       ],
     ];
 
-    // Override with format-specific settings if available
+    // Override with format-specific settings if available.
     if ($editor && isset($editor->getSettings()['plugins']['ckeditor_ai_assist_ai_assist'])) {
       $format_config = $editor->getSettings()['plugins']['ckeditor_ai_assist_ai_assist'];
-      
-      // Map of PHP config keys to JS config keys with type casting
+
+      // Map of PHP config keys to JS config keys with type casting.
       $key_map = [
         'api_key' => ['key' => 'apiKey', 'cast' => 'strval'],
         'model' => ['key' => 'model', 'cast' => 'strval'],

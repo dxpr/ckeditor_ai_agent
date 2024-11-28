@@ -45,7 +45,7 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
       '#title' => $this->t('API Key'),
       '#default_value' => $this->configuration['api_key'],
       '#description' => $this->t('Enter your API Key. Leave empty to use <a href="@settings_url">global settings</a>.', [
-        '@settings_url' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_assist.settings')
+        '@settings_url' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_assist.settings'),
       ]),
       '#maxlength' => 512,
     ];
@@ -124,18 +124,20 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
         $form_state->setErrorByName('temperature', $this->t('Temperature must be between 0 and 2.'));
       }
       $form_state->setValue('temperature', $temperature);
-    } else {
+    }
+    else {
       $form_state->setValue('temperature', NULL);
     }
 
     $max_tokens = $form_state->getValue('max_tokens');
     if ($max_tokens !== '' && !is_null($max_tokens)) {
       $form_state->setValue('max_tokens', (int) $max_tokens);
-    } else {
+    }
+    else {
       $form_state->setValue('max_tokens', NULL);
     }
 
-    // Handle other fields
+    // Handle other fields.
     foreach (['api_key', 'model'] as $field) {
       if ($form_state->getValue($field) === '') {
         $form_state->setValue($field, NULL);
@@ -146,7 +148,8 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
       $value = $form_state->getValue($field);
       if ($value === '') {
         $form_state->setValue($field, NULL);
-      } else {
+      }
+      else {
         $form_state->setValue($field, (bool) $value);
       }
     }
@@ -168,10 +171,10 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
    * {@inheritdoc}
    */
   public function getDynamicPluginConfig(array $static_plugin_config, EditorInterface $editor): array {
-    // Get global settings
+    // Get global settings.
     $global_config = \Drupal::config('ckeditor_ai_assist.settings');
-    
-    // Build config with global fallbacks
+
+    // Build config with global fallbacks.
     return [
       'aiAssist' => [
         'apiKey' => $this->configuration['api_key'] ?? $global_config->get('api_key'),
