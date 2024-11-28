@@ -1,12 +1,11 @@
 ckeditor5.plugin.ckeditor_ai_assist_ai_assist:
   type: mapping
   label: 'CKEditor AI Assist'
-  constraints:
-    FullyValidatable: ~
   mapping:
     api_settings:
       type: mapping
       label: 'API Settings'
+      nullable: true
       mapping:
         api_key:
           type: string
@@ -23,6 +22,7 @@ ckeditor5.plugin.ckeditor_ai_assist_ai_assist:
     model_settings:
       type: mapping
       label: 'Model Settings'
+      nullable: true
       mapping:
         temperature:
           type: float
@@ -35,6 +35,7 @@ ckeditor5.plugin.ckeditor_ai_assist_ai_assist:
     request_settings:
       type: mapping
       label: 'Request Settings'
+      nullable: true
       mapping:
         timeout_duration:
           type: integer

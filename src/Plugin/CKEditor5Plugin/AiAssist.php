@@ -122,12 +122,26 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
    */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
     $temperature = $form_state->getValue('temperature');
-    if ($temperature < 0 || $temperature > 2) {
+    if ($temperature !== '' && ($temperature < 0 || $temperature > 2)) {
       $form_state->setErrorByName('temperature', $this->t('Temperature must be between 0 and 2.'));
     }
 
-    $form_state->setValue('debug_mode', (bool) $form_state->getValue('debug_mode'));
-    $form_state->setValue('stream_content', (bool) $form_state->getValue('stream_content'));
+    // Convert empty string values to null
+    foreach (['api_key', 'model', 'temperature', 'max_tokens'] as $field) {
+      if ($form_state->getValue($field) === '') {
+        $form_state->setValue($field, null);
+      }
+    }
+
+    // Convert string boolean values to actual booleans
+    foreach (['debug_mode', 'stream_content'] as $field) {
+      $value = $form_state->getValue($field);
+      if ($value === '') {
+        $form_state->setValue($field, null);
+      } else {
+        $form_state->setValue($field, (bool) $value);
+      }
+    }
   }
 
   /**
