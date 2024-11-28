@@ -44,7 +44,9 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
       '#type' => 'textfield',
       '#title' => $this->t('API Key'),
       '#default_value' => $this->configuration['api_key'],
-      '#description' => $this->t('Enter your AI API key. Leave empty to use global settings.'),
+      '#description' => $this->t('Enter your API Key. Leave empty to use <a href="@settings_url">global settings</a>.', [
+        '@settings_url' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_assist.settings')
+      ]),
       '#maxlength' => 512,
     ];
 
