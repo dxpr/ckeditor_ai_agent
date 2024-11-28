@@ -24,21 +24,15 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
    */
   public function defaultConfiguration() {
     return [
-      'api_settings' => [
-        'api_key' => '',
-        'model' => 'gpt-4o',
-        'endpoint_url' => 'https://kavya.dxpr.com/v1/chat/completions',
-      ],
-      'model_settings' => [
-        'temperature' => 0.7,
-        'max_tokens' => 4096,
-      ],
-      'request_settings' => [
-        'timeout_duration' => 45000,
-        'retry_attempts' => 1,
-      ],
-      'debug_mode' => FALSE,
-      'stream_content' => TRUE,
+      'api_key' => NULL,
+      'model' => NULL,
+      'endpoint_url' => NULL,
+      'temperature' => NULL,
+      'max_tokens' => NULL,
+      'timeout_duration' => NULL,
+      'retry_attempts' => NULL,
+      'debug_mode' => NULL,
+      'stream_content' => NULL,
     ];
   }
 
@@ -49,7 +43,7 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
     $form['api_key'] = [
       '#type' => 'textfield',
       '#title' => $this->t('API Key'),
-      '#default_value' => $this->configuration['api_settings']['api_key'],
+      '#default_value' => $this->configuration['api_key'],
       '#description' => $this->t('Enter your AI API key. Leave empty to use global settings.'),
       '#maxlength' => 512,
     ];
@@ -57,7 +51,7 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
     $form['model'] = [
       '#type' => 'select',
       '#title' => $this->t('AI Model'),
-      '#default_value' => '',
+      '#default_value' => $this->configuration['model'],
       '#options' => [
         '' => $this->t('- Use global settings -'),
         'gpt-4o' => $this->t('GPT-4o'),
@@ -74,7 +68,7 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
     $form['temperature'] = [
       '#type' => 'number',
       '#title' => $this->t('Temperature'),
-      '#default_value' => '',
+      '#default_value' => $this->configuration['temperature'],
       '#min' => 0,
       '#max' => 2,
       '#step' => 0.1,
@@ -84,7 +78,7 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
     $form['max_tokens'] = [
       '#type' => 'number',
       '#title' => $this->t('Max Tokens'),
-      '#default_value' => '',
+      '#default_value' => $this->configuration['max_tokens'],
       '#min' => 1,
       '#max' => 128000,
       '#description' => $this->t('Maximum number of tokens to generate. Leave empty to use global settings.'),
@@ -93,7 +87,7 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
     $form['debug_mode'] = [
       '#type' => 'select',
       '#title' => $this->t('Debug Mode'),
-      '#default_value' => '',
+      '#default_value' => $this->configuration['debug_mode'],
       '#options' => [
         '' => $this->t('- Use global settings -'),
         '0' => $this->t('Disabled'),
@@ -105,7 +99,7 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
     $form['stream_content'] = [
       '#type' => 'select',
       '#title' => $this->t('Stream Content'),
-      '#default_value' => '',
+      '#default_value' => $this->configuration['stream_content'],
       '#options' => [
         '' => $this->t('- Use global settings -'),
         '0' => $this->t('Disabled'),
@@ -122,22 +116,34 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
    */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
     $temperature = $form_state->getValue('temperature');
-    if ($temperature !== '' && ($temperature < 0 || $temperature > 2)) {
-      $form_state->setErrorByName('temperature', $this->t('Temperature must be between 0 and 2.'));
+    if ($temperature !== '' && !is_null($temperature)) {
+      $temperature = (float) $temperature;
+      if ($temperature < 0 || $temperature > 2) {
+        $form_state->setErrorByName('temperature', $this->t('Temperature must be between 0 and 2.'));
+      }
+      $form_state->setValue('temperature', $temperature);
+    } else {
+      $form_state->setValue('temperature', NULL);
     }
 
-    // Convert empty string values to null
-    foreach (['api_key', 'model', 'temperature', 'max_tokens'] as $field) {
+    $max_tokens = $form_state->getValue('max_tokens');
+    if ($max_tokens !== '' && !is_null($max_tokens)) {
+      $form_state->setValue('max_tokens', (int) $max_tokens);
+    } else {
+      $form_state->setValue('max_tokens', NULL);
+    }
+
+    // Handle other fields
+    foreach (['api_key', 'model'] as $field) {
       if ($form_state->getValue($field) === '') {
-        $form_state->setValue($field, null);
+        $form_state->setValue($field, NULL);
       }
     }
 
-    // Convert string boolean values to actual booleans
     foreach (['debug_mode', 'stream_content'] as $field) {
       $value = $form_state->getValue($field);
       if ($value === '') {
-        $form_state->setValue($field, null);
+        $form_state->setValue($field, NULL);
       } else {
         $form_state->setValue($field, (bool) $value);
       }
@@ -148,10 +154,10 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
    * {@inheritdoc}
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-    $this->configuration['api_settings']['api_key'] = $form_state->getValue('api_key');
-    $this->configuration['api_settings']['model'] = $form_state->getValue('model');
-    $this->configuration['model_settings']['temperature'] = $form_state->getValue('temperature');
-    $this->configuration['model_settings']['max_tokens'] = $form_state->getValue('max_tokens');
+    $this->configuration['api_key'] = $form_state->getValue('api_key');
+    $this->configuration['model'] = $form_state->getValue('model');
+    $this->configuration['temperature'] = $form_state->getValue('temperature');
+    $this->configuration['max_tokens'] = $form_state->getValue('max_tokens');
     $this->configuration['debug_mode'] = $form_state->getValue('debug_mode');
     $this->configuration['stream_content'] = $form_state->getValue('stream_content');
   }
@@ -160,15 +166,14 @@ class AiAssist extends CKEditor5PluginDefault implements CKEditor5PluginConfigur
    * {@inheritdoc}
    */
   public function getDynamicPluginConfig(array $static_plugin_config, EditorInterface $editor): array {
-    $config = $this->getConfiguration();
     return [
       'aiAssist' => [
-        'apiKey' => $config['api_settings']['api_key'],
-        'model' => $config['api_settings']['model'],
-        'temperature' => $config['model_settings']['temperature'],
-        'maxTokens' => $config['model_settings']['max_tokens'],
-        'debugMode' => $config['debug_mode'],
-        'streamContent' => $config['stream_content'],
+        'apiKey' => $this->configuration['api_key'],
+        'model' => $this->configuration['model'],
+        'temperature' => $this->configuration['temperature'],
+        'maxTokens' => $this->configuration['max_tokens'],
+        'debugMode' => $this->configuration['debug_mode'],
+        'streamContent' => $this->configuration['stream_content'],
       ],
     ];
   }
