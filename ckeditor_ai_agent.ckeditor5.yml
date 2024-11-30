@@ -1,0 +1,14 @@
+ckeditor_ai_agent_ai_agent:
+  ckeditor5:
+    plugins:
+      - aiagent.AiAgent
+  drupal:
+    label: 'AI Agent'
+    library: ckeditor_ai_agent/aiagent
+    admin_library: ckeditor_ai_agent/aiagent.admin
+    class: Drupal\ckeditor_ai_agent\Plugin\CKEditor5Plugin\AiAgent
+    toolbar_items:
+      aiagent:
+        label: 'AI Agent'
+    elements:
+      - <p>

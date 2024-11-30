@@ -27,7 +27,7 @@ Installation
 - Go to **Administration > Configuration > Content authoring > Text formats
   and editors** (`admin/config/content/formats`).
 - Edit the settings for your desired text format (typically Full HTML).
-- Drag and drop the "AI Assist" button into the CKEditor toolbar to make it
+- Drag and drop the "AI Agent" button into the CKEditor toolbar to make it
   available for content editors.
 
 Development

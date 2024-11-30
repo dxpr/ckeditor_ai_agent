@@ -1,0 +1,7 @@
+ckeditor_ai_agent.settings:
+  path: '/admin/config/content/ckeditor-ai-agent'
+  defaults:
+    _form: '\Drupal\ckeditor_ai_agent\Form\AiAgentSettingsForm'
+    _title: 'CKEditor AI Agent Settings'
+  requirements:
+    _permission: 'administer ckeditor ai assist' 

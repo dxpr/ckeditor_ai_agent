@@ -19,7 +19,7 @@ jobs:
       - uses: wagoid/commitlint-github-action@v6
         with:
           configFile: commitlint.config.mjs
-          helpURL: https://github.com/dxpr/ckeditor_ai_assist/blob/1.0.x/CONTRIBUTING.md
+          helpURL: https://github.com/dxpr/ckeditor_ai_agent/blob/1.0.x/CONTRIBUTING.md
 
   drupal-lint:
     runs-on: ubuntu-latest

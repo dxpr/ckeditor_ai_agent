@@ -1,4 +1,0 @@
-services:
-  ckeditor_ai_assist.configuration_manager:
-    class: Drupal\ckeditor_ai_assist\AiAssistConfigurationManager
-    arguments: ['@config.factory']
