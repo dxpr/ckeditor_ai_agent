@@ -1,11 +1,11 @@
-import { Plugin } from 'ckeditor5/src/core.js';
+import { Plugin } from 'ckeditor5/src/core';
 // import { ButtonView, createDropdown, SplitButtonView } from 'ckeditor5/src/ui.js';
-import { ButtonView } from 'ckeditor5/src/ui.js';
-import aiAgentIcon from '../theme/icons/ai-agent.svg';
+import { ButtonView } from 'ckeditor5/src/ui';
+// import aiAgentIcon from '../theme/icons/ai-agent.svg';
 import { aiAgentContext } from './aiagentcontext.js';
 import { SUPPORTED_LANGUAGES } from './const.js';
-import { Widget, toWidget } from 'ckeditor5/src/widget.js';
-import { env } from 'ckeditor5/src/utils.js';
+import { Widget, toWidget } from 'ckeditor5/src/widget';
+import { env } from 'ckeditor5/src/utils';
 export default class AiAgentUI extends Plugin {
     constructor() {
         super(...arguments);

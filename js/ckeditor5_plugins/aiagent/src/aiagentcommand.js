@@ -1,4 +1,4 @@
-import { Command } from 'ckeditor5/src/core.js';
+import { Command } from 'ckeditor5/src/core';
 export default class AiAgentCommand extends Command {
     /**
      * Creates an instance of the AiAgentCommand.

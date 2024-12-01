@@ -1,4 +1,4 @@
-import { Command } from 'ckeditor5/src/core.js';
+import { Command } from 'ckeditor5/src/core';
 import type AiAgentService from './aiagentservice.js';
 import type { Editor } from 'ckeditor5';
 export default class AiAgentCommand extends Command {

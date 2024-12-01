@@ -1,4 +1,4 @@
-import type { Editor } from 'ckeditor5/src/core.js';
+import type { Editor } from 'ckeditor5/src/core';
 import type { MarkdownContent } from '../type-identifiers.js';
 export declare class PromptHelper {
     private editor;

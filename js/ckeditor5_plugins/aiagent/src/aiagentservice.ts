@@ -1,4 +1,4 @@
-import type { Editor } from 'ckeditor5/src/core.js';
+import type { Editor } from 'ckeditor5/src/core';
 import type { Element } from 'ckeditor5/src/engine.js';
 import type { AiModel, MarkdownContent } from './type-identifiers.js';
 import { aiAgentContext } from './aiagentcontext.js';

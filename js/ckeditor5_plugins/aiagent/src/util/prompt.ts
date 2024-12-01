@@ -1,5 +1,5 @@
 import sbd from 'sbd';
-import type { Editor } from 'ckeditor5/src/core.js';
+import type { Editor } from 'ckeditor5/src/core';
 import type { MarkdownContent } from '../type-identifiers.js';
 import { aiAgentContext } from '../aiagentcontext.js';
 export class PromptHelper {
@@ -34,24 +34,24 @@ export class PromptHelper {
 	public getSystemPrompt( isInlineResponse: boolean = false ): string {
 		const corpus: Array<string> = [];
 		corpus.push(
-			`You will be provided with a partially written article with """@@@cursor@@@""" somewhere 
-			under a CONTEXT section, user input under a TASK section, and sometimes there will be articles 
-			(delimited with marked-up language) separated by Starting Markdown Content \${ number } and 
-			Ending Markdown Content \${ index } with certain instructions to follow while generating a response 
+			`You will be provided with a partially written article with """@@@cursor@@@""" somewhere
+			under a CONTEXT section, user input under a TASK section, and sometimes there will be articles
+			(delimited with marked-up language) separated by Starting Markdown Content \${ number } and
+			Ending Markdown Content \${ index } with certain instructions to follow while generating a response
 			under an INSTRUCTION section`
 		);
 		corpus.push(
-			`If there is an article with """Stating Markdown Content""", your task is to 
+			`If there is an article with """Stating Markdown Content""", your task is to
 			use that provided information solely to respond to the user request in the TASK section.`
 		);
 		corpus.push( 'Follow these step-by-step instructions to respond to user inputs:' );
 		corpus.push(
-			`Step 1 - Summarize information under the CONTEXT section, set a tone for the article, and 
+			`Step 1 - Summarize information under the CONTEXT section, set a tone for the article, and
 			later use that summarized information to generate a response`
 		);
 		corpus.push(
-			`Step 2: If there is an article with """Stating Markdown Content""", 
-			break it into derived sections and eliminate unnecessary information 
+			`Step 2: If there is an article with """Stating Markdown Content""",
+			break it into derived sections and eliminate unnecessary information
 			that does not relate to the context and user prompt.`
 		);
 		corpus.push(
@@ -59,24 +59,24 @@ export class PromptHelper {
 		);
 		corpus.push( 'While generating the response, adhere to the following rules:' );
 		corpus.push(
-			`1. Provide only the new text content that should replace "@@@cursor@@@" based on the context above, 
+			`1. Provide only the new text content that should replace "@@@cursor@@@" based on the context above,
 			ensuring that the response must primarily based on the request.`
 		);
 		corpus.push(
-			`2. Avoid including any part of the context in the output at any cost, 
+			`2. Avoid including any part of the context in the output at any cost,
 			except for necessary glimpses that enhance the response.`
 		);
 		corpus.push(
-			`3. Ensure response adheres to the specified tone or style, such as 
+			`3. Ensure response adheres to the specified tone or style, such as
 			formal, informal, or technical, as appropriate for the context.`
 		);
 		corpus.push( '4. Do not use any markdown formatting in your response. (e.g., **, ##, ###, ---, ===, ____).' );
 		corpus.push(
-			`5. Use a relaxed, formal or informal tone based on the summary of context with lots of personal touches. 
+			`5. Use a relaxed, formal or informal tone based on the summary of context with lots of personal touches.
 			Feel free to include spontaneous thoughts, offhand comments, or quirky observations.`
 		);
 		corpus.push(
-			`6. Vary sentence lengths and styles—include fragments, casual interjections, 
+			`6. Vary sentence lengths and styles—include fragments, casual interjections,
 			and minor grammar slips, but avoid spelling mistakes.`
 		);
 		corpus.push(
@@ -87,11 +87,11 @@ export class PromptHelper {
 		);
 		if ( isInlineResponse ) {
 			corpus.push(
-				`9: Determine from the context, task, and the position of the @@@cursor@@@ whether the request 
+				`9: Determine from the context, task, and the position of the @@@cursor@@@ whether the request
 				involves list items, table cells, or inline content.
 				- List items: Format each item as <li> within an <ol> or <ul> as appropriate.
 				- Table cells: Present each item in plain text, wrapping it within <p> tags.
-				- Inline content: Wrap entire response in a single <p> tag, ensuring it fits seamlessly within the existing paragraph or 
+				- Inline content: Wrap entire response in a single <p> tag, ensuring it fits seamlessly within the existing paragraph or
 				sentence structure where the @@@cursor@@@ is located.
 				Strictly adherence to these rules is mandatory to avoid errors, based on where the @@@cursor@@@ is placed within content.`
 			);

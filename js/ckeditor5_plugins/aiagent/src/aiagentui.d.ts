@@ -1,4 +1,4 @@
-import { Plugin } from 'ckeditor5/src/core.js';
+import { Plugin } from 'ckeditor5/src/core';
 import { Widget } from 'ckeditor5/src/widget.js';
 export default class AiAgentUI extends Plugin {
     PLACEHOLDER_TEXT_ID: string;

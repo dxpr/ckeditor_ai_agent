@@ -1,8 +1,8 @@
-import { Plugin } from 'ckeditor5/src/core.js';
+import { Plugin } from 'ckeditor5/src/core';
 import AiAgentUI from './aiagentui.js';
 import AiAgentEditing from './aiagentediting.js';
 import { TOKEN_LIMITS } from './const.js';
-import '../theme/style.css';
+// import '../theme/style.css';
 export default class AiAgent extends Plugin {
     constructor(editor) {
         super(editor);

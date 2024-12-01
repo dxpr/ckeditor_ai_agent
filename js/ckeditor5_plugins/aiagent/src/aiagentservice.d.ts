@@ -1,4 +1,4 @@
-import type { Editor } from 'ckeditor5/src/core.js';
+import type { Editor } from 'ckeditor5/src/core';
 export default class AiAgentService {
     private editor;
     private aiModel;
