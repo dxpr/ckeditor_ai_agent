@@ -1,4 +1,4 @@
-import { Plugin } from 'ckeditor5/src/core';
+import { Plugin } from 'ckeditor5/src/core.js';
 import AiAgentCommand from './aiagentcommand.js';
 import type { Element } from 'ckeditor5';
 import AiAgentService from './aiagentservice.js';

@@ -1,10 +1,10 @@
-import { Plugin } from 'ckeditor5/src/core';
+import { Plugin } from 'ckeditor5/src/core.js';
 import AiAgentUI from './aiagentui.js';
 import AiAgentEditing from './aiagentediting.js';
 import type { Editor } from 'ckeditor5';
 import type { AiModel, AiAgentConfig } from './type-identifiers.js';
 import { TOKEN_LIMITS } from './const.js';
-// import '../theme/style.css';
+import '../theme/style.css';
 export default class AiAgent extends Plugin {
 	public DEFAULT_GPT_MODEL = 'gpt-4o' as AiModel;
 	public DEFAULT_AI_END_POINT = 'https://api.openai.com/v1/chat/completions';

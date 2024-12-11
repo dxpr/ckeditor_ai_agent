@@ -8,7 +8,7 @@ ckeditor_ai_agent_ai_agent:
     admin_library: ckeditor_ai_agent/aiagent.admin
     class: Drupal\ckeditor_ai_agent\Plugin\CKEditor5Plugin\AiAgent
     toolbar_items:
-      aiagent:
+      aiAgentButton:
         label: 'AI Agent'
     elements:
       - <p>

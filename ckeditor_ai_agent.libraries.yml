@@ -6,10 +6,10 @@ aiagent:
     js/build/translations/nl.js: { preprocess: false, minified: true }
   css:
     theme:
-      css/style.css: { }
+      js/ckeditor5_plugins/aiagent/theme/style.css: { }
   dependencies:
     - core/ckeditor5
 aiagent.admin:
   css:
     theme:
-      css/aiagent.admin.css: { }
+      js/ckeditor5_plugins/aiagent/theme/aiagent.admin.css: { }

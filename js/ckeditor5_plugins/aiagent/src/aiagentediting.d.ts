@@ -1,4 +1,4 @@
-import { Plugin } from 'ckeditor5/src/core';
+import { Plugin } from 'ckeditor5/src/core.js';
 export default class AiAgentEditing extends Plugin {
     static get pluginName(): "AiAgentEditing";
     /**

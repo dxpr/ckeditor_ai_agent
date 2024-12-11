@@ -1,4 +1,4 @@
-import { Plugin } from 'ckeditor5/src/core';
+import { Plugin } from 'ckeditor5/src/core.js';
 import AiAgentUI from './aiagentui.js';
 import AiAgentEditing from './aiagentediting.js';
 import type { Editor } from 'ckeditor5';
