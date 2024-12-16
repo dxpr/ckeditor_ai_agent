@@ -11,9 +11,45 @@ if (!fs.existsSync(destinationDir)) {
 }
 
 try {
+  // First, remove only the ai-agent.js file from build directory
+  const buildDir = path.join(__dirname, 'js/build');
+  const buildFile = path.join(buildDir, 'ai-agent.js');
+  
+  if (fs.existsSync(buildFile)) {
+    console.log('Removing existing build file...');
+    fs.unlinkSync(buildFile);
+  }
+
+  // Ensure build directory exists
+  if (!fs.existsSync(buildDir)) {
+    fs.mkdirSync(buildDir, { recursive: true });
+  }
+  console.log('Build directory ready.');
+
+  // Copy translations from package build directory
+  const sourceTranslationsDir = path.join(
+    __dirname,
+    'node_modules/@dxpr/ckeditor5-ai-agent/build/translations'
+  );
+  const destTranslationsDir = path.join(buildDir, 'translations');
+
+  if (fs.existsSync(sourceTranslationsDir)) {
+    if (!fs.existsSync(destTranslationsDir)) {
+      fs.mkdirSync(destTranslationsDir, { recursive: true });
+    }
+    copyRecursively(sourceTranslationsDir, destTranslationsDir);
+    console.log('Translations successfully copied.');
+  }
+
+  // Remove existing destination directory
+  if (fs.existsSync(destinationDir)) {
+    console.log('Removing existing destination directory...');
+    fs.rmSync(destinationDir, { recursive: true, force: true });
+  }
+  fs.mkdirSync(destinationDir, { recursive: true });
+  
   console.log('Installing @dxpr/ckeditor5-ai-agent package...');
-  // Install the package locally in a temporary location
-  execSync('npm install @dxpr/ckeditor5-ai-agent --no-save', { stdio: 'inherit' });
+  execSync('npm install @dxpr/ckeditor5-ai-agent', { stdio: 'inherit' });
 
   console.log('Copying files from @dxpr/ckeditor5-ai-agent/src to destination...');
   // Source directory inside the package
@@ -29,16 +65,34 @@ try {
   }
 
   // Copy files recursively from source to destination
-  fs.readdirSync(sourceDir).forEach((file) => {
-    const sourceFile = path.join(sourceDir, file);
-    const destFile = path.join(destinationDir, file);
-
-    // Check if the item is a file and has .js or .ts extension
-    if (fs.lstatSync(sourceFile).isFile() && /\.(js|ts)$/.test(file)) {
-      fs.copyFileSync(sourceFile, destFile);
-      console.log(`Copied: ${file}`);
+  function copyRecursively(source, destination) {
+    // Create destination directory if it doesn't exist
+    if (!fs.existsSync(destination)) {
+      fs.mkdirSync(destination, { recursive: true });
     }
-  });
+
+    // Read source directory
+    const files = fs.readdirSync(source);
+
+    files.forEach(file => {
+      const sourcePath = path.join(source, file);
+      const destPath = path.join(destination, file);
+
+      const stats = fs.lstatSync(sourcePath);
+      
+      if (stats.isDirectory()) {
+        // Recursively copy subdirectories
+        console.log(`Creating directory: ${destPath}`);
+        copyRecursively(sourcePath, destPath);
+      } else {
+        // Copy all files
+        fs.copyFileSync(sourcePath, destPath);
+        console.log(`Copied file: ${sourcePath} -> ${destPath}`);
+      }
+    });
+  }
+
+  copyRecursively(sourceDir, destinationDir);
 
   console.log('Files successfully copied to destination directory.');
 
@@ -77,6 +131,25 @@ try {
     console.log('Modified index.js');
   } else {
     console.warn('index.js not found, skipping modification.');
+  }
+
+  // Update theme directory copying to handle icons subdirectory
+  const sourceThemeDir = path.join(
+    __dirname,
+    'node_modules/@dxpr/ckeditor5-ai-agent/theme'
+  );
+  const destThemeDir = path.join(__dirname, 'js/ckeditor5_plugins/aiagent/theme');
+
+  if (fs.existsSync(sourceThemeDir)) {
+    if (!fs.existsSync(destThemeDir)) {
+      fs.mkdirSync(destThemeDir, { recursive: true });
+    }
+    
+    // Copy theme files and maintain directory structure
+    copyRecursively(sourceThemeDir, destThemeDir);
+    console.log('Theme directory successfully copied.');
+  } else {
+    console.warn('Theme directory not found in source package.');
   }
 
 } catch (error) {
