@@ -79,6 +79,42 @@ try {
     console.warn('index.js not found, skipping modification.');
   }
 
+  // Copy theme directory
+  const sourceThemeDir = path.join(
+    __dirname,
+    'node_modules/@dxpr/ckeditor5-ai-agent/theme'
+  );
+  const destThemeDir = path.join(__dirname, 'js/ckeditor5_plugins/aiagent/theme');
+
+  if (!fs.existsSync(destThemeDir)) {
+    fs.mkdirSync(destThemeDir, { recursive: true });
+  }
+
+  // Copy theme files recursively
+  function copyDir(src, dest) {
+    fs.readdirSync(src).forEach((item) => {
+      const srcPath = path.join(src, item);
+      const destPath = path.join(dest, item);
+
+      if (fs.lstatSync(srcPath).isDirectory()) {
+        if (!fs.existsSync(destPath)) {
+          fs.mkdirSync(destPath, { recursive: true });
+        }
+        copyDir(srcPath, destPath);
+      } else {
+        fs.copyFileSync(srcPath, destPath);
+        console.log(`Copied: ${item}`);
+      }
+    });
+  }
+
+  if (fs.existsSync(sourceThemeDir)) {
+    copyDir(sourceThemeDir, destThemeDir);
+    console.log('Theme directory successfully copied.');
+  } else {
+    console.warn('Theme directory not found in source package.');
+  }
+
 } catch (error) {
   console.error('Error during build process:', error.message);
   process.exit(1);
