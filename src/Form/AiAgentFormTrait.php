@@ -2,6 +2,8 @@
 
 namespace Drupal\ckeditor_ai_agent\Form;
 
+use Drupal\Core\Form\FormStateInterface;
+
 /**
  * Provides common form elements for AI Agent configuration.
  */

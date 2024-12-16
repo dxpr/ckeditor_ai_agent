@@ -2,134 +2,116 @@ ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
   type: mapping
   label: 'CKEditor AI Agent settings'
   mapping:
-    api_key:
+    aiAgent:
+      type: mapping
+      label: 'AI Agent Configuration'
+      mapping:
+        apiKey:
+          type: string
+          label: 'API Key'
+        model:
+          type: string
+          label: 'AI Model'
+        endpointUrl:
+          type: string
+          label: 'Endpoint URL'
+        temperature:
+          type: float
+          label: 'Temperature'
+        maxOutputTokens:
+          type: integer
+          label: 'Max Output Tokens'
+        maxInputTokens:
+          type: integer
+          label: 'Max Input Tokens'
+        contextSize:
+          type: integer
+          label: 'Context Size'
+        editorContextRatio:
+          type: float
+          label: 'Editor Context Ratio'
+        timeOutDuration:
+          type: integer
+          label: 'Timeout Duration'
+        retryAttempts:
+          type: integer
+          label: 'Retry Attempts'
+        debugMode:
+          type: boolean
+          label: 'Debug Mode'
+        streamContent:
+          type: boolean
+          label: 'Stream Content'
+        showErrorDuration:
+          type: integer
+          label: 'Show Error Duration'
+        moderation:
+          type: mapping
+          label: 'Moderation Settings'
+          mapping:
+            enable:
+              type: boolean
+              label: 'Enable Moderation'
+            key:
+              type: string
+              label: 'Moderation Key'
+            disableFlags:
+              type: mapping
+              label: 'Disabled Flags'
+              mapping:
+                sexual:
+                  type: integer
+                  label: 'Sexual'
+                'sexual/minors':
+                  type: integer
+                  label: 'Sexual/Minors'
+                harassment:
+                  type: integer
+                  label: 'Harassment'
+                'harassment/threatening':
+                  type: integer
+                  label: 'Harassment/Threatening'
+                hate:
+                  type: integer
+                  label: 'Hate'
+                'hate/threatening':
+                  type: integer
+                  label: 'Hate/Threatening'
+                illicit:
+                  type: integer
+                  label: 'Illicit'
+                'illicit/violent':
+                  type: integer
+                  label: 'Illicit/Violent'
+                'self-harm':
+                  type: integer
+                  label: 'Self-harm'
+                'self-harm/intent':
+                  type: integer
+                  label: 'Self-harm/Intent'
+                'self-harm/instructions':
+                  type: integer
+                  label: 'Self-harm/Instructions'
+                violence:
+                  type: integer
+                  label: 'Violence'
+                'violence/graphic':
+                  type: integer
+                  label: 'Violence/Graphic'
+        promptSettings:
+          type: mapping
+          label: 'Prompt Settings'
+          mapping:
+            overrides:
+              type: sequence
+              label: 'Overrides'
+              sequence:
+                type: string
+            additions:
+              type: sequence
+              label: 'Additions'
+              sequence:
+                type: string
+    test_field:
       type: string
-      label: 'API Key'
-      nullable: true
-    model:
-      type: string
-      label: 'AI Model'
-      nullable: true
-    endpoint_url:
-      type: string
-      label: 'Endpoint URL'
-      nullable: true
-    temperature:
-      type: float
-      label: 'Temperature'
-      nullable: true
-    max_output_tokens:
-      type: integer
-      label: 'Max Output Tokens'
-      nullable: true
-    max_input_tokens:
-      type: integer
-      label: 'Max Input Tokens'
-      nullable: true
-    context_size:
-      type: integer
-      label: 'Context Size'
-      nullable: true
-    editor_context_ratio:
-      type: float
-      label: 'Editor Context Ratio'
-      nullable: true
-    timeout_duration:
-      type: integer
-      label: 'Timeout Duration'
-      nullable: true
-    retry_attempts:
-      type: integer
-      label: 'Retry Attempts'
-      nullable: true
-    debug_mode:
-      type: boolean
-      label: 'Debug Mode'
-      nullable: true
-    stream_content:
-      type: boolean
-      label: 'Stream Content'
-      nullable: true
-    show_error_duration:
-      type: integer
-      label: 'Show Error Duration'
-      nullable: true
-    moderation_enable:
-      type: boolean
-      label: 'Enable Content Moderation'
-      nullable: true
-    moderation_key:
-      type: string
-      label: 'Moderation API Key'
-      nullable: true
-    moderation_disable_flags:
-      type: sequence
-      label: 'Disabled Moderation Categories'
-      nullable: true
-      sequence:
-        type: string
-        label: 'Category'
-    prompt_settings_overrides_responseRules:
-      type: string
-      label: 'Response Rules Override'
-      nullable: true
-    prompt_settings_overrides_htmlFormatting:
-      type: string
-      label: 'HTML Formatting Override'
-      nullable: true
-    prompt_settings_overrides_contentStructure:
-      type: string
-      label: 'Content Structure Override'
-      nullable: true
-    prompt_settings_overrides_tone:
-      type: string
-      label: 'Tone Override'
-      nullable: true
-    prompt_settings_overrides_inlineContent:
-      type: string
-      label: 'Inline Content Override'
-      nullable: true
-    prompt_settings_overrides_imageHandling:
-      type: string
-      label: 'Image Handling Override'
-      nullable: true
-    prompt_settings_overrides_referenceGuidelines:
-      type: string
-      label: 'Reference Guidelines Override'
-      nullable: true
-    prompt_settings_overrides_contextRequirements:
-      type: string
-      label: 'Context Requirements Override'
-      nullable: true
-    prompt_settings_additions_responseRules:
-      type: string
-      label: 'Response Rules Additions'
-      nullable: true
-    prompt_settings_additions_htmlFormatting:
-      type: string
-      label: 'HTML Formatting Additions'
-      nullable: true
-    prompt_settings_additions_contentStructure:
-      type: string
-      label: 'Content Structure Additions'
-      nullable: true
-    prompt_settings_additions_tone:
-      type: string
-      label: 'Tone Additions'
-      nullable: true
-    prompt_settings_additions_inlineContent:
-      type: string
-      label: 'Inline Content Additions'
-      nullable: true
-    prompt_settings_additions_imageHandling:
-      type: string
-      label: 'Image Handling Additions'
-      nullable: true
-    prompt_settings_additions_referenceGuidelines:
-      type: string
-      label: 'Reference Guidelines Additions'
-      nullable: true
-    prompt_settings_additions_contextRequirements:
-      type: string
-      label: 'Context Requirements Additions'
-      nullable: true
+      label: 'Test Field'
