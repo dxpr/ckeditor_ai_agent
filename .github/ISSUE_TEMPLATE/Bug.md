@@ -11,7 +11,7 @@ Please read this!
 Before opening a new issue, make sure to search for keywords in the issues
 filtered by the "regression" or "type::bug" label:
 
-- https://github.com/dxpr/ckeditor_ai_assist/issues?q=is%3Aopen+is%3Aissue+label%3Abug
+- https://github.com/dxpr/ckeditor_ai_agent/issues?q=is%3Aopen+is%3Aissue+label%3Abug
 
 and verify the issue you're about to submit isn't a duplicate.
 --->

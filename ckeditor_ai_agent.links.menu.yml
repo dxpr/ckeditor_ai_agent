@@ -1,0 +1,5 @@
+ckeditor_ai_agent.settings:
+  title: 'CKEditor AI Agent'
+  description: 'Configure CKEditor AI Agent settings'
+  parent: system.admin_config_content
+  route_name: ckeditor_ai_agent.settings 

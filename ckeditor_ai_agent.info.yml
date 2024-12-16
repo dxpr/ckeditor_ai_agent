@@ -1,0 +1,8 @@
+name: CKEditor Ai Agent
+type: module
+description: AI integration for CKEditor 5
+package: CKEditor 5
+core_version_requirement: ^10.3 || ^11
+dependencies:
+  - drupal:ckeditor5
+configure: ckeditor_ai_agent.settings

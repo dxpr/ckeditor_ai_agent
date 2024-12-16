@@ -1,0 +1,4 @@
+services:
+  ckeditor_ai_agent.configuration_manager:
+    class: Drupal\ckeditor_ai_agent\AiAgentConfigurationManager
+    arguments: ['@config.factory']

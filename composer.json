@@ -1,5 +1,5 @@
 {
-    "name": "dxpr/ckeditor_ai_assist",
+    "name": "dxpr/ckeditor_ai_agent",
     "description": "CKEditor 5 module for Ai Assist.",
     "type": "drupal-module",
     "keywords": ["Drupal"],

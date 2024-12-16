@@ -41,7 +41,7 @@ getDirectories('./js/ckeditor5_plugins').forEach((dir) => {
     },
     output: {
       path: path.resolve(__dirname, './js/build'),
-      filename: `ai-assist.js`,
+      filename: `ai-agent.js`,
       library: ['CKEditor5', dir],
       libraryTarget: 'umd',
       libraryExport: 'default',

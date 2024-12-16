@@ -1,0 +1,15 @@
+aiagent:
+  js:
+    js/build/ai-agent.js: { preprocess: false, minified: true }
+    js/build/translations/es.js: { preprocess: false, minified: true }
+    js/build/translations/hi.js: { preprocess: false, minified: true }
+    js/build/translations/nl.js: { preprocess: false, minified: true }
+  css:
+    theme:
+      js/ckeditor5_plugins/aiagent/theme/style.css: { }
+  dependencies:
+    - core/ckeditor5
+aiagent.admin:
+  css:
+    theme:
+      js/ckeditor5_plugins/aiagent/theme/aiagent.admin.css: { }

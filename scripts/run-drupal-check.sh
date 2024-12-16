@@ -12,9 +12,9 @@ fi
 cd drupal
 mkdir -p web/modules/contrib/
 
-# Symlink ckeditor_ai_assist if not already linked
-if [ ! -L "web/modules/contrib/ckeditor_ai_assist" ]; then
-  ln -s /src web/modules/contrib/ckeditor_ai_assist
+# Symlink ckeditor_ai_agent if not already linked
+if [ ! -L "web/modules/contrib/ckeditor_ai_agent" ]; then
+  ln -s /src web/modules/contrib/ckeditor_ai_agent
 fi
 
 # Install the statistic modules if D11 (removed from core).
@@ -28,4 +28,4 @@ if [ ! -f "./vendor/bin/drupal-check" ]; then
 fi
 
 # Run drupal-check
-./vendor/bin/drupal-check --drupal-root . -ad web/modules/contrib/ckeditor_ai_assist
+./vendor/bin/drupal-check --drupal-root . -ad web/modules/contrib/ckeditor_ai_agent
