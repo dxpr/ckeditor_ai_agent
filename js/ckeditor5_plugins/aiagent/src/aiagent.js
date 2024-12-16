@@ -13,7 +13,7 @@ export default class AiAgent extends Plugin {
             model: this.DEFAULT_GPT_MODEL,
             apiKey: '',
             endpointUrl: this.DEFAULT_AI_END_POINT,
-            temperature: undefined,
+            temperature: 0.7,
             timeOutDuration: 45000,
             maxOutputTokens: TOKEN_LIMITS[this.DEFAULT_GPT_MODEL].maxOutputTokens,
             maxInputTokens: TOKEN_LIMITS[this.DEFAULT_GPT_MODEL].maxInputContextTokens,

@@ -40,13 +40,14 @@ export default class AiAgentService {
      *
      * @returns A promise that resolves when the command has been processed.
      */
-    async handleSlashCommand() {
+    async handleSlashCommand(command) {
         const editor = this.editor;
         const model = editor.model;
         const mapper = editor.editing.mapper;
         const view = editor.editing.view;
         const root = model.document.getRoot();
         let content;
+        let selectedContent;
         let parentEquivalentHTML;
         let parent;
         const position = model.document.selection.getLastPosition();
@@ -56,11 +57,13 @@ export default class AiAgentService {
             const equivalentView = mapper.toViewElement(parent);
             parentEquivalentHTML = equivalentView ? view.domConverter.mapViewToDom(equivalentView) : undefined;
             if (inlineSlash) {
+                editor.model.change(writer => {
+                    const endPosition = writer.createPositionAt(inlineSlash, 'end');
+                    writer.setSelection(endPosition);
+                });
                 this.isInlineInsertion = true;
-                const startingPath = inlineSlash.getPath();
-                const endingPath = position === null || position === void 0 ? void 0 : position.path;
-                const startPosition = model.createPositionFromPath(root, startingPath); // Example path
-                const endPosition = model.createPositionFromPath(root, endingPath); // Example path
+                const startPosition = editor.model.createPositionAt(inlineSlash, 0);
+                const endPosition = editor.model.createPositionAt(inlineSlash, 'end');
                 const range = model.createRange(startPosition, endPosition);
                 parentEquivalentHTML = (equivalentView === null || equivalentView === void 0 ? void 0 : equivalentView.parent) ?
                     view.domConverter.mapViewToDom(equivalentView.parent) :
@@ -73,7 +76,22 @@ export default class AiAgentService {
                 }
             }
             else if (parentEquivalentHTML) {
+                editor.model.change(writer => {
+                    const endPosition = writer.createPositionAt(position.parent, 'end');
+                    writer.setSelection(endPosition);
+                });
                 content = parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.innerText;
+            }
+        }
+        if (command) {
+            content = command;
+            selectedContent = parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.outerHTML;
+            const selection = model.document.selection;
+            const range = selection.getFirstRange();
+            if (range) {
+                model.change(writer => {
+                    writer.setSelection(range.end);
+                });
             }
         }
         if (this.moderationEnable) {
@@ -87,7 +105,7 @@ export default class AiAgentService {
             const domRange = domSelection === null || domSelection === void 0 ? void 0 : domSelection.getRangeAt(0);
             const rect = domRange.getBoundingClientRect();
             aiAgentContext.showLoader(rect);
-            const gptPrompt = await this.generateGptPromptBasedOnUserPrompt(content !== null && content !== void 0 ? content : '', parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.innerText);
+            const gptPrompt = await this.generateGptPromptBasedOnUserPrompt(content !== null && content !== void 0 ? content : '', parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.innerText, selectedContent);
             if (parent && gptPrompt) {
                 await this.fetchAndProcessGptResponse(gptPrompt, parent);
             }
@@ -251,8 +269,10 @@ export default class AiAgentService {
                             parentContent += child.data;
                         }
                     }
-                    const parentPosition = parentContent ? writer.createPositionAfter(parent) : writer.createPositionBefore(parent);
-                    writer.insert(aiTag, insertParent ? parentPosition : position);
+                    const nextLinePosition = parentContent ?
+                        writer.createPositionAt(position.parent, 'after') :
+                        writer.createPositionAt(position.parent, 'before');
+                    writer.insert(aiTag, insertParent ? nextLinePosition : position);
                     const newPosition = writer.createPositionAt(aiTag, 'end');
                     writer.setSelection(newPosition);
                 }
@@ -282,7 +302,7 @@ export default class AiAgentService {
                             if (content !== null && content !== undefined) {
                                 contentBuffer += content;
                             }
-                            await this.updateContent(contentBuffer, blockID, insertParent);
+                            await this.updateContent(contentBuffer, blockID);
                         }
                         catch (parseError) {
                             console.warn('Error parsing JSON:', parseError);
@@ -385,9 +405,31 @@ export default class AiAgentService {
             }
         }
         const editorData = editor.getData();
-        let editorContent = editorData.replace(`<ai-tag id="${blockID}">`, '');
-        editorContent = editorContent.replace('</ai-tag>', '');
+        let editorContent = editorData.replace(/<\/ai-tag>\s*<[^>]+>\s*&nbsp;\s*<\/[^>]+>/g, '');
+        editorContent = editorContent.replace(`<ai-tag id="${blockID}">`, '');
         editor.setData(editorContent);
+    }
+    /**
+     * Recursively retrieves all child elements of a given view element that match the specified block ID.
+     *
+     * @param viewElement - The parent view element from which to retrieve children.
+     * @param blockID - The unique identifier of the AI block to search for.
+     * @returns An array of matching child elements.
+     */
+    getViewChildrens(viewElement, blockID) {
+        const results = [];
+        for (const child of viewElement.getChildren()) {
+            if (child.is('element')) {
+                if (child.is('element', 'ai-tag') && child.getAttribute('id') === blockID) {
+                    results.push(child);
+                }
+                else {
+                    const nestedResults = this.getViewChildrens(child, blockID);
+                    results.push(...nestedResults);
+                }
+            }
+        }
+        return results;
     }
     /**
      * Updates the content of an AI-generated block in the editor.
@@ -398,29 +440,13 @@ export default class AiAgentService {
      * @returns Promise that resolves when the update is complete
      * @private
      */
-    async updateContent(newHtml, blockID, insertParent) {
+    async updateContent(newHtml, blockID) {
         const editor = this.editor;
         editor.model.change(writer => {
             const root = editor.model.document.getRoot();
-            let targetElement = null;
             if (root) {
-                for (const child of root.getChildren()) {
-                    const childElement = child;
-                    if (insertParent) {
-                        if (childElement.is('element', 'ai-tag') && childElement.getAttribute('id') === blockID) {
-                            targetElement = childElement;
-                            break;
-                        }
-                    }
-                    else {
-                        for (const innerChild of childElement.getChildren()) {
-                            if (innerChild.is('element', 'ai-tag') && innerChild.getAttribute('id') === blockID) {
-                                targetElement = innerChild;
-                                break;
-                            }
-                        }
-                    }
-                }
+                const childrens = this.getViewChildrens(root, blockID);
+                const targetElement = childrens.length ? childrens[0] : null;
                 if (targetElement) {
                     const range = editor.model.createRangeIn(targetElement);
                     writer.remove(range);
@@ -516,7 +542,7 @@ export default class AiAgentService {
                 const startingPath = (inlineSlash === null || inlineSlash === void 0 ? void 0 : inlineSlash.getPath()) || parent.getPath();
                 const range = model.createRange(model.createPositionFromPath(root, startingPath), model.createPositionFromPath(root, position.path));
                 writer.remove(range);
-                writer.setSelection(model.createPositionFromPath(root, startingPath));
+                // writer.setSelection( model.createPositionFromPath( root, startingPath ) );
             });
         }
     }
@@ -529,10 +555,10 @@ export default class AiAgentService {
      * @param promptContainerText - Optional text from the container that may provide additional context.
      * @returns A promise that resolves to the generated GPT prompt string or null if an error occurs.
     */
-    async generateGptPromptBasedOnUserPrompt(prompt, promptContainerText) {
+    async generateGptPromptBasedOnUserPrompt(prompt, promptContainerText, selectedContent) {
         try {
             const context = this.promptHelper.trimContext(prompt, promptContainerText);
-            const request = prompt.slice(1); // Remove the leading slash
+            const request = selectedContent ? prompt : prompt.slice(1);
             let markDownContents = [];
             const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
             const urls = prompt.match(urlRegex);
@@ -544,7 +570,7 @@ export default class AiAgentService {
                 markDownContents = this.promptHelper.allocateTokensToFetchedContent(prompt, markDownContents);
             }
             const isEditorEmpty = context === '@@@cursor@@@';
-            return this.promptHelper.formatFinalPrompt(request, context, markDownContents, isEditorEmpty);
+            return this.promptHelper.formatFinalPrompt(request, context, selectedContent, markDownContents, isEditorEmpty);
         }
         catch (error) {
             console.error(error);
