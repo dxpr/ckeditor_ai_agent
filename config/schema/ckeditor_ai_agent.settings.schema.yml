@@ -29,3 +29,79 @@ ckeditor_ai_agent.settings:
     stream_content:
       type: boolean
       label: 'Stream Content'
+    prompt_settings:
+      type: mapping
+      label: 'Prompt Settings'
+      mapping:
+        overrides:
+          type: mapping
+          label: 'Prompt Component Overrides'
+          mapping:
+            responseRules:
+              type: string
+              label: 'Response Rules Override'
+            htmlFormatting:
+              type: string
+              label: 'HTML Formatting Override'
+            contentStructure:
+              type: string
+              label: 'Content Structure Override'
+            tone:
+              type: string
+              label: 'Tone Override'
+            inlineContent:
+              type: string
+              label: 'Inline Content Override'
+            imageHandling:
+              type: string
+              label: 'Image Handling Override'
+            referenceGuidelines:
+              type: string
+              label: 'Reference Guidelines Override'
+            contextRequirements:
+              type: string
+              label: 'Context Requirements Override'
+        additions:
+          type: mapping
+          label: 'Prompt Component Additions'
+          mapping:
+            responseRules:
+              type: string
+              label: 'Response Rules Additions'
+            htmlFormatting:
+              type: string
+              label: 'HTML Formatting Additions'
+            contentStructure:
+              type: string
+              label: 'Content Structure Additions'
+            tone:
+              type: string
+              label: 'Tone Additions'
+            inlineContent:
+              type: string
+              label: 'Inline Content Additions'
+            imageHandling:
+              type: string
+              label: 'Image Handling Additions'
+            referenceGuidelines:
+              type: string
+              label: 'Reference Guidelines Additions'
+            contextRequirements:
+              type: string
+              label: 'Context Requirements Additions'
+    moderation:
+      type: mapping
+      label: 'Content Moderation Settings'
+      mapping:
+        enable:
+          type: boolean
+          label: 'Enable Content Moderation'
+        key:
+          type: string
+          label: 'Moderation API Key'
+        disable_flags:
+          type: sequence
+          label: 'Disabled Moderation Categories'
+          sequence:
+            type: string
+            label: 'Category'

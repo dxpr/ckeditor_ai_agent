@@ -4,4 +4,4 @@ ckeditor_ai_agent.settings:
     _form: '\Drupal\ckeditor_ai_agent\Form\AiAgentSettingsForm'
     _title: 'CKEditor AI Agent Settings'
   requirements:
-    _permission: 'administer ckeditor ai assist' 
+    _permission: 'administer ckeditor ai agent'
