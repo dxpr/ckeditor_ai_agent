@@ -60,7 +60,7 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $config = $this->config('ckeditor_ai_agent.settings');
 
     // Get common form elements
-    $form = $this->getCommonFormElements(FALSE);
+    $form = $this->getCommonFormElements(FALSE, $config);
 
     // Set default values from config
     $form['basic_settings']['api_key']['#default_value'] = $config->get('api_key');
@@ -83,67 +83,6 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $form['moderation_settings']['moderation_enable']['#default_value'] = $config->get('moderation.enable');
     $form['moderation_settings']['moderation_key']['#default_value'] = $config->get('moderation.key');
     $form['moderation_settings']['moderation_disable_flags']['#default_value'] = $config->get('moderation.disable_flags') ?: [];
-
-    // Load default rules from JSON file for prompt settings
-    try {
-      $module_path = $this->extensionPathResolver->getPath('module', 'ckeditor_ai_agent');
-      $default_rules_path = $module_path . '/js/ckeditor5_plugins/aiagent/src/config/default-rules.json';
-      
-      if (!file_exists($default_rules_path)) {
-        throw new \Exception('Default rules file not found');
-      }
-      
-      $default_rules = json_decode(file_get_contents($default_rules_path), TRUE);
-      if (json_last_error() !== JSON_ERROR_NONE) {
-        throw new \Exception('Invalid JSON in default rules file');
-      }
-
-      // Add prompt settings section
-      $form['prompt_settings'] = [
-        '#type' => 'details',
-        '#title' => $this->t('Prompt Settings'),
-        '#open' => FALSE,
-      ];
-
-      $prompt_components = [
-        'responseRules' => $this->t('Response Rules'),
-        'htmlFormatting' => $this->t('HTML Formatting'),
-        'contentStructure' => $this->t('Content Structure'),
-        'tone' => $this->t('Tone'),
-        'inlineContent' => $this->t('Inline Content'),
-        'imageHandling' => $this->t('Image Handling'),
-        'referenceGuidelines' => $this->t('Reference Guidelines'),
-        'contextRequirements' => $this->t('Context Requirements'),
-      ];
-
-      foreach ($prompt_components as $key => $label) {
-        $form['prompt_settings'][$key] = [
-          '#type' => 'details',
-          '#title' => $label,
-          '#open' => FALSE,
-        ];
-
-        $form['prompt_settings'][$key]['override'] = [
-          '#type' => 'textarea',
-          '#title' => $this->t('Override Rules'),
-          '#default_value' => $config->get("prompt_settings.overrides.$key"),
-          '#placeholder' => $default_rules[$key] ?? '',
-          '#description' => $this->t('Override default rules. Leave empty to use defaults shown in placeholder.'),
-          '#rows' => 6,
-        ];
-
-        $form['prompt_settings'][$key]['additions'] = [
-          '#type' => 'textarea',
-          '#title' => $this->t('Additional Rules'),
-          '#default_value' => $config->get("prompt_settings.additions.$key"),
-          '#description' => $this->t('Add rules to append to the defaults.'),
-          '#rows' => 4,
-        ];
-      }
-    }
-    catch (\Exception $e) {
-      $this->messenger()->addError($this->t('Error loading prompt settings: @error', ['@error' => $e->getMessage()]));
-    }
 
     return parent::buildForm($form, $form_state);
   }
@@ -201,19 +140,19 @@ class AiAgentSettingsForm extends ConfigFormBase {
     
     // Save prompt settings
     $prompt_components = [
-      'responseRules', 'htmlFormatting', 'contentStructure', 'tone',
-      'inlineContent', 'imageHandling', 'referenceGuidelines', 'contextRequirements'
+        'responseRules', 'htmlFormatting', 'contentStructure', 'tone',
+        'inlineContent', 'imageHandling', 'referenceGuidelines', 'contextRequirements'
     ];
 
     foreach ($prompt_components as $key) {
-      $config->set(
-        "prompt_settings.overrides.$key",
-        $form_state->getValue(['prompt_settings', $key, 'override'])
-      );
-      $config->set(
-        "prompt_settings.additions.$key",
-        $form_state->getValue(['prompt_settings', $key, 'additions'])
-      );
+        $config->set(
+            "prompt_settings.overrides.$key",
+            $form_state->getValue("override_$key")
+        );
+        $config->set(
+            "prompt_settings.additions.$key",
+            $form_state->getValue("additions_$key")
+        );
     }
     
     $config->save();

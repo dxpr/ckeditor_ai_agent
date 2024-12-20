@@ -84,7 +84,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         // Basic Settings
         $form['basic_settings']['api_key']['#default_value'] = $config['aiAgent']['apiKey'] ?? '';
         $form['basic_settings']['model']['#default_value'] = $config['aiAgent']['model'] ?? '';
-        $form['basic_settings']['temperature']['#default_value'] = $config['aiAgent']['temperature'] ?? '';
+        $form['advanced_settings']['temperature']['#default_value'] = $config['aiAgent']['temperature'] ?? '';
         $form['basic_settings']['endpoint_url']['#default_value'] = $config['aiAgent']['endpointUrl'] ?? '';
 
         // Advanced Settings
@@ -138,7 +138,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         // Basic Settings
         'apiKey' => (string) $values['basic_settings']['api_key'],
         'model' => (string) $values['basic_settings']['model'],
-        'temperature' => is_numeric($values['basic_settings']['temperature']) ? (float) $values['basic_settings']['temperature'] : NULL,
+        'temperature' => is_numeric($values['advanced_settings']['temperature']) ? (float) $values['advanced_settings']['temperature'] : NULL,
         'endpointUrl' => (string) $values['basic_settings']['endpoint_url'],
         
         // Advanced Settings
@@ -162,7 +162,21 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
             'key' => (string) $values['moderation_settings']['moderation_key'],
             'disableFlags' => array_map('intval', (array) $values['moderation_settings']['moderation_disable_flags']),
         ],
+        
+        // Add prompt settings
+        'promptSettings' => [
+            'overrides' => [],
+            'additions' => [],
+        ],
     ];
+
+    // Process each prompt component
+    foreach ($this->getPromptComponents() as $component) {
+        $this->configuration['aiAgent']['promptSettings']['overrides'][$component] = 
+            $values['prompt_settings'][$component]['override'] ?? '';
+        $this->configuration['aiAgent']['promptSettings']['additions'][$component] = 
+            $values['prompt_settings'][$component]['additions'] ?? '';
+    }
   }
 
   /**
@@ -185,61 +199,85 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    * {@inheritdoc}
    */
   public function getDynamicPluginConfig(array $static_plugin_config, EditorInterface $editor): array {
-    // Get global settings.
     $config = \Drupal::config('ckeditor_ai_agent.settings');
     $editor_config = $this->configuration['aiAgent'] ?? [];
 
-    // Build config with global fallbacks.
-    return [
-      'aiAgent' => [
-        'apiKey' => $editor_config['apiKey'] ?? $config->get('api_key'),
-        'model' => $editor_config['model'] ?? $config->get('model') ?? 'gpt-4o',
-        'endpointUrl' => $editor_config['endpointUrl'] ?? $config->get('endpoint_url') ?? 'https://api.openai.com/v1/chat/completions',
-        
-        // Numeric configurations with type casting.
-        'temperature' => $this->getTypedValue($editor_config['temperature'], $config->get('temperature'), 'float'),
-        'maxOutputTokens' => $this->getTypedValue($editor_config['maxOutputTokens'], $config->get('max_output_tokens'), 'int'),
-        'maxInputTokens' => $this->getTypedValue($editor_config['maxInputTokens'], $config->get('max_input_tokens'), 'int'),
-        'contextSize' => $this->getTypedValue($editor_config['contextSize'], $config->get('context_size'), 'int'),
-        'editorContextRatio' => $this->getTypedValue($editor_config['editorContextRatio'], $config->get('editor_context_ratio'), 'float', 0.3),
-        'timeoutDuration' => $this->getTypedValue($editor_config['timeOutDuration'], $config->get('timeout_duration'), 'int', 45000),
-        'retryAttempts' => $this->getTypedValue($editor_config['retryAttempts'], $config->get('retry_attempts'), 'int', 1),
-        
-        // Boolean configurations.
-        'debugMode' => $this->getTypedValue($editor_config['debugMode'], $config->get('debug_mode'), 'bool', FALSE),
-        'streamContent' => $this->getTypedValue($editor_config['streamContent'], $config->get('stream_content'), 'bool', TRUE),
-        'showErrorDuration' => $this->getTypedValue($editor_config['showErrorDuration'], $config->get('show_error_duration'), 'int', 5000),
-        
-        // Moderation settings handled separately.
-        'moderation' => [
-          'enable' => $this->getTypedValue($editor_config['moderation']['enable'] ?? NULL, $config->get('moderation.enable'), 'bool', FALSE),
-          'key' => $editor_config['moderation']['key'] ?? $config->get('moderation.key'),
-          'disableFlags' => $editor_config['moderation']['disableFlags'] ?? $config->get('moderation.disable_flags') ?? [],
-        ],
-        'promptSettings' => [
-          'overrides' => [
-            'responseRules' => $this->configuration['aiAgent']['promptSettings']['overrides']['responseRules'] ?? $config->get('prompt_settings.overrides.responseRules'),
-            'htmlFormatting' => $this->configuration['aiAgent']['promptSettings']['overrides']['htmlFormatting'] ?? $config->get('prompt_settings.overrides.htmlFormatting'),
-            'contentStructure' => $this->configuration['aiAgent']['promptSettings']['overrides']['contentStructure'] ?? $config->get('prompt_settings.overrides.contentStructure'),
-            'tone' => $this->configuration['aiAgent']['promptSettings']['overrides']['tone'] ?? $config->get('prompt_settings.overrides.tone'),
-            'inlineContent' => $this->configuration['aiAgent']['promptSettings']['overrides']['inlineContent'] ?? $config->get('prompt_settings.overrides.inlineContent'),
-            'imageHandling' => $this->configuration['aiAgent']['promptSettings']['overrides']['imageHandling'] ?? $config->get('prompt_settings.overrides.imageHandling'),
-            'referenceGuidelines' => $this->configuration['aiAgent']['promptSettings']['overrides']['referenceGuidelines'] ?? $config->get('prompt_settings.overrides.referenceGuidelines'),
-            'contextRequirements' => $this->configuration['aiAgent']['promptSettings']['overrides']['contextRequirements'] ?? $config->get('prompt_settings.overrides.contextRequirements'),
-          ],
-          'additions' => [
-            'responseRules' => $this->configuration['aiAgent']['promptSettings']['additions']['responseRules'] ?? $config->get('prompt_settings.additions.responseRules'),
-            'htmlFormatting' => $this->configuration['aiAgent']['promptSettings']['additions']['htmlFormatting'] ?? $config->get('prompt_settings.additions.htmlFormatting'),
-            'contentStructure' => $this->configuration['aiAgent']['promptSettings']['additions']['contentStructure'] ?? $config->get('prompt_settings.additions.contentStructure'),
-            'tone' => $this->configuration['aiAgent']['promptSettings']['additions']['tone'] ?? $config->get('prompt_settings.additions.tone'),
-            'inlineContent' => $this->configuration['aiAgent']['promptSettings']['additions']['inlineContent'] ?? $config->get('prompt_settings.additions.inlineContent'),
-            'imageHandling' => $this->configuration['aiAgent']['promptSettings']['additions']['imageHandling'] ?? $config->get('prompt_settings.additions.imageHandling'),
-            'referenceGuidelines' => $this->configuration['aiAgent']['promptSettings']['additions']['referenceGuidelines'] ?? $config->get('prompt_settings.additions.referenceGuidelines'),
-            'contextRequirements' => $this->configuration['aiAgent']['promptSettings']['additions']['contextRequirements'] ?? $config->get('prompt_settings.additions.contextRequirements'),
-          ],
-        ],
-      ],
+    // Debug logging
+    \Drupal::messenger()->addStatus('Configuration inputs: ' . print_r([
+        'editor_config' => $editor_config,
+        'global_config' => $config->get(),
+    ], TRUE));
+
+    // Build configuration with proper fallback handling
+    $result = ['aiAgent' => []];
+    
+    // Basic settings
+    $settings_map = [
+        'apiKey' => 'api_key',
+        'model' => 'model',
+        'endpointUrl' => 'endpoint_url',
+        'temperature' => 'temperature',
+        'maxOutputTokens' => 'max_output_tokens',
+        'maxInputTokens' => 'max_input_tokens',
+        'contextSize' => 'context_size',
+        'editorContextRatio' => 'editor_context_ratio',
+        'timeOutDuration' => 'timeout_duration',
+        'retryAttempts' => 'retry_attempts',
+        'debugMode' => 'debug_mode',
+        'streamContent' => 'stream_content',
+        'showErrorDuration' => 'show_error_duration',
     ];
+
+    // Add before the foreach loop
+    \Drupal::messenger()->addStatus('Model values: ' . print_r([
+        'editor_model' => $editor_config['model'] ?? 'not set',
+        'global_model' => $config->get('model'),
+        'final_model' => $result['aiAgent']['model'] ?? 'not set'
+    ], TRUE));
+
+    foreach ($settings_map as $js_key => $drupal_key) {
+        // Only set if either editor config or global config has a non-null value
+        if (isset($editor_config[$js_key]) && !empty($editor_config[$js_key])) {
+            $result['aiAgent'][$js_key] = $editor_config[$js_key];
+        } elseif ($config->get($drupal_key) !== NULL && !empty($config->get($drupal_key))) {
+            $result['aiAgent'][$js_key] = $config->get($drupal_key);
+        }
+    }
+
+    // Moderation settings
+    if (isset($editor_config['moderation']) || $config->get('moderation')) {
+        $result['aiAgent']['moderation'] = [
+            'enable' => $editor_config['moderation']['enable'] ?? $config->get('moderation.enable'),
+            'key' => $editor_config['moderation']['key'] ?? $config->get('moderation.key'),
+            'disableFlags' => $editor_config['moderation']['disableFlags'] ?? $config->get('moderation.disable_flags'),
+        ];
+    }
+
+    // Prompt settings
+    if (isset($editor_config['promptSettings']) || $config->get('prompt_settings')) {
+        $result['aiAgent']['promptSettings'] = [
+            'overrides' => [],
+            'additions' => [],
+        ];
+
+        foreach (['overrides', 'additions'] as $type) {
+            $editor_settings = $editor_config['promptSettings'][$type] ?? [];
+            $global_settings = $config->get("prompt_settings.$type") ?? [];
+
+            foreach ($this->getPromptComponents() as $component) {
+                if (isset($editor_settings[$component])) {
+                    $result['aiAgent']['promptSettings'][$type][$component] = $editor_settings[$component];
+                } elseif (isset($global_settings[$component])) {
+                    $result['aiAgent']['promptSettings'][$type][$component] = $global_settings[$component];
+                }
+            }
+        }
+    }
+
+    // Debug final configuration
+    \Drupal::messenger()->addStatus('Final configuration: ' . print_r($result, TRUE));
+
+    return $result;
   }
 
   /**
@@ -319,7 +357,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     if (isset($config['aiAgent'])) {
         if (isset($elements['basic_settings'])) {
             $elements['basic_settings']['model']['#default_value'] = $config['aiAgent']['model'] ?? '';
-            $elements['basic_settings']['temperature']['#default_value'] = $config['aiAgent']['temperature'] ?? '';
+            $elements['advanced_settings']['temperature']['#default_value'] = $config['aiAgent']['temperature'] ?? '';
             $elements['basic_settings']['endpoint_url']['#default_value'] = $config['aiAgent']['endpointUrl'] ?? '';
         }
 

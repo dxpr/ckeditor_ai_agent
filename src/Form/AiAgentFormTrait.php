@@ -18,9 +18,14 @@ trait AiAgentFormTrait {
    * @return array
    *   The form elements.
    */
-  protected function getCommonFormElements($is_plugin = FALSE) {
+  protected function getCommonFormElements($is_plugin = FALSE, $config = NULL) {
     $elements = [];
     
+    // Initialize config based on context
+    if (!$is_plugin) {
+        $config = \Drupal::config('ckeditor_ai_agent.settings');
+    }
+
     // Basic Settings
     $elements['basic_settings'] = [
       '#type' => 'details',
@@ -50,15 +55,6 @@ trait AiAgentFormTrait {
           'gpt-3.5-turbo' => $this->t('GPT-3.5 Turbo'),
         ],
         '#description' => $this->t('Select AI model or use global settings.'),
-      ];
-
-      $elements['basic_settings']['temperature'] = [
-        '#type' => 'number',
-        '#title' => $this->t('Temperature'),
-        '#min' => 0,
-        '#max' => 2,
-        '#step' => 0.1,
-        '#description' => $this->t('Controls randomness (0-2). Leave empty to use global settings.'),
       ];
 
       $elements['basic_settings']['endpoint_url'] = [
@@ -102,15 +98,31 @@ trait AiAgentFormTrait {
       '#open' => FALSE,
     ];
 
-    $elements['advanced_settings']['temperature'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Response Creativity'),
-      '#field_suffix' => $this->t('(0.0 - 2.0)'),
-      '#min' => 0,
-      '#max' => 2,
-      '#step' => 0.1,
-      '#description' => $this->t('Controls response creativity: 0.0-0.5 for focused, factual responses; 0.5-1.0 for balanced creativity; 1.0-2.0 for highly creative variations.'),
-    ];
+    if ($is_plugin) {
+      $elements['advanced_settings']['temperature'] = [
+        '#type' => 'number',
+        '#title' => $this->t('Response Creativity'),
+        '#field_suffix' => $this->t('(0.0 - 2.0)'),
+        '#min' => 0,
+        '#max' => 2,
+        '#step' => 0.1,
+        '#description' => $this->t('Controls response creativity: 0.0-0.5 for focused, factual responses; 0.5-1.0 for balanced creativity; 1.0-2.0 for highly creative variations.'),
+        '#default_value' => $config['aiAgent']['temperature'] ?? '',
+      ];
+      \Drupal::messenger()->addStatus(t('Plugin form temperature config: @temp', ['@temp' => print_r($config['aiAgent']['temperature'] ?? 'not set', TRUE)]));
+    } else {
+      $elements['advanced_settings']['temperature'] = [
+        '#type' => 'number',
+        '#title' => $this->t('Response Creativity'),
+        '#field_suffix' => $this->t('(0.0 - 2.0)'),
+        '#min' => 0,
+        '#max' => 2,
+        '#step' => 0.1,
+        '#description' => $this->t('Controls response creativity: 0.0-0.5 for focused, factual responses; 0.5-1.0 for balanced creativity; 1.0-2.0 for highly creative variations.'),
+        '#default_value' => $config->get('temperature') ?? 0.7,
+      ];
+      \Drupal::messenger()->addStatus(t('Global form temperature config: @temp', ['@temp' => print_r($config->get('temperature') ?? 'not set', TRUE)]));
+    }
 
     $elements['advanced_settings']['tokens'] = [
       '#type' => 'fieldset',
@@ -271,6 +283,64 @@ trait AiAgentFormTrait {
         ],
       ],
     ];
+
+    // Add prompt settings section
+    $elements['prompt_settings'] = [
+        '#type' => 'details',
+        '#title' => $this->t('Prompt Settings'),
+        '#open' => FALSE,
+    ];
+
+    $prompt_components = [
+        'responseRules' => $this->t('Response Rules'),
+        'htmlFormatting' => $this->t('HTML Formatting'),
+        'contentStructure' => $this->t('Content Structure'),
+        'tone' => $this->t('Tone'),
+        'inlineContent' => $this->t('Inline Content'),
+        'imageHandling' => $this->t('Image Handling'),
+        'referenceGuidelines' => $this->t('Reference Guidelines'),
+        'contextRequirements' => $this->t('Context Requirements'),
+    ];
+
+    try {
+        $module_path = \Drupal::service('extension.path.resolver')->getPath('module', 'ckeditor_ai_agent');
+        $default_rules_path = $module_path . '/js/ckeditor5_plugins/aiagent/src/config/default-rules.json';
+        $default_rules = [];
+        
+        if (file_exists($default_rules_path)) {
+            $default_rules = json_decode(file_get_contents($default_rules_path), TRUE) ?: [];
+        }
+
+        foreach ($prompt_components as $key => $label) {
+            $override_default = $is_plugin 
+                ? ($config['aiAgent']['promptSettings']['overrides'][$key] ?? '')
+                : ($config->get("prompt_settings.overrides.$key") ?? '');
+
+            $additions_default = $is_plugin 
+                ? ($config['aiAgent']['promptSettings']['additions'][$key] ?? '')
+                : ($config->get("prompt_settings.additions.$key") ?? '');
+
+            $elements['prompt_settings']["override_$key"] = [
+                '#type' => 'textarea',
+                '#title' => $this->t('@label Override Rules', ['@label' => $label]),
+                '#default_value' => $override_default,
+                '#placeholder' => $default_rules[$key] ?? '',
+                '#description' => $this->t('Override default rules. Leave empty to use defaults shown in placeholder.'),
+                '#rows' => 6,
+            ];
+
+            $elements['prompt_settings']["additions_$key"] = [
+                '#type' => 'textarea',
+                '#title' => $this->t('@label Additional Rules', ['@label' => $label]),
+                '#default_value' => $additions_default,
+                '#description' => $this->t('Add rules to append to the defaults.'),
+                '#rows' => 4,
+            ];
+        }
+    }
+    catch (\Exception $e) {
+        \Drupal::messenger()->addError(t('Error loading prompt settings: @error', ['@error' => $e->getMessage()]));
+    }
 
     return $elements;
   }
