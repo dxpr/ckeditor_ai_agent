@@ -1,12 +1,12 @@
 #!/bin/bash
 set -vo pipefail
 
-DRUPAL_RECOMMENDED_PROJECT=${DRUPAL_RECOMMENDED_PROJECT:-10.3.x-dev}
+DRUPAL_RECOMMENDED_PROJECT=${DRUPAL_RECOMMENDED_PROJECT:-11.x-dev}
 DRUPAL_CHECK_TOOL="mglaman/drupal-check"
 
 # Create Drupal project if it doesn't exist
 if [ ! -d "/drupal" ]; then
-  composer create-project drupal/recommended-project=$DRUPAL_RECOMMENDED_PROJECT drupal --no-interaction --stability=dev
+  composer create-project drupal/recommended-project=$DRUPAL_RECOMMENDED_PROJECT drupal --no-interaction --stability=dev --ignore-platform-reqs
 fi
 
 cd drupal
@@ -17,15 +17,11 @@ if [ ! -L "web/modules/contrib/ckeditor_ai_agent" ]; then
   ln -s /src web/modules/contrib/ckeditor_ai_agent
 fi
 
-# Install the statistic modules if D11 (removed from core).
-if [[ $DRUPAL_RECOMMENDED_PROJECT == 11.* ]]; then
-  composer require drupal/statistics
-fi
-
-# Install drupal-check only if not already installed
+# Install drupal-check if not already installed
 if [ ! -f "./vendor/bin/drupal-check" ]; then
-  composer require $DRUPAL_CHECK_TOOL --dev
+  composer config allow-plugins.tbachert/spi true
+  composer require $DRUPAL_CHECK_TOOL --dev --ignore-platform-reqs
 fi
 
-# Run drupal-check
-./vendor/bin/drupal-check --drupal-root . -ad web/modules/contrib/ckeditor_ai_agent
+# Run drupal-check with stderr redirected
+./vendor/bin/drupal-check --drupal-root . -ad web/modules/contrib/ckeditor_ai_agent 2>/dev/null
