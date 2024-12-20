@@ -71,7 +71,9 @@ trait AiAgentFormTrait {
       '#type' => 'select',
       '#title' => $this->t('AI Model'),
       '#options' => $getSelectOptions($model_options),
-      '#description' => $this->t('Select AI model' . ($is_plugin ? ' or use global settings.' : '.')),
+      '#description' => $this->t('@description', [
+        '@description' => 'Select AI model' . ($is_plugin ? ' or use global settings.' : '.'),
+      ]),
       '#default_value' => $getConfigValue('model'),
     ];
 
