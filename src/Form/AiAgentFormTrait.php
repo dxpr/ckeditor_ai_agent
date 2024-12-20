@@ -15,10 +15,10 @@ trait AiAgentFormTrait {
    * @param mixed $config
    *   Configuration object or array.
    *
-   * @return array
+   * @return array<string, mixed>
    *   The form elements.
    */
-  protected function getCommonFormElements($is_plugin = FALSE, $config = NULL) {
+  protected function getCommonFormElements($is_plugin = FALSE, $config = NULL): array {
     $elements = [];
 
     // Initialize config based on context.
@@ -285,15 +285,20 @@ trait AiAgentFormTrait {
     ];
 
     // Add prompt settings.
-    $this->addPromptSettings($elements, $is_plugin, $config, $getConfigValue);
+    $this->addPromptSettings($elements, $getConfigValue);
 
     return $elements;
   }
 
   /**
    * Adds prompt settings to the form elements.
+   *
+   * @param array<string, mixed> $elements
+   *   List of common form elements.
+   * @param \Closure $getConfigValue
+   *   Helper function to get config value based on context.
    */
-  protected function addPromptSettings(&$elements, $is_plugin, $config, $getConfigValue) {
+  protected function addPromptSettings(array &$elements, \Closure $getConfigValue): void {
     $elements['prompt_settings'] = [
       '#type' => 'details',
       '#title' => $this->t('Prompt Settings'),
