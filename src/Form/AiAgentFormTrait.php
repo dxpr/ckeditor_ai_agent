@@ -329,7 +329,7 @@ trait AiAgentFormTrait {
           '#title' => $this->t('@label Override', ['@label' => $label]),
           '#default_value' => $getConfigValue("prompt_settings.overrides.$key"),
           '#placeholder' => $default_rules[$key] ?? '',
-          '#description' => $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower($label)]),
+          '#description' => $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower((string) $label)]),
           '#rows' => 6,
         ];
 
@@ -337,7 +337,7 @@ trait AiAgentFormTrait {
           '#type' => 'textarea',
           '#title' => $this->t('@label Additions', ['@label' => $label]),
           '#default_value' => $getConfigValue("prompt_settings.additions.$key"),
-          '#description' => $this->t('Add custom @label rules that will be appended to the defaults.', ['@label' => strtolower($label)]),
+          '#description' => $this->t('Add custom @label rules that will be appended to the defaults.', ['@label' => strtolower((string) $label)]),
           '#rows' => 4,
         ];
       }
