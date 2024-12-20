@@ -195,7 +195,7 @@ trait AiAgentFormTrait {
     ];
 
     $boolean_options = ['0' => $this->t('Disabled'), '1' => $this->t('Enabled')];
-    $behavior_fields = ['debug_mode', 'stream_content'];
+    $behavior_fields = ['debug_mode'];
 
     foreach ($behavior_fields as $field) {
         $elements['behavior_settings'][$field] = [
@@ -203,9 +203,7 @@ trait AiAgentFormTrait {
             '#title' => $this->t(str_replace('_', ' ', ucfirst($field))),
             '#options' => $getSelectOptions($boolean_options),
             '#description' => $this->t('@desc', [
-                '@desc' => $field === 'debug_mode' 
-                    ? 'Enable detailed logging for troubleshooting purposes.'
-                    : 'Display AI responses as they are generated. Provides immediate feedback but may appear less polished.'
+                '@desc' => 'Enable detailed logging for troubleshooting purposes.'
             ]),
             '#default_value' => $getConfigValue("behavior.$field"),
         ];

@@ -59,7 +59,6 @@ class AiAgentConfigurationManager {
             'timeOutDuration' => $global_config->get('timeout_duration'),
             'retryAttempts' => $global_config->get('retry_attempts'),
             'debugMode' => $global_config->get('debug_mode'),
-            'streamContent' => $global_config->get('stream_content'),
             'showErrorDuration' => $global_config->get('show_error_duration'),
             'moderation' => [
                 'enable' => $global_config->get('moderation.enable'),

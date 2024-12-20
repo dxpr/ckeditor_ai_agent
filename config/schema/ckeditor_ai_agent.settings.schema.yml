@@ -26,9 +26,6 @@ ckeditor_ai_agent.settings:
     debug_mode:
       type: boolean
       label: 'Debug Mode'
-    stream_content:
-      type: boolean
-      label: 'Stream Content'
     prompt_settings:
       type: mapping
       label: 'Prompt Settings'
