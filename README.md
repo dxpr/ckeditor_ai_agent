@@ -2,7 +2,9 @@
 
 ## Overview
 
-CKEditor AI Agent is a Drupal module that integrates AI-powered content generation capabilities into CKEditor 5. It provides an intuitive interface for generating, modifying, and enhancing content directly within your editor.
+CKEditor AI Agent is a Drupal module that integrates AI-powered content
+generation capabilities into CKEditor 5. It provides an intuitive interface for
+generating, modifying, and enhancing content directly within your editor.
 
 ## Requirements
 
@@ -14,16 +16,19 @@ CKEditor AI Agent is a Drupal module that integrates AI-powered content generati
 ## Installation
 
 1. **Install the Module**
-   - Download and place the module in your Drupal installation's modules directory
+   - Download and place the module in your Drupal installation's modules
+   directory
    - Enable the module through Drupal's admin interface or using Drush:
      ```bash
      drush en ckeditor_ai_agent
      ```
 
 2. **Configure CKEditor Integration**
-   - Go to **Administration > Configuration > Content authoring > Text formats and editors** (`admin/config/content/formats`)
+   - Go to **Administration > Configuration > Content authoring > Text formats
+   and editors** (`admin/config/content/formats`)
    - Edit your desired text format (typically Full HTML)
-   - Drag and drop the "AI Agent" button into the CKEditor toolbar to make it available for content editors
+   - Drag and drop the "AI Agent" button into the CKEditor toolbar to make it
+   available for content editors
 
 3. **Development**
 
@@ -51,7 +56,9 @@ CKEditor AI Agent is a Drupal module that integrates AI-powered content generati
 
 ## Configuration
 
-Navigate to `Administration > Configuration > Content authoring > CKEditor AI Agent Settings` (`/admin/config/content/ckeditor-ai-agent`) to configure global settings.
+Navigate to `Administration > Configuration > Content authoring > CKEditor AI
+Agent Settings` (`/admin/config/content/ckeditor-ai-agent`) to configure global
+settings.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -144,4 +151,5 @@ For bug reports and feature requests, please use the [issue queue](https://www.d
 
 ## License
 
-This project is licensed under the GPL-2.0+ license. See the LICENSE file for details.
+This project is licensed under the GPL-2.0+ license. See the LICENSE file for
+details.

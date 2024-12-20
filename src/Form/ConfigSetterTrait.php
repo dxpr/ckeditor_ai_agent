@@ -10,12 +10,12 @@ trait ConfigSetterTrait {
   /**
    * Sets configuration values with proper type casting.
    *
-   * @param array $values
+   * @param array<string, mixed> $values
    *   Form values to process.
-   * @param array $mapping
+   * @param array<string, mixed> $mapping
    *   Mapping of form keys to config keys with type information.
    *
-   * @return array
+   * @return array<string, mixed>
    *   Processed configuration array.
    */
   protected function processConfigValues(array $values, array $mapping): array {
@@ -35,8 +35,13 @@ trait ConfigSetterTrait {
 
   /**
    * Gets a nested array value using dot notation.
+   *
+   * @param array<string, mixed> $array
+   *   Array of form values.
+   * @param string $key
+   *   Form key used to extract the nested value.
    */
-  protected function getNestedValue(array $array, string $key) {
+  protected function getNestedValue(array $array, string $key): mixed {
     $keys = explode('.', $key);
     $value = $array;
 
@@ -53,7 +58,7 @@ trait ConfigSetterTrait {
   /**
    * Casts a value to the specified type.
    */
-  protected function castValue($value, string $type) {
+  protected function castValue(mixed $value, string $type): mixed {
     if (empty($value) && $value !== '0' && $value !== 0) {
       return NULL;
     }
@@ -78,6 +83,12 @@ trait ConfigSetterTrait {
 
   /**
    * Processes moderation settings.
+   *
+   * @param array<string, mixed> $values
+   *   Array of form values.
+   *
+   * @return array<string, mixed>
+   *   An array of moderation configuration properties.
    */
   protected function processModerationSettings(array $values): array {
     // Get moderation settings with defaults.
@@ -94,6 +105,12 @@ trait ConfigSetterTrait {
 
   /**
    * Processes prompt settings.
+   *
+   * @param array<string, mixed> $values
+   *   Array of form values.
+   *
+   * @return array<string, mixed>
+   *   An array of prompt configuration properties.
    */
   protected function processPromptSettings(array $values): array {
     $settings = [

@@ -27,6 +27,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-return array<string, mixed>
    */
   public function defaultConfiguration(): array {
     return [
@@ -74,6 +76,9 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-param mixed[] $form
+   * @phpstan-return array<string, mixed>
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state): array {
     $config = $this->getConfiguration();
@@ -125,8 +130,10 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-param mixed[] $form
    */
-  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
+  public function submitConfigurationForm(array &$form, FormStateInterface $form_state): void {
     $values = $form_state->getValues();
 
     $this->configuration['aiAgent'] = $this->processConfigValues(
@@ -141,6 +148,9 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-param mixed[] $static_plugin_config
+   * @phpstan-return array<string, mixed>
    */
   public function getDynamicPluginConfig(array $static_plugin_config, EditorInterface $editor): array {
     $config = \Drupal::config('ckeditor_ai_agent.settings');
@@ -212,8 +222,10 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-param mixed[] $form
    */
-  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
+  public function validateConfigurationForm(array &$form, FormStateInterface $form_state): void {
     // Required by interface, but no validation needed.
   }
 
