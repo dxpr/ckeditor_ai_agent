@@ -116,8 +116,8 @@ trait AiAgentFormTrait {
       $elements['advanced_settings']['tokens'][$field] = [
         '#type' => 'number',
         '#title' => $this->t('@title', ['@title' => $formatMachineNameAsTitle($field)]),
-        '#description' => $this->t('Maximum number of tokens for @type. If not set, uses model\'s maximum limit',
-                ['@type' => str_contains($field, 'output') ? 'AI response' : 'combined prompt and context']),
+        '#description' => $this->t("Maximum number of tokens for @type. If not set, uses model's maximum limit",
+          ['@type' => str_contains($field, 'output') ? 'AI response' : 'combined prompt and context']),
         '#min' => 1,
         '#default_value' => $getConfigValue("tokens.$field"),
       ];
