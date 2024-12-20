@@ -14,41 +14,42 @@ trait ConfigSetterTrait {
    *   Form values to process.
    * @param array $mapping
    *   Mapping of form keys to config keys with type information.
+   *
    * @return array
    *   Processed configuration array.
    */
   protected function processConfigValues(array $values, array $mapping): array {
     $config = [];
-    
+
     foreach ($mapping as $form_key => $settings) {
       $value = $this->getNestedValue($values, $form_key);
-      
+
       if ($value !== NULL) {
         $config_key = $settings['config_key'] ?? basename($form_key);
         $config[$config_key] = $this->castValue($value, $settings['type']);
       }
     }
-    
+
     return $config;
   }
-  
+
   /**
    * Gets a nested array value using dot notation.
    */
   protected function getNestedValue(array $array, string $key) {
     $keys = explode('.', $key);
     $value = $array;
-    
+
     foreach ($keys as $key) {
       if (!is_array($value) || !isset($value[$key])) {
         return NULL;
       }
       $value = $value[$key];
     }
-    
+
     return $value;
   }
-  
+
   /**
    * Casts a value to the specified type.
    */
@@ -56,16 +57,20 @@ trait ConfigSetterTrait {
     if (empty($value) && $value !== '0' && $value !== 0) {
       return NULL;
     }
-    
+
     switch ($type) {
       case 'int':
         return (int) $value;
+
       case 'float':
         return (float) $value;
+
       case 'bool':
         return (bool) $value;
+
       case 'array':
         return (array) $value;
+
       default:
         return (string) $value;
     }
@@ -75,9 +80,9 @@ trait ConfigSetterTrait {
    * Processes moderation settings.
    */
   protected function processModerationSettings(array $values): array {
-    // Get moderation settings with defaults
+    // Get moderation settings with defaults.
     $moderation_settings = $values['moderation_settings'] ?? [];
-    
+
     return [
       'enable' => !empty($moderation_settings['moderation_enable']),
       'key' => (string) ($moderation_settings['moderation_key'] ?? ''),
@@ -103,4 +108,5 @@ trait ConfigSetterTrait {
 
     return $settings;
   }
+
 }

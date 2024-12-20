@@ -70,7 +70,7 @@ trait ConfigMappingTrait {
     ];
 
     if ($is_plugin) {
-      // For plugin configuration, use the plugin_key
+      // For plugin configuration, use the plugin_key.
       $plugin_mapping = [];
       foreach ($base_mapping as $path => $settings) {
         $plugin_mapping[$path] = [
@@ -81,7 +81,7 @@ trait ConfigMappingTrait {
       return $plugin_mapping;
     }
 
-    // For global settings, use the last part of the path as the config key
+    // For global settings, use the last part of the path as the config key.
     $settings_mapping = [];
     foreach ($base_mapping as $path => $settings) {
       $parts = explode('.', $path);
@@ -105,7 +105,8 @@ trait ConfigMappingTrait {
       'inlineContent',
       'imageHandling',
       'referenceGuidelines',
-      'contextRequirements'
+      'contextRequirements',
     ];
   }
+
 }
