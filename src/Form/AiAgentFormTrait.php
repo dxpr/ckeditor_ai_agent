@@ -40,6 +40,9 @@ trait AiAgentFormTrait {
             : $options;
     };
 
+    // Helper function for formatting field names as titles.
+    $formatMachineNameAsTitle = fn($title) => str_replace('_', ' ', ucfirst($title));
+
     // Basic Settings.
     $elements['basic_settings'] = [
       '#type' => 'details',
@@ -112,7 +115,7 @@ trait AiAgentFormTrait {
     foreach ($token_fields as $field) {
       $elements['advanced_settings']['tokens'][$field] = [
         '#type' => 'number',
-        '#title' => $this->t(str_replace('_', ' ', ucfirst($field))),
+        '#title' => $this->t('@title', ['@title' => $formatMachineNameAsTitle($field)]),
         '#description' => $this->t('Maximum number of tokens for @type. If not set, uses model\'s maximum limit',
                 ['@type' => str_contains($field, 'output') ? 'AI response' : 'combined prompt and context']),
         '#min' => 1,
@@ -200,7 +203,7 @@ trait AiAgentFormTrait {
     foreach ($behavior_fields as $field) {
       $elements['behavior_settings'][$field] = [
         '#type' => 'select',
-        '#title' => $this->t(str_replace('_', ' ', ucfirst($field))),
+        '#title' => $this->t('@title', ['@title' => $formatMachineNameAsTitle($field)]),
         '#options' => $getSelectOptions($boolean_options),
         '#description' => $this->t('@desc', [
           '@desc' => 'Enable detailed logging for troubleshooting purposes.',
