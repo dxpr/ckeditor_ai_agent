@@ -208,4 +208,11 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     return $result;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
+    // Required by interface, but no validation needed
+  }
+
 }
