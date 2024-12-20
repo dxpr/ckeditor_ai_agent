@@ -6,12 +6,16 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\ckeditor_ai_agent\Form\ConfigSetterTrait;
+use Drupal\ckeditor_ai_agent\Form\ConfigMappingTrait;
 
 /**
  * Configure CKEditor AI Agent settings.
  */
 class AiAgentSettingsForm extends ConfigFormBase {
   use AiAgentFormTrait;
+  use ConfigSetterTrait;
+  use ConfigMappingTrait;
 
   /**
    * The extension path resolver.
@@ -107,57 +111,19 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $config = $this->config('ckeditor_ai_agent.settings');
     $values = $form_state->getValues();
     
-    // Basic settings
-    $config->set('api_key', (string) $values['basic_settings']['api_key']);
-    $config->set('model', (string) $values['basic_settings']['model']);
-    $config->set('endpoint_url', (string) $values['basic_settings']['endpoint_url']);
-    
-    // Advanced settings
-    $config->set('temperature', is_numeric($values['advanced_settings']['temperature']) ? (float) $values['advanced_settings']['temperature'] : NULL);
-    $config->set('max_output_tokens', !empty($values['advanced_settings']['tokens']['max_output_tokens']) ? (int) $values['advanced_settings']['tokens']['max_output_tokens'] : NULL);
-    $config->set('max_input_tokens', !empty($values['advanced_settings']['tokens']['max_input_tokens']) ? (int) $values['advanced_settings']['tokens']['max_input_tokens'] : NULL);
-    $config->set('context_size', !empty($values['advanced_settings']['context']['context_size']) ? (int) $values['advanced_settings']['context']['context_size'] : NULL);
-    $config->set('editor_context_ratio', is_numeric($values['advanced_settings']['context']['editor_context_ratio']) ? (float) $values['advanced_settings']['context']['editor_context_ratio'] : NULL);
-    
-    // Performance settings
-    $config->set('timeout_duration', !empty($values['performance_settings']['timeout_duration']) ? (int) $values['performance_settings']['timeout_duration'] : NULL);
-    $config->set('retry_attempts', !empty($values['performance_settings']['retry_attempts']) ? (int) $values['performance_settings']['retry_attempts'] : NULL);
-    
-    // Behavior settings
-    $config->set('debug_mode', !empty($values['behavior_settings']['debug_mode']) ? (bool) $values['behavior_settings']['debug_mode'] : NULL);
-    $config->set('stream_content', !empty($values['behavior_settings']['stream_content']) ? (bool) $values['behavior_settings']['stream_content'] : NULL);
-    $config->set('show_error_duration', !empty($values['behavior_settings']['show_error_duration']) ? (int) $values['behavior_settings']['show_error_duration'] : NULL);
-    
-    // Save moderation settings
-    $config->set('moderation.enable', $values['moderation_settings']['moderation_enable']);
-    $config->set('moderation.key', $values['moderation_settings']['moderation_key']);
-    
-    // Filter out unselected flags (where value is 0)
-    $disable_flags = array_filter(
-      $values['moderation_settings']['moderation_disable_flags'],
-      function ($value) { return $value !== 0; }
-    );
-    $config->set('moderation.disable_flags', array_keys($disable_flags));
-    
-    // Save prompt settings
-    $prompt_components = [
-        'responseRules', 'htmlFormatting', 'contentStructure', 'tone',
-        'inlineContent', 'imageHandling', 'referenceGuidelines', 'contextRequirements'
-    ];
-
-    foreach ($prompt_components as $key) {
-        $config->set(
-            "prompt_settings.overrides.$key",
-            $values["override_$key"]
-        );
-        $config->set(
-            "prompt_settings.additions.$key",
-            $values["additions_$key"]
-        );
+    $processed = $this->processConfigValues($values, $this->getConfigMapping());
+    foreach ($processed as $key => $value) {
+      $config->set($key, $value);
     }
     
+    // Handle moderation and prompt settings
+    $moderation = $this->processModerationSettings($values);
+    $config->set('moderation', $moderation);
+    
+    $prompt_settings = $this->processPromptSettings($values);
+    $config->set('prompt_settings', $prompt_settings);
+    
     $config->save();
-
     parent::submitForm($form, $form_state);
   }
 

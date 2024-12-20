@@ -128,8 +128,8 @@ trait AiAgentFormTrait {
 
     $context_fields = [
         'context_size' => [
-            'title' => $this->t('Context Size'),
-            'description' => $this->t('Maximum context window size in tokens. If not set, defaults to 75% of model\'s maximum input token limit.'),
+            'title' => $this->t('Content Window Size'),
+            'description' => $this->t('How many tokens to use for surrounding content. Must be less than Total Token Limit. Recommended: 75% of Total Token Limit to leave room for AI instructions.'),
             'min' => 1,
         ],
         'editor_context_ratio' => [
