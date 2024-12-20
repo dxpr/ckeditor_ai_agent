@@ -126,13 +126,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   /**
    * {@inheritdoc}
    */
-  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
-    $this->messenger()->addMessage('Form values in validation: ' . print_r($form_state->getValues(), TRUE));
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     
@@ -153,12 +146,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     $config = \Drupal::config('ckeditor_ai_agent.settings');
     $editor_config = $this->configuration['aiAgent'] ?? [];
 
-    // Debug logging
-    \Drupal::messenger()->addStatus('Configuration inputs: ' . print_r([
-        'editor_config' => $editor_config,
-        'global_config' => $config->get(),
-    ], TRUE));
-
     // Build configuration with proper fallback handling
     $result = ['aiAgent' => []];
     
@@ -178,13 +165,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         'streamContent' => 'stream_content',
         'showErrorDuration' => 'show_error_duration',
     ];
-
-    // Add before the foreach loop
-    \Drupal::messenger()->addStatus('Model values: ' . print_r([
-        'editor_model' => $editor_config['model'] ?? 'not set',
-        'global_model' => $config->get('model'),
-        'final_model' => $result['aiAgent']['model'] ?? 'not set'
-    ], TRUE));
 
     foreach ($settings_map as $js_key => $drupal_key) {
         // Only set if either editor config or global config has a non-null value
@@ -224,9 +204,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
             }
         }
     }
-
-    // Debug final configuration
-    \Drupal::messenger()->addStatus('Final configuration: ' . print_r($result, TRUE));
 
     return $result;
   }

@@ -38,12 +38,6 @@ class AiAgentConfigurationManager {
    */
   public function getCkEditorConfig(?Editor $editor = NULL): array {
     $global_config = $this->configFactory->get('ckeditor_ai_agent.settings');
-    
-    if ($editor) {
-      \Drupal::messenger()->addStatus(t('Editor settings: @settings', [
-        '@settings' => print_r($editor->getSettings()['plugins']['ckeditor_ai_agent_ai_agent'] ?? [], TRUE)
-      ]));
-    }
 
     // Structure the config to match the aiAgent JS configuration
     $config = [
@@ -71,10 +65,6 @@ class AiAgentConfigurationManager {
             ],
         ]
     ];
-
-    \Drupal::messenger()->addStatus(t('Final config temperature: @temp', [
-      '@temp' => print_r($config['aiAgent']['temperature'] ?? 'not set', TRUE)
-    ]));
 
     return $config;
   }

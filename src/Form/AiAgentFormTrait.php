@@ -281,15 +281,6 @@ trait AiAgentFormTrait {
         ],
     ];
 
-    // Optional: Add back debug messages if needed
-    if ($is_plugin) {
-        \Drupal::messenger()->addStatus(t('Plugin form temperature config: @temp', 
-            ['@temp' => print_r($getConfigValue('temperature', 'not set'), TRUE)]));
-    } else {
-        \Drupal::messenger()->addStatus(t('Global form temperature config: @temp', 
-            ['@temp' => print_r($getConfigValue('temperature', 'not set'), TRUE)]));
-    }
-
     // Add prompt settings
     $this->addPromptSettings($elements, $is_plugin, $config, $getConfigValue);
 
