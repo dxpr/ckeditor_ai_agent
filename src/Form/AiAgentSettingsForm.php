@@ -35,7 +35,7 @@ class AiAgentSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container) {
+  public static function create(ContainerInterface $container): self {
     return new static(
       $container->get('extension.path.resolver')
     );
@@ -50,13 +50,18 @@ class AiAgentSettingsForm extends ConfigFormBase {
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-return string[]
    */
-  protected function getEditableConfigNames() {
+  protected function getEditableConfigNames(): array {
     return ['ckeditor_ai_agent.settings'];
   }
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-param mixed[] $form
+   * @phpstan-return mixed[]
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('ckeditor_ai_agent.settings');
@@ -91,8 +96,10 @@ class AiAgentSettingsForm extends ConfigFormBase {
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-param mixed[] $form
    */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state): void {
     parent::validateForm($form, $form_state);
 
     // Validate temperature range.
@@ -104,8 +111,10 @@ class AiAgentSettingsForm extends ConfigFormBase {
 
   /**
    * {@inheritdoc}
+   *
+   * @phpstan-param mixed[] $form
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state): void {
     $config = $this->config('ckeditor_ai_agent.settings');
     $values = $form_state->getValues();
 

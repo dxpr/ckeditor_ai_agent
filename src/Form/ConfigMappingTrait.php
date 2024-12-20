@@ -12,6 +12,9 @@ trait ConfigMappingTrait {
    *
    * @param bool $is_plugin
    *   Whether this is for the plugin configuration.
+   *
+   * @return array<string, mixed>
+   *   The configuration mapping array.
    */
   protected function getConfigMapping(bool $is_plugin = FALSE): array {
     $base_mapping = [
@@ -95,6 +98,9 @@ trait ConfigMappingTrait {
 
   /**
    * Gets the prompt components list.
+   *
+   * @return string[]
+   *   The prompt components.
    */
   protected function getPromptComponents(): array {
     return [
