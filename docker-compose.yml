@@ -1,7 +1,7 @@
 services:
 
   drupal-lint:
-    image: composer:2.7
+    image: composer:latest
     profiles: ["lint"]
     working_dir: /src
     command: bash -c "./scripts/run-drupal-lint.sh"
@@ -11,7 +11,7 @@ services:
       - .:/src
 
   drupal-lint-auto-fix:
-    image: composer:2.7
+    image: composer:latest
     profiles: ["lint"]
     working_dir: /src
     command: bash -c "./scripts/run-drupal-lint-auto-fix.sh"
@@ -21,12 +21,16 @@ services:
       - .:/src
 
   drupal-check:
-   image: composer:2.7
-   profiles: ["lint"]
-   working_dir: /
-   command: bash -c "/src/scripts/run-drupal-check.sh"
-   tty: true
-   environment:
-     DRUPAL_RECOMMENDED_PROJECT: 10.3.x-dev
-   volumes:
+    image: composer:latest
+    profiles: ["lint"]
+    working_dir: /
+    command: bash -c "/src/scripts/run-drupal-check.sh"
+    tty: true
+    environment:
+      DRUPAL_RECOMMENDED_PROJECT: 11.x-dev
+      COMPOSER_ALLOW_SUPERUSER: 1
+    volumes:
       - .:/src
+    build:
+      context: .
+      dockerfile: Dockerfile.check

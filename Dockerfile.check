@@ -1,0 +1,20 @@
+FROM composer:latest
+
+# Install required system dependencies
+RUN apk add --no-cache \
+    freetype \
+    libpng \
+    libjpeg-turbo \
+    freetype-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    $PHPIZE_DEPS
+
+# Install and configure PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        gd \
+    && docker-php-ext-enable gd
+
+# Clean up
+RUN apk del --no-cache freetype-dev libpng-dev libjpeg-turbo-dev $PHPIZE_DEPS

@@ -25,6 +25,30 @@ CKEditor AI Agent is a Drupal module that integrates AI-powered content generati
    - Edit your desired text format (typically Full HTML)
    - Drag and drop the "AI Agent" button into the CKEditor toolbar to make it available for content editors
 
+3. **Development**
+
+   - **Code Quality Checks**
+
+     Run these commands from the repository root:
+
+     ```bash
+     # Run Drupal coding standards checks
+     docker compose run drupal-lint
+
+     # Auto-fix Drupal coding standards where possible
+     docker compose run drupal-lint-auto-fix
+
+     # Run static analysis using PHPStan
+     docker compose run drupal-check
+     ```
+
+   - **Configuration**
+
+     These checks use:
+     - PHP_CodeSniffer with Drupal coding standards
+     - PHPStan for static analysis
+     - Targets Drupal 10.x compatibility
+
 ## Configuration
 
 ### Global Settings
