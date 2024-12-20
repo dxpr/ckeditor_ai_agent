@@ -14,6 +14,8 @@ trait AiAgentFormTrait {
    *
    * @param bool $is_plugin
    *   Whether this is for the plugin form (TRUE) or settings form (FALSE).
+   * @param mixed $config
+   *   Configuration object or array.
    *
    * @return array
    *   The form elements.
@@ -26,80 +28,70 @@ trait AiAgentFormTrait {
         $config = \Drupal::config('ckeditor_ai_agent.settings');
     }
 
+    // Helper function to get config value based on context
+    $getConfigValue = function($key, $default = NULL) use ($is_plugin, $config) {
+        return $is_plugin 
+            ? ($config['aiAgent'][$key] ?? $default)
+            : ($config->get($key) ?? $default);
+    };
+
+    // Helper function to get select options with optional global settings
+    $getSelectOptions = function($options) use ($is_plugin) {
+        return $is_plugin 
+            ? ['' => $this->t('- Use global settings -')] + $options
+            : $options;
+    };
+
     // Basic Settings
     $elements['basic_settings'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Basic Settings'),
-      '#open' => TRUE,
+        '#type' => 'details',
+        '#title' => $this->t('Basic Settings'),
+        '#open' => TRUE,
     ];
 
-    if ($is_plugin) {
-      $elements['basic_settings']['api_key'] = [
+    $elements['basic_settings']['api_key'] = [
         '#type' => 'textfield',
         '#title' => $this->t('OpenAI API Key'),
-        '#description' => $this->t('Your OpenAI API key. Leave empty to use <a href="@settings_url">global settings</a>.', [
-          '@settings_url' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_agent.settings'),
-        ]),
-        '#required' => FALSE,
+        '#description' => $is_plugin 
+            ? $this->t('Your OpenAI API key. Leave empty to use <a href="@settings_url">global settings</a>.', [
+                '@settings_url' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_agent.settings'),
+              ])
+            : $this->t('Your OpenAI API key for authentication. Required for all AI operations.'),
+        '#required' => !$is_plugin,
         '#size' => 100,
         '#maxlength' => 255,
-      ];
+        '#default_value' => $getConfigValue('api_key'),
+    ];
 
-      $elements['basic_settings']['model'] = [
+    $model_options = [
+        'gpt-4o' => $this->t('GPT-4o (Recommended)'),
+        'gpt-4o-mini' => $this->t('GPT-4o Mini'),
+        'gpt-3.5-turbo' => $this->t('GPT-3.5 Turbo'),
+    ];
+
+    $elements['basic_settings']['model'] = [
         '#type' => 'select',
         '#title' => $this->t('AI Model'),
-        '#options' => [
-          '' => $this->t('- Use global settings -'),
-          'gpt-4o' => $this->t('GPT-4o (Recommended)'),
-          'gpt-4o-mini' => $this->t('GPT-4o Mini'),
-          'gpt-3.5-turbo' => $this->t('GPT-3.5 Turbo'),
-        ],
-        '#description' => $this->t('Select AI model or use global settings.'),
-      ];
+        '#options' => $getSelectOptions($model_options),
+        '#description' => $this->t('Select AI model' . ($is_plugin ? ' or use global settings.' : '.')),
+        '#default_value' => $getConfigValue('model'),
+    ];
 
-      $elements['basic_settings']['endpoint_url'] = [
+    $elements['basic_settings']['endpoint_url'] = [
         '#type' => 'url',
         '#title' => $this->t('API Endpoint URL'),
         '#description' => $this->t('OpenAI API endpoint URL. Only change if using a custom endpoint or proxy.'),
-      ];
-
-    } else {
-      $elements['basic_settings']['api_key'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('OpenAI API Key'),
-        '#description' => $this->t('Your OpenAI API key for authentication. Required for all AI operations.'),
-        '#required' => TRUE,
-        '#size' => 100,
-        '#maxlength' => 255,
-      ];
-
-      $elements['basic_settings']['model'] = [
-        '#type' => 'select',
-        '#title' => $this->t('AI Model'),
-        '#options' => [
-          'gpt-4o' => $this->t('GPT-4o (Recommended)'),
-          'gpt-4o-mini' => $this->t('GPT-4o Mini'),
-          'gpt-3.5-turbo' => $this->t('GPT-3.5 Turbo'),
-        ],
-        '#description' => $this->t('Select the AI model to use.'),
-      ];
-
-      $elements['basic_settings']['endpoint_url'] = [
-        '#type' => 'url',
-        '#title' => $this->t('API Endpoint URL'),
-        '#description' => $this->t('OpenAI API endpoint URL. Only change if using a custom endpoint or proxy.'),
-      ];
-    }
+        '#default_value' => $getConfigValue('endpoint_url'),
+    ];
 
     // Advanced Settings
     $elements['advanced_settings'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Advanced Settings'),
-      '#open' => FALSE,
+        '#type' => 'details',
+        '#title' => $this->t('Advanced Settings'),
+        '#open' => FALSE,
     ];
 
-    if ($is_plugin) {
-      $elements['advanced_settings']['temperature'] = [
+    $elements['advanced_settings']['temperature'] = [
         '#type' => 'number',
         '#title' => $this->t('Response Creativity'),
         '#field_suffix' => $this->t('(0.0 - 2.0)'),
@@ -107,161 +99,162 @@ trait AiAgentFormTrait {
         '#max' => 2,
         '#step' => 0.1,
         '#description' => $this->t('Controls response creativity: 0.0-0.5 for focused, factual responses; 0.5-1.0 for balanced creativity; 1.0-2.0 for highly creative variations.'),
-        '#default_value' => $config['aiAgent']['temperature'] ?? '',
-      ];
-      \Drupal::messenger()->addStatus(t('Plugin form temperature config: @temp', ['@temp' => print_r($config['aiAgent']['temperature'] ?? 'not set', TRUE)]));
-    } else {
-      $elements['advanced_settings']['temperature'] = [
-        '#type' => 'number',
-        '#title' => $this->t('Response Creativity'),
-        '#field_suffix' => $this->t('(0.0 - 2.0)'),
-        '#min' => 0,
-        '#max' => 2,
-        '#step' => 0.1,
-        '#description' => $this->t('Controls response creativity: 0.0-0.5 for focused, factual responses; 0.5-1.0 for balanced creativity; 1.0-2.0 for highly creative variations.'),
-        '#default_value' => $config->get('temperature') ?? 0.7,
-      ];
-      \Drupal::messenger()->addStatus(t('Global form temperature config: @temp', ['@temp' => print_r($config->get('temperature') ?? 'not set', TRUE)]));
+        '#default_value' => $getConfigValue('temperature', 0.7),
+    ];
+
+    // Token Settings
+    $elements['advanced_settings']['tokens'] = [
+        '#type' => 'fieldset',
+        '#title' => $this->t('Token Limits'),
+    ];
+
+    $token_fields = ['max_output_tokens', 'max_input_tokens'];
+    foreach ($token_fields as $field) {
+        $elements['advanced_settings']['tokens'][$field] = [
+            '#type' => 'number',
+            '#title' => $this->t(str_replace('_', ' ', ucfirst($field))),
+            '#description' => $this->t('Maximum number of tokens for @type. If not set, uses model\'s maximum limit', 
+                ['@type' => str_contains($field, 'output') ? 'AI response' : 'combined prompt and context']),
+            '#min' => 1,
+            '#default_value' => $getConfigValue("tokens.$field"),
+        ];
     }
 
-    $elements['advanced_settings']['tokens'] = [
-      '#type' => 'fieldset',
-      '#title' => $this->t('Token Limits'),
-    ];
-
-    $elements['advanced_settings']['tokens']['max_output_tokens'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Max Output Tokens'),
-      '#description' => $this->t('Maximum number of tokens the AI can generate in its response. If not set, uses model\'s maximum output limit'),
-      '#min' => 1,
-    ];
-
-    $elements['advanced_settings']['tokens']['max_input_tokens'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Max Input Tokens'),
-      '#description' => $this->t('Maximum number of tokens allowed in the combined prompt and context. If not set, uses model\'s maximum context window limit'),
-      '#min' => 1,
-    ];
-
+    // Context Settings
     $elements['advanced_settings']['context'] = [
-      '#type' => 'fieldset',
-      '#title' => $this->t('Context Settings'),
+        '#type' => 'fieldset',
+        '#title' => $this->t('Context Settings'),
     ];
 
-    $elements['advanced_settings']['context']['context_size'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Context Size'),
-      '#description' => $this->t('Maximum context window size in tokens. If not set, defaults to 75% of model\'s maximum input token limit'),
-      '#min' => 1,
+    $context_fields = [
+        'context_size' => [
+            'title' => $this->t('Context Size'),
+            'description' => $this->t('Maximum context window size in tokens. If not set, defaults to 75% of model\'s maximum input token limit'),
+            'min' => 1,
+        ],
+        'editor_context_ratio' => [
+            'title' => $this->t('Editor Context Ratio'),
+            'description' => $this->t('Portion of context for editor content. Default: 0.3 (30%)'),
+            'min' => 0,
+            'max' => 1,
+            'step' => 0.1,
+            'field_suffix' => $this->t('(0.0 - 1.0)'),
+        ],
     ];
 
-    $elements['advanced_settings']['context']['editor_context_ratio'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Editor Context Ratio'),
-      '#min' => 0,
-      '#max' => 1,
-      '#step' => 0.1,
-      '#field_suffix' => $this->t('(0.0 - 1.0)'),
-      '#description' => $this->t('Portion of context for editor content. Default: 0.3 (30%)'),
-    ];
+    foreach ($context_fields as $field => $settings) {
+        $elements['advanced_settings']['context'][$field] = [
+            '#type' => 'number',
+            '#title' => $settings['title'],
+            '#description' => $settings['description'],
+            '#min' => $settings['min'],
+            '#max' => $settings['max'] ?? NULL,
+            '#step' => $settings['step'] ?? NULL,
+            '#field_suffix' => $settings['field_suffix'] ?? NULL,
+            '#default_value' => $getConfigValue("context.$field"),
+        ];
+    }
 
     // Performance Settings
     $elements['performance_settings'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Performance Settings'),
-      '#open' => FALSE,
+        '#type' => 'details',
+        '#title' => $this->t('Performance Settings'),
+        '#open' => FALSE,
     ];
 
-    $elements['performance_settings']['timeout_duration'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Request Timeout'),
-      '#min' => 1000,
-      '#field_suffix' => 'ms',
-      '#description' => $this->t('Maximum wait time for AI response. Default: 45000ms (45s)'),
+    $performance_fields = [
+        'timeout_duration' => [
+            'title' => $this->t('Request Timeout'),
+            'description' => $this->t('Maximum wait time for AI response. Default: 45000ms (45s)'),
+            'min' => 1000,
+            'field_suffix' => 'ms',
+        ],
+        'retry_attempts' => [
+            'title' => $this->t('Retry Attempts'),
+            'description' => $this->t('Number of retry attempts for failed requests. Default: 1'),
+            'min' => 0,
+        ],
     ];
 
-    $elements['performance_settings']['retry_attempts'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Retry Attempts'),
-      '#min' => 0,
-      '#description' => $this->t('Number of retry attempts for failed requests. Default: 1'),
-    ];
+    foreach ($performance_fields as $field => $settings) {
+        $elements['performance_settings'][$field] = [
+            '#type' => 'number',
+            '#title' => $settings['title'],
+            '#description' => $settings['description'],
+            '#min' => $settings['min'],
+            '#field_suffix' => $settings['field_suffix'] ?? NULL,
+            '#default_value' => $getConfigValue("performance.$field"),
+        ];
+    }
 
     // Behavior Settings
     $elements['behavior_settings'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Behavior Settings'),
-      '#open' => FALSE,
+        '#type' => 'details',
+        '#title' => $this->t('Behavior Settings'),
+        '#open' => FALSE,
     ];
 
-    $elements['behavior_settings']['debug_mode'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Debug Mode'),
-      '#options' => $is_plugin 
-        ? ['' => $this->t('- Use global settings -'), '0' => $this->t('Disabled'), '1' => $this->t('Enabled')]
-        : ['0' => $this->t('Disabled'), '1' => $this->t('Enabled')],
-      '#description' => $this->t('Enable detailed logging for troubleshooting.'),
-    ];
+    $boolean_options = ['0' => $this->t('Disabled'), '1' => $this->t('Enabled')];
+    $behavior_fields = ['debug_mode', 'stream_content'];
 
-    $elements['behavior_settings']['stream_content'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Stream Responses'),
-      '#options' => $is_plugin 
-        ? ['' => $this->t('- Use global settings -'), '0' => $this->t('Disabled'), '1' => $this->t('Enabled')]
-        : ['0' => $this->t('Disabled'), '1' => $this->t('Enabled')],
-      '#description' => $this->t('Show AI responses as they are generated. Provides immediate feedback but may feel less polished.'),
-    ];
+    foreach ($behavior_fields as $field) {
+        $elements['behavior_settings'][$field] = [
+            '#type' => 'select',
+            '#title' => $this->t(str_replace('_', ' ', ucfirst($field))),
+            '#options' => $getSelectOptions($boolean_options),
+            '#description' => $this->t('@desc', [
+                '@desc' => $field === 'debug_mode' 
+                    ? 'Enable detailed logging for troubleshooting.'
+                    : 'Show AI responses as they are generated. Provides immediate feedback but may feel less polished.'
+            ]),
+            '#default_value' => $getConfigValue("behavior.$field"),
+        ];
+    }
 
     $elements['behavior_settings']['show_error_duration'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Error Message Duration'),
-      '#min' => 1000,
-      '#field_suffix' => 'ms',
-      '#description' => $this->t('How long to display error messages. Default: 5000ms (5s)'),
+        '#type' => 'number',
+        '#title' => $this->t('Error Message Duration'),
+        '#min' => 1000,
+        '#field_suffix' => 'ms',
+        '#description' => $this->t('How long to display error messages. Default: 5000ms (5s)'),
+        '#default_value' => $getConfigValue('behavior.show_error_duration'),
     ];
 
     // Moderation Settings
     $elements['moderation_settings'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Content Moderation'),
-      '#open' => FALSE,
+        '#type' => 'details',
+        '#title' => $this->t('Content Moderation'),
+        '#open' => FALSE,
     ];
 
-    if ($is_plugin) {
-      $elements['moderation_settings']['moderation_enable'] = [
-        '#type' => 'select',
-        '#title' => $this->t('Content Moderation'),
-        '#options' => [
-          '' => $this->t('- Use global settings -'),
-          '0' => $this->t('Disabled'),
-          '1' => $this->t('Enabled'),
-        ],
-        '#description' => $this->t('Enable content safety filtering.'),
-      ];
-    }
-    else {
-      $elements['moderation_settings']['moderation_enable'] = [
-        '#type' => 'checkbox',
-        '#title' => $this->t('Enable Content Moderation'),
-        '#description' => $this->t('Filter inappropriate or unsafe content. Recommended for public-facing implementations.'),
-      ];
-    }
+    $elements['moderation_settings']['moderation_enable'] = $is_plugin
+        ? [
+            '#type' => 'select',
+            '#title' => $this->t('Content Moderation'),
+            '#options' => $getSelectOptions($boolean_options),
+            '#description' => $this->t('Enable content safety filtering.'),
+            '#default_value' => $getConfigValue('moderation.enable'),
+        ]
+        : [
+            '#type' => 'checkbox',
+            '#title' => $this->t('Enable Content Moderation'),
+            '#description' => $this->t('Filter inappropriate or unsafe content. Recommended for public-facing implementations.'),
+            '#default_value' => $getConfigValue('moderation.enable'),
+        ];
 
     $elements['moderation_settings']['moderation_key'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Moderation API Key'),
-      '#description' => $this->t('Separate API key for content moderation service. Required if using a different service than the main AI.'),
-      '#states' => [
-        'visible' => [
-          ':input[name="moderation_enable"]' => ['checked' => TRUE],
+        '#type' => 'textfield',
+        '#title' => $this->t('Moderation API Key'),
+        '#description' => $this->t('Separate API key for content moderation service. Required if using a different service than the main AI.'),
+        '#default_value' => $getConfigValue('moderation.key'),
+        '#states' => [
+            'visible' => [
+                ':input[name="moderation_enable"]' => ['checked' => TRUE],
+            ],
         ],
-      ],
     ];
 
-    $elements['moderation_settings']['moderation_disable_flags'] = [
-      '#type' => 'checkboxes',
-      '#title' => $this->t('Disabled Safety Filters'),
-      '#options' => [
+    $moderation_flags = [
         'sexual' => $this->t('Sexual content'),
         'sexual/minors' => $this->t('Sexual content involving minors'),
         'harassment' => $this->t('Harassment'),
@@ -275,16 +268,40 @@ trait AiAgentFormTrait {
         'self-harm/instructions' => $this->t('Self-harm instructions'),
         'violence' => $this->t('Violence'),
         'violence/graphic' => $this->t('Graphic violence'),
-      ],
-      '#description' => $this->t('Select content types to exclude from moderation. Use with caution.'),
-      '#states' => [
-        'visible' => [
-          ':input[name="moderation_enable"]' => ['checked' => TRUE],
-        ],
-      ],
     ];
 
-    // Add prompt settings section
+    $elements['moderation_settings']['moderation_disable_flags'] = [
+        '#type' => 'checkboxes',
+        '#title' => $this->t('Disabled Safety Filters'),
+        '#options' => $moderation_flags,
+        '#description' => $this->t('Select content types to exclude from moderation. Use with caution.'),
+        '#default_value' => $getConfigValue('moderation.disable_flags', []),
+        '#states' => [
+            'visible' => [
+                ':input[name="moderation_enable"]' => ['checked' => TRUE],
+            ],
+        ],
+    ];
+
+    // Optional: Add back debug messages if needed
+    if ($is_plugin) {
+        \Drupal::messenger()->addStatus(t('Plugin form temperature config: @temp', 
+            ['@temp' => print_r($getConfigValue('temperature', 'not set'), TRUE)]));
+    } else {
+        \Drupal::messenger()->addStatus(t('Global form temperature config: @temp', 
+            ['@temp' => print_r($getConfigValue('temperature', 'not set'), TRUE)]));
+    }
+
+    // Add prompt settings
+    $this->addPromptSettings($elements, $is_plugin, $config, $getConfigValue);
+
+    return $elements;
+  }
+
+  /**
+   * Adds prompt settings to the form elements.
+   */
+  protected function addPromptSettings(&$elements, $is_plugin, $config, $getConfigValue) {
     $elements['prompt_settings'] = [
         '#type' => 'details',
         '#title' => $this->t('Prompt Settings'),
@@ -305,25 +322,15 @@ trait AiAgentFormTrait {
     try {
         $module_path = \Drupal::service('extension.path.resolver')->getPath('module', 'ckeditor_ai_agent');
         $default_rules_path = $module_path . '/js/ckeditor5_plugins/aiagent/src/config/default-rules.json';
-        $default_rules = [];
-        
-        if (file_exists($default_rules_path)) {
-            $default_rules = json_decode(file_get_contents($default_rules_path), TRUE) ?: [];
-        }
+        $default_rules = file_exists($default_rules_path) 
+            ? json_decode(file_get_contents($default_rules_path), TRUE) ?: []
+            : [];
 
         foreach ($prompt_components as $key => $label) {
-            $override_default = $is_plugin 
-                ? ($config['aiAgent']['promptSettings']['overrides'][$key] ?? '')
-                : ($config->get("prompt_settings.overrides.$key") ?? '');
-
-            $additions_default = $is_plugin 
-                ? ($config['aiAgent']['promptSettings']['additions'][$key] ?? '')
-                : ($config->get("prompt_settings.additions.$key") ?? '');
-
             $elements['prompt_settings']["override_$key"] = [
                 '#type' => 'textarea',
                 '#title' => $this->t('@label Override Rules', ['@label' => $label]),
-                '#default_value' => $override_default,
+                '#default_value' => $getConfigValue("prompt_settings.overrides.$key"),
                 '#placeholder' => $default_rules[$key] ?? '',
                 '#description' => $this->t('Override default rules. Leave empty to use defaults shown in placeholder.'),
                 '#rows' => 6,
@@ -332,7 +339,7 @@ trait AiAgentFormTrait {
             $elements['prompt_settings']["additions_$key"] = [
                 '#type' => 'textarea',
                 '#title' => $this->t('@label Additional Rules', ['@label' => $label]),
-                '#default_value' => $additions_default,
+                '#default_value' => $getConfigValue("prompt_settings.additions.$key"),
                 '#description' => $this->t('Add rules to append to the defaults.'),
                 '#rows' => 4,
             ];
@@ -341,8 +348,5 @@ trait AiAgentFormTrait {
     catch (\Exception $e) {
         \Drupal::messenger()->addError(t('Error loading prompt settings: @error', ['@error' => $e->getMessage()]));
     }
-
-    return $elements;
   }
-
 }
