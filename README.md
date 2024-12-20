@@ -51,78 +51,30 @@ CKEditor AI Agent is a Drupal module that integrates AI-powered content generati
 
 ## Configuration
 
-### Global Settings
+Navigate to `Administration > Configuration > Content authoring > CKEditor AI Agent Settings` (`/admin/config/content/ckeditor-ai-agent`) to configure global settings.
 
-Navigate to `Administration > Configuration > Content authoring > CKEditor AI Agent Settings` (`/admin/config/content/ckeditor-ai-agent`) to configure global settings:
-
-1. **Basic Settings**
-   - API Key: Your OpenAI API key
-   - Model: Select AI model (default: gpt-4o)
-   - Endpoint URL: API endpoint URL (default: https://api.openai.com/v1/chat/completions)
-   - Temperature: Controls response randomness (0-2)
-
-2. **Advanced Settings**
-   - Max Output Tokens: Maximum tokens in AI responses
-   - Max Input Tokens: Maximum tokens for input context
-   - Context Size: Size of context window (default: 75% of model's max input token limit)
-   - Editor Context Ratio: Ratio of editor content in context (default: 0.3)
-
-3. **Performance Settings**
-   - Timeout Duration: Request timeout in milliseconds (default: 45000)
-   - Retry Attempts: Number of retry attempts on failure (default: 1)
-
-4. **Behavior Settings**
-   - Debug Mode: Enable detailed logging (default: false)
-   - Stream Content: Enable real-time content streaming (default: true)
-   - Show Error Duration: Duration for error message display (default: 5000ms)
-
-5. **Moderation Settings**
-   - Enable Moderation: Toggle content moderation
-   - Moderation API Key: Key for moderation service
-   - Disable Flags: Configure moderation categories to ignore:
-     - Sexual content
-     - Harassment
-     - Hate speech
-     - Violence
-     - Self-harm
-     - Illicit content
-
-### Editor-Specific Settings
-
-You can configure settings per text format:
-
-1. Go to `Administration > Configuration > Content authoring > Text formats and editors`
-2. Edit your desired text format
-3. In the CKEditor toolbar, locate and configure the "AI Agent" button
-4. Configure editor-specific settings that will override global defaults
-
-### Prompt Settings
-
-The module allows customization of AI behavior through prompt components:
-
-1. **Response Rules**
-   - Configure basic response generation guidelines
-   - Set default formatting preferences
-
-2. **HTML Formatting**
-   - Define HTML tag usage rules
-   - Set structure preferences
-
-3. **Content Structure**
-   - Configure document organization rules
-   - Set hierarchy preferences
-
-4. **Tone Settings**
-   - Define language style
-   - Set formality levels
-
-5. **Inline Content**
-   - Configure handling of inline elements
-   - Set integration rules
-
-6. **Image Handling**
-   - Define image processing rules
-   - Set alt text requirements
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| **Basic Settings** ||||
+| `apiKey` | `string` | - | Your OpenAI API key. Required for all AI functionality |
+| `model` | `string` | `'gpt-4o'` | Select AI model: GPT-4o (Most capable), GPT-4o Mini (Balanced), or GPT-3.5 Turbo (Fastest) |
+| `endpointUrl` | `string` | `https://api.openai.com/v1/chat/completions` | OpenAI API endpoint URL. Only change if using a custom endpoint or proxy |
+| **Advanced Settings** ||||
+| `temperature` | `number` | `0.7` | Controls the creativity of AI responses. Low values (0.0-0.5) produce consistent, deterministic responses ideal for factual content. Medium values (0.6-1.0) offer balanced creativity. High values (1.1-2.0) generate more diverse and unexpected responses |
+| `maxOutputTokens` | `number` | Model's max limit | Maximum number of tokens for AI response. If not set, uses model's maximum limit |
+| `maxInputTokens` | `number` | Model's max limit | Maximum number of tokens for combined prompt and context. If not set, uses model's maximum limit |
+| `contextSize` | `number` | 75% of max input tokens | How many tokens to use for surrounding content. Must be less than Total Token Limit. Recommended: 75% of Total Token Limit to leave room for AI instructions |
+| `editorContextRatio` | `number` | `0.3` | Portion of context for editor content. Default: 0.3 (30%) |
+| **Performance Settings** ||||
+| `timeoutDuration` | `number` | `45000` | Maximum wait time for AI response in milliseconds |
+| `retryAttempts` | `number` | `1` | Number of retry attempts for failed requests |
+| **Behavior Settings** ||||
+| `debugMode` | `boolean` | `false` | Enable detailed logging for troubleshooting purposes |
+| `showErrorDuration` | `number` | `5000` | How long to display error messages in milliseconds |
+| **Content Moderation** ||||
+| `moderation.enable` | `boolean` | `false` | Filter inappropriate or unsafe content. Recommended for public-facing implementations |
+| `moderation.key` | `string` | - | Separate API key for content moderation service. Required if using a different service than the main AI |
+| `moderation.disableFlags` | `array` | `[]` | Select content types to exclude from moderation (e.g., sexual, harassment, hate, violence, self-harm, illicit). Use with caution |
 
 ## Features
 
