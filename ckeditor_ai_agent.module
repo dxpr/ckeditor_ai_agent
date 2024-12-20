@@ -9,6 +9,8 @@ use Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition;
 
 /**
  * Implements hook_ckeditor5_plugin_info_alter().
+ *
+ * @phpstan-param \Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition[] $plugin_definitions
  */
 function ckeditor_ai_agent_ckeditor5_plugin_info_alter(array &$plugin_definitions): void {
   if (isset($plugin_definitions['ckeditor_ai_agent_ai_agent'])) {
