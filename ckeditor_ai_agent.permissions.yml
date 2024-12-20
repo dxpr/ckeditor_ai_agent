@@ -1,4 +1,4 @@
-administer ckeditor ai assist:
+administer ckeditor ai agent:
   title: 'Administer CKEditor AI Agent'
-  description: 'Configure CKEditor AI Agent settings'
-  restrict access: TRUE 
+  description: 'Configure CKEditor AI Agent settings.'
+  restrict access: true

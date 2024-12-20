@@ -6,13 +6,13 @@ import { getDefaultRules } from './default-rules.js';
 import { getAllowedHtmlTags } from './html-utils.js';
 export class PromptHelper {
     constructor(editor, options = {}) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c;
         this.editor = editor;
         const config = editor.config.get('aiAgent');
-        this.contextSize = (_a = config.contextSize) !== null && _a !== void 0 ? _a : 4000;
-        this.promptSettings = (_b = config.promptSettings) !== null && _b !== void 0 ? _b : {};
-        this.debugMode = (_c = config.debugMode) !== null && _c !== void 0 ? _c : false;
-        this.editorContextRatio = (_d = options.editorContextRatio) !== null && _d !== void 0 ? _d : 0.3;
+        this.contextSize = config.contextSize;
+        this.promptSettings = (_a = config.promptSettings) !== null && _a !== void 0 ? _a : {};
+        this.debugMode = (_b = config.debugMode) !== null && _b !== void 0 ? _b : false;
+        this.editorContextRatio = (_c = options.editorContextRatio) !== null && _c !== void 0 ? _c : 0.3;
     }
     getSystemPrompt(isInlineResponse = false) {
         var _a, _b;
@@ -77,7 +77,7 @@ export class PromptHelper {
         const trimmedContext = `${contentBeforePrompt}\n${contentAfterPrompt}`;
         return trimmedContext.trim();
     }
-    formatFinalPrompt(request, context, markDownContents, isEditorEmpty) {
+    formatFinalPrompt(request, context, selectedContent, markDownContents, isEditorEmpty = false) {
         if (this.debugMode) {
             console.group('formatFinalPrompt Debug');
             console.log('Request:', request);
@@ -92,10 +92,15 @@ export class PromptHelper {
         corpus.push(request);
         corpus.push('</TASK>');
         // Context Section
-        if (context === null || context === void 0 ? void 0 : context.length) {
+        if ((context === null || context === void 0 ? void 0 : context.length) && !selectedContent) {
             corpus.push('\n<CONTEXT>');
             corpus.push(context);
             corpus.push('</CONTEXT>');
+        }
+        if (selectedContent) {
+            corpus.push('<SELECTED_CONTENT>');
+            corpus.push(selectedContent);
+            corpus.push('</SELECTED_CONTENT>');
         }
         // Markdown Content Section
         if (markDownContents === null || markDownContents === void 0 ? void 0 : markDownContents.length) {
@@ -104,40 +109,21 @@ export class PromptHelper {
                 corpus.push(`<SOURCE url="${content.url}">\n${content.content}\n</SOURCE>`);
             }
             corpus.push('</REFERENCE_CONTENT>');
+            // Use default referenceGuidelines
             corpus.push('\n<REFERENCE_GUIDELINES>');
-            corpus.push(trimMultilineString(`
-				Use information from provided markdown to generate new text.
-				Do not copy content verbatim.
-				Ensure natural flow with existing context.
-				Avoid markdown formatting in response.
-				Consider whole markdown as single source.
-				Generate requested percentage of content.
-			`));
+            corpus.push(this.getComponentContent('referenceGuidelines'));
             corpus.push('</REFERENCE_GUIDELINES>');
         }
-        // Instructions Section
+        // Context-Specific Instructions
+        if (!isEditorEmpty && !selectedContent) {
+            corpus.push('\n<CONTEXT_REQUIREMENTS>');
+            corpus.push(this.getComponentContent('contextRequirements'));
+            corpus.push('</CONTEXT_REQUIREMENTS>');
+        }
+        // Add language instructions back
         corpus.push('\n<INSTRUCTIONS>');
         corpus.push(`The response must follow the language code - ${contentLanguageCode}.`);
         corpus.push('</INSTRUCTIONS>');
-        // Context-Specific Instructions
-        if (!isEditorEmpty) {
-            corpus.push('\n<CONTEXT_REQUIREMENTS>');
-            corpus.push(trimMultilineString(`
-				Replace "@@@cursor@@@" with contextually appropriate content.
-				Replace ONLY @@@cursor@@@ - surrounding text is READ-ONLY.
-				NEVER copy or paraphrase context text.
-				Verify zero phrase duplication.
-				Analyze the CONTEXT section thoroughly 
-				to understand the existing content and its style.
-				Generate a response that seamlessly integrates 
-				with the existing content.
-				Determine the appropriate tone and style based
-				on the context. Ensure the response flows 
-				naturally with the existing content.
-
-			`));
-            corpus.push('</CONTEXT_REQUIREMENTS>');
-        }
         // Debug Output
         if (this.debugMode) {
             console.group('AiAgent Final Prompt Debug');
@@ -145,6 +131,18 @@ export class PromptHelper {
             console.groupEnd();
         }
         return corpus.map(text => removeLeadingSpaces(text)).join('\n');
+    }
+    getComponentContent(componentId) {
+        var _a, _b;
+        const defaultComponents = getDefaultRules(this.editor);
+        let content = defaultComponents[componentId];
+        if ((_a = this.promptSettings.overrides) === null || _a === void 0 ? void 0 : _a[componentId]) {
+            content = this.promptSettings.overrides[componentId];
+        }
+        if ((_b = this.promptSettings.additions) === null || _b === void 0 ? void 0 : _b[componentId]) {
+            content += '\n' + this.promptSettings.additions[componentId];
+        }
+        return trimMultilineString(content);
     }
     async generateMarkDownForUrls(urls) {
         try {

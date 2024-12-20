@@ -9,6 +9,9 @@ use Drupal\ckeditor5\Plugin\CKEditor5PluginConfigurableInterface;
 use Drupal\ckeditor5\Plugin\CKEditor5PluginConfigurableTrait;
 use Drupal\ckeditor5\Plugin\CKEditor5PluginDefault;
 use Drupal\editor\EditorInterface;
+use Drupal\ckeditor_ai_agent\Form\AiAgentFormTrait;
+use Drupal\ckeditor_ai_agent\Form\ConfigSetterTrait;
+use Drupal\ckeditor_ai_agent\Form\ConfigMappingTrait;
 
 /**
  * CKEditor 5 AI Agent plugin.
@@ -18,97 +21,104 @@ use Drupal\editor\EditorInterface;
  */
 class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigurableInterface {
   use CKEditor5PluginConfigurableTrait;
+  use AiAgentFormTrait;
+  use ConfigSetterTrait;
+  use ConfigMappingTrait;
 
   /**
    * {@inheritdoc}
    */
-  public function defaultConfiguration() {
+  public function defaultConfiguration(): array {
     return [
-      'api_key' => NULL,
-      'model' => NULL,
-      'endpoint_url' => NULL,
-      'temperature' => NULL,
-      'max_tokens' => NULL,
-      'timeout_duration' => NULL,
-      'retry_attempts' => NULL,
-      'debug_mode' => NULL,
-      'stream_content' => NULL,
+      'aiAgent' => [
+        'apiKey' => NULL,
+        'model' => NULL,
+        'endpointUrl' => NULL,
+        'temperature' => NULL,
+        'maxOutputTokens' => NULL,
+        'maxInputTokens' => NULL,
+        'contextSize' => NULL,
+        'editorContextRatio' => NULL,
+        'timeOutDuration' => NULL,
+        'retryAttempts' => NULL,
+        'debugMode' => NULL,
+        'streamContent' => NULL,
+        'showErrorDuration' => NULL,
+        'moderation' => [
+          'enable' => NULL,
+          'key' => NULL,
+          'disableFlags' => [
+            'sexual' => 0,
+            'sexual/minors' => 0,
+            'harassment' => 0,
+            'harassment/threatening' => 0,
+            'hate' => 0,
+            'hate/threatening' => 0,
+            'illicit' => 0,
+            'illicit/violent' => 0,
+            'self-harm' => 0,
+            'self-harm/intent' => 0,
+            'self-harm/instructions' => 0,
+            'violence' => 0,
+            'violence/graphic' => 0,
+          ],
+        ],
+        'promptSettings' => [
+          'overrides' => [],
+          'additions' => [],
+        ],
+      ],
+      'test_field' => '',
     ];
   }
 
   /**
    * {@inheritdoc}
    */
-  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $form['api_key'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('API Key'),
-      '#default_value' => $this->configuration['api_key'],
-      '#description' => $this->t('Enter your API Key. Leave empty to use <a href="@settings_url">global settings</a>.', [
-        '@settings_url' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_agent.settings'),
-      ]),
-      '#maxlength' => 512,
-    ];
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state): array {
+    $config = $this->getConfiguration();
+    
+    // Get common form elements
+    $form = $this->getCommonFormElements(TRUE);
+    
+    // Set default values for all form elements from our configuration
+    if (isset($config['aiAgent'])) {
+        // Basic Settings
+        $form['basic_settings']['api_key']['#default_value'] = $config['aiAgent']['apiKey'] ?? '';
+        $form['basic_settings']['model']['#default_value'] = $config['aiAgent']['model'] ?? '';
+        $form['advanced_settings']['temperature']['#default_value'] = $config['aiAgent']['temperature'] ?? '';
+        $form['basic_settings']['endpoint_url']['#default_value'] = $config['aiAgent']['endpointUrl'] ?? '';
 
-    $form['model'] = [
-      '#type' => 'select',
-      '#title' => $this->t('AI Model'),
-      '#default_value' => $this->configuration['model'],
-      '#options' => [
-        '' => $this->t('- Use global settings -'),
-        'gpt-4o' => $this->t('GPT-4o'),
-        'gpt-4o-mini' => $this->t('GPT-4o Mini'),
-        'gpt-4-turbo' => $this->t('GPT-4 Turbo'),
-        'gpt-4' => $this->t('GPT-4'),
-        'gpt-3.5-turbo' => $this->t('GPT-3.5 Turbo'),
-        'gpt-3' => $this->t('GPT-3'),
-        'kavya-m1' => $this->t('Kavya M1'),
-      ],
-      '#description' => $this->t('Select AI model or use global settings.'),
-    ];
+        // Advanced Settings
+        if (isset($form['advanced_settings'])) {
+            $form['advanced_settings']['tokens']['max_output_tokens']['#default_value'] = $config['aiAgent']['maxOutputTokens'] ?? '';
+            $form['advanced_settings']['tokens']['max_input_tokens']['#default_value'] = $config['aiAgent']['maxInputTokens'] ?? '';
+            $form['advanced_settings']['context']['context_size']['#default_value'] = $config['aiAgent']['contextSize'] ?? '';
+            $form['advanced_settings']['context']['editor_context_ratio']['#default_value'] = $config['aiAgent']['editorContextRatio'] ?? '';
+        }
 
-    $form['temperature'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Temperature'),
-      '#default_value' => $this->configuration['temperature'],
-      '#min' => 0,
-      '#max' => 2,
-      '#step' => 0.1,
-      '#description' => $this->t('Controls randomness in responses (0-2). Leave empty to use global settings.'),
-    ];
+        // Performance Settings
+        if (isset($form['performance_settings'])) {
+            $form['performance_settings']['timeout_duration']['#default_value'] = $config['aiAgent']['timeOutDuration'] ?? '';
+            $form['performance_settings']['retry_attempts']['#default_value'] = $config['aiAgent']['retryAttempts'] ?? '';
+        }
 
-    $form['max_tokens'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Max Tokens'),
-      '#default_value' => $this->configuration['max_tokens'],
-      '#min' => 1,
-      '#max' => 128000,
-      '#description' => $this->t('Maximum number of tokens to generate. Leave empty to use global settings.'),
-    ];
+        // Behavior Settings
+        if (isset($form['behavior_settings'])) {
+            $form['behavior_settings']['debug_mode']['#default_value'] = $config['aiAgent']['debugMode'] ?? '';
+            $form['behavior_settings']['stream_content']['#default_value'] = $config['aiAgent']['streamContent'] ?? '';
+            $form['behavior_settings']['show_error_duration']['#default_value'] = $config['aiAgent']['showErrorDuration'] ?? '';
+        }
 
-    $form['debug_mode'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Debug Mode'),
-      '#default_value' => $this->configuration['debug_mode'],
-      '#options' => [
-        '' => $this->t('- Use global settings -'),
-        '0' => $this->t('Disabled'),
-        '1' => $this->t('Enabled'),
-      ],
-      '#description' => $this->t('Enable debug mode for troubleshooting.'),
-    ];
-
-    $form['stream_content'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Stream Content'),
-      '#default_value' => $this->configuration['stream_content'],
-      '#options' => [
-        '' => $this->t('- Use global settings -'),
-        '0' => $this->t('Disabled'),
-        '1' => $this->t('Enabled'),
-      ],
-      '#description' => $this->t('Enable streaming of AI responses.'),
-    ];
+        // Moderation Settings
+        if (isset($form['moderation_settings'])) {
+            $form['moderation_settings']['moderation_enable']['#default_value'] = $config['aiAgent']['moderation']['enable'] ?? '';
+            $form['moderation_settings']['moderation_key']['#default_value'] = $config['aiAgent']['moderation']['key'] ?? '';
+            if (isset($config['aiAgent']['moderation']['disableFlags'])) {
+                $form['moderation_settings']['moderation_disable_flags']['#default_value'] = $config['aiAgent']['moderation']['disableFlags'];
+            }
+        }
+    }
 
     return $form;
   }
@@ -116,76 +126,93 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   /**
    * {@inheritdoc}
    */
-  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
-    $temperature = $form_state->getValue('temperature');
-    if ($temperature !== '' && !is_null($temperature)) {
-      $temperature = (float) $temperature;
-      if ($temperature < 0 || $temperature > 2) {
-        $form_state->setErrorByName('temperature', $this->t('Temperature must be between 0 and 2.'));
-      }
-      $form_state->setValue('temperature', $temperature);
-    }
-    else {
-      $form_state->setValue('temperature', NULL);
-    }
-
-    $max_tokens = $form_state->getValue('max_tokens');
-    if ($max_tokens !== '' && !is_null($max_tokens)) {
-      $form_state->setValue('max_tokens', (int) $max_tokens);
-    }
-    else {
-      $form_state->setValue('max_tokens', NULL);
-    }
-
-    // Handle other fields.
-    foreach (['api_key', 'model'] as $field) {
-      if ($form_state->getValue($field) === '') {
-        $form_state->setValue($field, NULL);
-      }
-    }
-
-    foreach (['debug_mode', 'stream_content'] as $field) {
-      $value = $form_state->getValue($field);
-      if ($value === '') {
-        $form_state->setValue($field, NULL);
-      }
-      else {
-        $form_state->setValue($field, (bool) $value);
-      }
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-    $this->configuration['api_key'] = $form_state->getValue('api_key');
-    $this->configuration['model'] = $form_state->getValue('model');
-    $this->configuration['temperature'] = $form_state->getValue('temperature');
-    $this->configuration['max_tokens'] = $form_state->getValue('max_tokens');
-    $this->configuration['debug_mode'] = $form_state->getValue('debug_mode');
-    $this->configuration['stream_content'] = $form_state->getValue('stream_content');
+    $values = $form_state->getValues();
+    
+    $this->configuration['aiAgent'] = $this->processConfigValues(
+      $values, 
+      $this->getConfigMapping(TRUE)
+    );
+    
+    // Handle moderation and prompt settings
+    $this->configuration['aiAgent']['moderation'] = $this->processModerationSettings($values);
+    $this->configuration['aiAgent']['promptSettings'] = $this->processPromptSettings($values);
   }
 
   /**
    * {@inheritdoc}
    */
   public function getDynamicPluginConfig(array $static_plugin_config, EditorInterface $editor): array {
-    // Get global settings.
-    $global_config = \Drupal::config('ckeditor_ai_agent.settings');
+    $config = \Drupal::config('ckeditor_ai_agent.settings');
+    $editor_config = $this->configuration['aiAgent'] ?? [];
 
-    // Build config with global fallbacks.
-    return [
-      'aiAgent' => [
-        'apiKey' => $this->configuration['api_key'] ?? $global_config->get('api_key'),
-        'model' => $this->configuration['model'] ?? $global_config->get('model'),
-        'endpointUrl' => $global_config->get('endpoint_url') ?: 'https://api.openai.com/v1/chat/completions',
-        'temperature' => $this->configuration['temperature'] ?? $global_config->get('temperature'),
-        'maxTokens' => $this->configuration['max_tokens'] ?? $global_config->get('max_tokens'),
-        'debugMode' => $this->configuration['debug_mode'] ?? $global_config->get('debug_mode'),
-        'streamContent' => $this->configuration['stream_content'] ?? $global_config->get('stream_content'),
-      ],
+    // Build configuration with proper fallback handling
+    $result = ['aiAgent' => []];
+    
+    // Basic settings
+    $settings_map = [
+        'apiKey' => 'api_key',
+        'model' => 'model',
+        'endpointUrl' => 'endpoint_url',
+        'temperature' => 'temperature',
+        'maxOutputTokens' => 'max_output_tokens',
+        'maxInputTokens' => 'max_input_tokens',
+        'contextSize' => 'context_size',
+        'editorContextRatio' => 'editor_context_ratio',
+        'timeOutDuration' => 'timeout_duration',
+        'retryAttempts' => 'retry_attempts',
+        'debugMode' => 'debug_mode',
+        'streamContent' => 'stream_content',
+        'showErrorDuration' => 'show_error_duration',
     ];
+
+    foreach ($settings_map as $js_key => $drupal_key) {
+        // Only set if either editor config or global config has a non-null value
+        if (isset($editor_config[$js_key]) && !empty($editor_config[$js_key])) {
+            $result['aiAgent'][$js_key] = $editor_config[$js_key];
+        } elseif ($config->get($drupal_key) !== NULL && !empty($config->get($drupal_key))) {
+            $result['aiAgent'][$js_key] = $config->get($drupal_key);
+        }
+    }
+
+    // Moderation settings
+    if (isset($editor_config['moderation']) || $config->get('moderation')) {
+        $result['aiAgent']['moderation'] = [
+            'enable' => $editor_config['moderation']['enable'] ?? $config->get('moderation.enable'),
+            'key' => $editor_config['moderation']['key'] ?? $config->get('moderation.key'),
+            'disableFlags' => $editor_config['moderation']['disableFlags'] ?? $config->get('moderation.disable_flags'),
+        ];
+    }
+
+    // Prompt settings
+    if (isset($editor_config['promptSettings']) || $config->get('prompt_settings')) {
+        $result['aiAgent']['promptSettings'] = [
+            'overrides' => [],
+            'additions' => [],
+        ];
+
+        foreach (['overrides', 'additions'] as $type) {
+            $editor_settings = $editor_config['promptSettings'][$type] ?? [];
+            $global_settings = $config->get("prompt_settings.$type") ?? [];
+
+            foreach ($this->getPromptComponents() as $component) {
+                if (isset($editor_settings[$component])) {
+                    $result['aiAgent']['promptSettings'][$type][$component] = $editor_settings[$component];
+                } elseif (isset($global_settings[$component])) {
+                    $result['aiAgent']['promptSettings'][$type][$component] = $global_settings[$component];
+                }
+            }
+        }
+    }
+
+    return $result;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
+    // Required by interface, but no validation needed
   }
 
 }

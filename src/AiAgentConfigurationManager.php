@@ -39,42 +39,32 @@ class AiAgentConfigurationManager {
   public function getCkEditorConfig(?Editor $editor = NULL): array {
     $global_config = $this->configFactory->get('ckeditor_ai_agent.settings');
 
-    // Start with default configuration.
+    // Structure the config to match the aiAgent JS configuration
     $config = [
-      'aiAgent' => [
-        'apiKey' => $global_config->get('api_key'),
-        'model' => $global_config->get('model') ?: 'gpt-4o',
-        'endpointUrl' => $global_config->get('endpoint_url') ?: 'https://api.openai.com/v1/chat/completions',
-        'temperature' => (float) ($global_config->get('temperature') ?? 0.7),
-        'maxTokens' => (int) ($global_config->get('max_tokens') ?? 4096),
-        'timeOutDuration' => (int) ($global_config->get('timeout_duration') ?? 45000),
-        'retryAttempts' => (int) ($global_config->get('retry_attempts') ?? 1),
-        'debugMode' => (bool) ($global_config->get('debug_mode') ?? FALSE),
-        'streamContent' => (bool) ($global_config->get('stream_content') ?? TRUE),
-      ],
+        'aiAgent' => [
+            'apiKey' => $global_config->get('api_key'),
+            'model' => $global_config->get('model'),
+            'endpointUrl' => $global_config->get('endpoint_url'),
+            'temperature' => $global_config->get('temperature'),
+            'maxOutputTokens' => $global_config->get('max_output_tokens'),
+            'maxInputTokens' => $global_config->get('max_input_tokens'),
+            'contextSize' => $global_config->get('context_size'),
+            'editorContextRatio' => $global_config->get('editor_context_ratio'),
+            'timeOutDuration' => $global_config->get('timeout_duration'),
+            'retryAttempts' => $global_config->get('retry_attempts'),
+            'debugMode' => $global_config->get('debug_mode'),
+            'showErrorDuration' => $global_config->get('show_error_duration'),
+            'moderation' => [
+                'enable' => $global_config->get('moderation.enable'),
+                'key' => $global_config->get('moderation.key'),
+                'disableFlags' => $global_config->get('moderation.disable_flags'),
+            ],
+            'promptSettings' => [
+                'overrides' => $global_config->get('prompt_settings.overrides'),
+                'additions' => $global_config->get('prompt_settings.additions'),
+            ],
+        ]
     ];
-
-    // Override with format-specific settings if available.
-    if ($editor && isset($editor->getSettings()['plugins']['ckeditor_ai_agent_ai_agent'])) {
-      $format_config = $editor->getSettings()['plugins']['ckeditor_ai_agent_ai_agent'];
-
-      // Map of PHP config keys to JS config keys with type casting.
-      $key_map = [
-        'api_key' => ['key' => 'apiKey', 'cast' => 'strval'],
-        'model' => ['key' => 'model', 'cast' => 'strval'],
-        'temperature' => ['key' => 'temperature', 'cast' => 'floatval'],
-        'max_tokens' => ['key' => 'maxTokens', 'cast' => 'intval'],
-        'debug_mode' => ['key' => 'debugMode', 'cast' => 'boolval'],
-        'stream_content' => ['key' => 'streamContent', 'cast' => 'boolval'],
-      ];
-
-      foreach ($key_map as $php_key => $settings) {
-        if (isset($format_config[$php_key]) && $format_config[$php_key] !== NULL) {
-          $cast_func = $settings['cast'];
-          $config['aiAgent'][$settings['key']] = $cast_func($format_config[$php_key]);
-        }
-      }
-    }
 
     return $config;
   }

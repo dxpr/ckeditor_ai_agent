@@ -4,11 +4,44 @@ namespace Drupal\ckeditor_ai_agent\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Extension\ExtensionPathResolver;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\ckeditor_ai_agent\Form\ConfigSetterTrait;
+use Drupal\ckeditor_ai_agent\Form\ConfigMappingTrait;
 
 /**
  * Configure CKEditor AI Agent settings.
  */
 class AiAgentSettingsForm extends ConfigFormBase {
+  use AiAgentFormTrait;
+  use ConfigSetterTrait;
+  use ConfigMappingTrait;
+
+  /**
+   * The extension path resolver.
+   *
+   * @var \Drupal\Core\Extension\ExtensionPathResolver
+   */
+  protected $extensionPathResolver;
+
+  /**
+   * Constructs a new AiAgentSettingsForm.
+   *
+   * @param \Drupal\Core\Extension\ExtensionPathResolver $extension_path_resolver
+   *   The extension path resolver.
+   */
+  public function __construct(ExtensionPathResolver $extension_path_resolver) {
+    $this->extensionPathResolver = $extension_path_resolver;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('extension.path.resolver')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -30,94 +63,30 @@ class AiAgentSettingsForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('ckeditor_ai_agent.settings');
 
-    $form['api_key'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('API Key'),
-      '#default_value' => $config->get('api_key'),
-      '#maxlength' => 512,
-      '#description' => $this->t('Enter your AI API key.'),
-    ];
+    // Get common form elements
+    $form = $this->getCommonFormElements(FALSE, $config);
 
-    $form['model'] = [
-      '#type' => 'select',
-      '#title' => $this->t('AI Model'),
-      '#default_value' => $config->get('model') ?: 'gpt-4o',
-      '#options' => [
-        'gpt-4o' => $this->t('GPT-4o'),
-        'gpt-4o-mini' => $this->t('GPT-4o Mini'),
-        'gpt-4-turbo' => $this->t('GPT-4 Turbo'),
-        'gpt-4' => $this->t('GPT-4'),
-        'gpt-3.5-turbo' => $this->t('GPT-3.5 Turbo'),
-        'gpt-3' => $this->t('GPT-3'),
-        'kavya-m1' => $this->t('Kavya M1'),
-      ],
-      '#description' => $this->t('Select AI model.'),
-    ];
-
-    $form['endpoint_url'] = [
-      '#type' => 'url',
-      '#title' => $this->t('Endpoint URL'),
-      '#default_value' => $config->get('endpoint_url') ?: 'https://api.openai.com/v1/chat/completions',
-      '#description' => $this->t('Enter the endpoint URL.'),
-    ];
-
-    $form['temperature'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Temperature'),
-      '#default_value' => $config->get('temperature') ?: 0.7,
-      '#min' => 0,
-      '#max' => 2,
-      '#step' => 0.1,
-      '#description' => $this->t('Controls randomness in responses (0-2).'),
-    ];
-
-    $form['timeout_duration'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Timeout Duration (ms)'),
-      '#default_value' => $config->get('timeout_duration') ?: 45000,
-      '#min' => 1000,
-      '#step' => 1000,
-      '#description' => $this->t('Set the timeout duration in milliseconds.'),
-    ];
-
-    $form['max_tokens'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Max Tokens'),
-      '#default_value' => $config->get('max_tokens') ?: 4096,
-      '#min' => 1,
-      '#max' => 128000,
-      '#description' => $this->t('Maximum number of tokens to generate.'),
-    ];
-
-    $form['retry_attempts'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Retry Attempts'),
-      '#default_value' => $config->get('retry_attempts') ?: 1,
-      '#min' => 0,
-      '#description' => $this->t('Number of retry attempts.'),
-    ];
-
-    $form['debug_mode'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Debug Mode'),
-      '#default_value' => $config->get('debug_mode') ? '1' : '0',
-      '#options' => [
-        '0' => $this->t('Disabled'),
-        '1' => $this->t('Enabled'),
-      ],
-      '#description' => $this->t('Enable debug mode for troubleshooting.'),
-    ];
-
-    $form['stream_content'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Stream Content'),
-      '#default_value' => $config->get('stream_content') ? '1' : '0',
-      '#options' => [
-        '0' => $this->t('Disabled'),
-        '1' => $this->t('Enabled'),
-      ],
-      '#description' => $this->t('Enable streaming of AI responses.'),
-    ];
+    // Set default values from config
+    $form['basic_settings']['api_key']['#default_value'] = $config->get('api_key');
+    $form['basic_settings']['model']['#default_value'] = $config->get('model') ?: 'gpt-4o';
+    $form['basic_settings']['endpoint_url']['#default_value'] = $config->get('endpoint_url') ?: 'https://api.openai.com/v1/chat/completions';
+    
+    $form['advanced_settings']['temperature']['#default_value'] = $config->get('temperature');
+    $form['advanced_settings']['tokens']['max_output_tokens']['#default_value'] = $config->get('max_output_tokens');
+    $form['advanced_settings']['tokens']['max_input_tokens']['#default_value'] = $config->get('max_input_tokens');
+    $form['advanced_settings']['context']['context_size']['#default_value'] = $config->get('context_size');
+    $form['advanced_settings']['context']['editor_context_ratio']['#default_value'] = $config->get('editor_context_ratio') ?: 0.3;
+    
+    $form['performance_settings']['timeout_duration']['#default_value'] = $config->get('timeout_duration') ?: 45000;
+    $form['performance_settings']['retry_attempts']['#default_value'] = $config->get('retry_attempts') ?: 1;
+    
+    $form['behavior_settings']['debug_mode']['#default_value'] = $config->get('debug_mode') ? '1' : '0';
+    $form['behavior_settings']['stream_content']['#default_value'] = $config->get('stream_content') ? '1' : '0';
+    $form['behavior_settings']['show_error_duration']['#default_value'] = $config->get('show_error_duration') ?: 5000;
+    
+    $form['moderation_settings']['moderation_enable']['#default_value'] = $config->get('moderation.enable');
+    $form['moderation_settings']['moderation_key']['#default_value'] = $config->get('moderation.key');
+    $form['moderation_settings']['moderation_disable_flags']['#default_value'] = $config->get('moderation.disable_flags') ?: [];
 
     return parent::buildForm($form, $form_state);
   }
@@ -128,7 +97,7 @@ class AiAgentSettingsForm extends ConfigFormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
 
-    // Validate temperature range.
+    // Validate temperature range
     $temperature = $form_state->getValue('temperature');
     if ($temperature !== '' && ($temperature < 0 || $temperature > 2)) {
       $form_state->setErrorByName('temperature', $this->t('Temperature must be between 0 and 2.'));
@@ -139,18 +108,22 @@ class AiAgentSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->configFactory->getEditable('ckeditor_ai_agent.settings')
-      ->set('api_key', $form_state->getValue('api_key'))
-      ->set('model', $form_state->getValue('model'))
-      ->set('endpoint_url', $form_state->getValue('endpoint_url'))
-      ->set('temperature', $form_state->getValue('temperature'))
-      ->set('timeout_duration', $form_state->getValue('timeout_duration'))
-      ->set('max_tokens', $form_state->getValue('max_tokens'))
-      ->set('retry_attempts', $form_state->getValue('retry_attempts'))
-      ->set('debug_mode', $form_state->getValue('debug_mode'))
-      ->set('stream_content', $form_state->getValue('stream_content'))
-      ->save();
-
+    $config = $this->config('ckeditor_ai_agent.settings');
+    $values = $form_state->getValues();
+    
+    $processed = $this->processConfigValues($values, $this->getConfigMapping());
+    foreach ($processed as $key => $value) {
+      $config->set($key, $value);
+    }
+    
+    // Handle moderation and prompt settings
+    $moderation = $this->processModerationSettings($values);
+    $config->set('moderation', $moderation);
+    
+    $prompt_settings = $this->processPromptSettings($values);
+    $config->set('prompt_settings', $prompt_settings);
+    
+    $config->save();
     parent::submitForm($form, $form_state);
   }
 
