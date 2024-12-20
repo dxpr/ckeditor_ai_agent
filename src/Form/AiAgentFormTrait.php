@@ -53,10 +53,10 @@ trait AiAgentFormTrait {
         '#type' => 'textfield',
         '#title' => $this->t('OpenAI API Key'),
         '#description' => $is_plugin 
-            ? $this->t('Your OpenAI API key. Leave empty to use <a href="@settings_url">global settings</a>.', [
+            ? $this->t('Enter your OpenAI API key or leave empty to use the <a href="@settings_url">global settings</a>.', [
                 '@settings_url' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_agent.settings'),
               ])
-            : $this->t('Your OpenAI API key for authentication. Required for all AI operations.'),
+            : $this->t('Enter your OpenAI API key. Required for all AI functionality.'),
         '#required' => !$is_plugin,
         '#size' => 100,
         '#maxlength' => 255,
@@ -64,9 +64,9 @@ trait AiAgentFormTrait {
     ];
 
     $model_options = [
-        'gpt-4o' => $this->t('GPT-4o (Recommended)'),
-        'gpt-4o-mini' => $this->t('GPT-4o Mini'),
-        'gpt-3.5-turbo' => $this->t('GPT-3.5 Turbo'),
+        'gpt-4o' => $this->t('GPT-4o (Most capable).'),
+        'gpt-4o-mini' => $this->t('GPT-4o Mini (Balanced).'),
+        'gpt-3.5-turbo' => $this->t('GPT-3.5 Turbo (Fastest).'),
     ];
 
     $elements['basic_settings']['model'] = [
@@ -98,7 +98,7 @@ trait AiAgentFormTrait {
         '#min' => 0,
         '#max' => 2,
         '#step' => 0.1,
-        '#description' => $this->t('Controls response creativity: 0.0-0.5 for focused, factual responses; 0.5-1.0 for balanced creativity; 1.0-2.0 for highly creative variations.'),
+        '#description' => $this->t('Controls the creativity of AI responses. Low values (0.0-0.5) produce consistent, deterministic responses ideal for factual content. Medium values (0.6-1.0) offer balanced creativity. High values (1.1-2.0) generate more diverse and unexpected responses.'),
         '#default_value' => $getConfigValue('temperature', 0.7),
     ];
 
@@ -129,12 +129,12 @@ trait AiAgentFormTrait {
     $context_fields = [
         'context_size' => [
             'title' => $this->t('Context Size'),
-            'description' => $this->t('Maximum context window size in tokens. If not set, defaults to 75% of model\'s maximum input token limit'),
+            'description' => $this->t('Maximum context window size in tokens. If not set, defaults to 75% of model\'s maximum input token limit.'),
             'min' => 1,
         ],
         'editor_context_ratio' => [
             'title' => $this->t('Editor Context Ratio'),
-            'description' => $this->t('Portion of context for editor content. Default: 0.3 (30%)'),
+            'description' => $this->t('Portion of context for editor content. Default: 0.3 (30%).'),
             'min' => 0,
             'max' => 1,
             'step' => 0.1,
@@ -204,8 +204,8 @@ trait AiAgentFormTrait {
             '#options' => $getSelectOptions($boolean_options),
             '#description' => $this->t('@desc', [
                 '@desc' => $field === 'debug_mode' 
-                    ? 'Enable detailed logging for troubleshooting.'
-                    : 'Show AI responses as they are generated. Provides immediate feedback but may feel less polished.'
+                    ? 'Enable detailed logging for troubleshooting purposes.'
+                    : 'Display AI responses as they are generated. Provides immediate feedback but may appear less polished.'
             ]),
             '#default_value' => $getConfigValue("behavior.$field"),
         ];
@@ -329,18 +329,18 @@ trait AiAgentFormTrait {
         foreach ($prompt_components as $key => $label) {
             $elements['prompt_settings']["override_$key"] = [
                 '#type' => 'textarea',
-                '#title' => $this->t('@label Override Rules', ['@label' => $label]),
+                '#title' => $this->t('@label Override', ['@label' => $label]),
                 '#default_value' => $getConfigValue("prompt_settings.overrides.$key"),
                 '#placeholder' => $default_rules[$key] ?? '',
-                '#description' => $this->t('Override default rules. Leave empty to use defaults shown in placeholder.'),
+                '#description' => $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower($label)]),
                 '#rows' => 6,
             ];
 
             $elements['prompt_settings']["additions_$key"] = [
                 '#type' => 'textarea',
-                '#title' => $this->t('@label Additional Rules', ['@label' => $label]),
+                '#title' => $this->t('@label Additions', ['@label' => $label]),
                 '#default_value' => $getConfigValue("prompt_settings.additions.$key"),
-                '#description' => $this->t('Add rules to append to the defaults.'),
+                '#description' => $this->t('Add custom @label rules that will be appended to the defaults.', ['@label' => strtolower($label)]),
                 '#rows' => 4,
             ];
         }
