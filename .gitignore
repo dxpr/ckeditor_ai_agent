@@ -1,3 +1,6 @@
 node_modules/
 package-lock.json
 drupal/
+.DS_Store
+.DS_Store?
+._*
