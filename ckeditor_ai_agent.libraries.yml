@@ -12,4 +12,4 @@ aiagent:
 aiagent.admin:
   css:
     theme:
-      js/ckeditor5_plugins/aiagent/theme/aiagent.admin.css: { }
+      css/aiagent.admin.css: { }

@@ -6,10 +6,11 @@
   "license": "GPL-2.0-or-later",
   "scripts": {
     "watch": "webpack --config webpack.config.js --mode development --watch",
-    "build": "node build.js && webpack --config webpack.config.js",
+    "build": "webpack --config webpack.config.js",
     "prepare": "husky",
     "lint": "bash scripts/lint.sh",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "postinstall": "node scripts/build-aiagent.js"
   },
   "devDependencies": {
     "@ckeditor/ckeditor5-dev-build-tools": "^43.0.0",
