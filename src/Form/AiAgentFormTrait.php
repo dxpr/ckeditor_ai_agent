@@ -15,10 +15,10 @@ trait AiAgentFormTrait {
    * @param mixed $config
    *   Configuration object or array.
    *
-   * @return array
+   * @return array<string, mixed>
    *   The form elements.
    */
-  protected function getCommonFormElements($is_plugin = FALSE, $config = NULL) {
+  protected function getCommonFormElements($is_plugin = FALSE, $config = NULL): array {
     $elements = [];
 
     // Initialize config based on context.
@@ -39,6 +39,9 @@ trait AiAgentFormTrait {
             ? ['' => $this->t('- Use global settings -')] + $options
             : $options;
     };
+
+    // Helper function for formatting field names as titles.
+    $formatMachineNameAsTitle = fn($title) => str_replace('_', ' ', ucfirst($title));
 
     // Basic Settings.
     $elements['basic_settings'] = [
@@ -71,7 +74,9 @@ trait AiAgentFormTrait {
       '#type' => 'select',
       '#title' => $this->t('AI Model'),
       '#options' => $getSelectOptions($model_options),
-      '#description' => $this->t('Select AI model' . ($is_plugin ? ' or use global settings.' : '.')),
+      '#description' => $this->t('@description', [
+        '@description' => 'Select AI model' . ($is_plugin ? ' or use global settings.' : '.'),
+      ]),
       '#default_value' => $getConfigValue('model'),
     ];
 
@@ -110,9 +115,9 @@ trait AiAgentFormTrait {
     foreach ($token_fields as $field) {
       $elements['advanced_settings']['tokens'][$field] = [
         '#type' => 'number',
-        '#title' => $this->t(str_replace('_', ' ', ucfirst($field))),
-        '#description' => $this->t('Maximum number of tokens for @type. If not set, uses model\'s maximum limit',
-                ['@type' => str_contains($field, 'output') ? 'AI response' : 'combined prompt and context']),
+        '#title' => $this->t('@title', ['@title' => $formatMachineNameAsTitle($field)]),
+        '#description' => $this->t("Maximum number of tokens for @type. If not set, uses model's maximum limit",
+          ['@type' => str_contains($field, 'output') ? 'AI response' : 'combined prompt and context']),
         '#min' => 1,
         '#default_value' => $getConfigValue("tokens.$field"),
       ];
@@ -198,7 +203,7 @@ trait AiAgentFormTrait {
     foreach ($behavior_fields as $field) {
       $elements['behavior_settings'][$field] = [
         '#type' => 'select',
-        '#title' => $this->t(str_replace('_', ' ', ucfirst($field))),
+        '#title' => $this->t('@title', ['@title' => $formatMachineNameAsTitle($field)]),
         '#options' => $getSelectOptions($boolean_options),
         '#description' => $this->t('@desc', [
           '@desc' => 'Enable detailed logging for troubleshooting purposes.',
@@ -280,15 +285,20 @@ trait AiAgentFormTrait {
     ];
 
     // Add prompt settings.
-    $this->addPromptSettings($elements, $is_plugin, $config, $getConfigValue);
+    $this->addPromptSettings($elements, $getConfigValue);
 
     return $elements;
   }
 
   /**
    * Adds prompt settings to the form elements.
+   *
+   * @param array<string, mixed> $elements
+   *   List of common form elements.
+   * @param \Closure $getConfigValue
+   *   Helper function to get config value based on context.
    */
-  protected function addPromptSettings(&$elements, $is_plugin, $config, $getConfigValue) {
+  protected function addPromptSettings(array &$elements, \Closure $getConfigValue): void {
     $elements['prompt_settings'] = [
       '#type' => 'details',
       '#title' => $this->t('Prompt Settings'),
@@ -319,7 +329,7 @@ trait AiAgentFormTrait {
           '#title' => $this->t('@label Override', ['@label' => $label]),
           '#default_value' => $getConfigValue("prompt_settings.overrides.$key"),
           '#placeholder' => $default_rules[$key] ?? '',
-          '#description' => $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower($label)]),
+          '#description' => $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower((string) $label)]),
           '#rows' => 6,
         ];
 
@@ -327,7 +337,7 @@ trait AiAgentFormTrait {
           '#type' => 'textarea',
           '#title' => $this->t('@label Additions', ['@label' => $label]),
           '#default_value' => $getConfigValue("prompt_settings.additions.$key"),
-          '#description' => $this->t('Add custom @label rules that will be appended to the defaults.', ['@label' => strtolower($label)]),
+          '#description' => $this->t('Add custom @label rules that will be appended to the defaults.', ['@label' => strtolower((string) $label)]),
           '#rows' => 4,
         ];
       }

@@ -33,7 +33,7 @@ class AiAgentConfigurationManager {
    * @param \Drupal\editor\Entity\Editor|null $editor
    *   The editor entity.
    *
-   * @return array
+   * @return array<string, array<string, mixed>>
    *   The CKEditor configuration.
    */
   public function getCkEditorConfig(?Editor $editor = NULL): array {
