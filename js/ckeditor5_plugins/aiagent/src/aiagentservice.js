@@ -4,6 +4,7 @@ import { HtmlParser } from './util/htmlparser.js';
 import { ButtonView } from 'ckeditor5/src/ui.js';
 import { env } from 'ckeditor5/src/utils.js';
 import { ALL_MODERATION_FLAGS, MODERATION_URL } from './const.js';
+import { getErrorMessages } from './util/translations.js';
 export default class AiAgentService {
     /**
      * Initializes the AiAgentService with the provided editor and configuration settings.
@@ -76,23 +77,16 @@ export default class AiAgentService {
                 }
             }
             else if (parentEquivalentHTML) {
-                editor.model.change(writer => {
-                    const endPosition = writer.createPositionAt(position.parent, 'end');
-                    writer.setSelection(endPosition);
-                });
                 content = parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.innerText;
             }
         }
         if (command) {
-            content = command;
-            selectedContent = parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.outerHTML;
             const selection = model.document.selection;
-            const range = selection.getFirstRange();
-            if (range) {
-                model.change(writer => {
-                    writer.setSelection(range.end);
-                });
-            }
+            const selectedContentFragment = model.getSelectedContent(selection);
+            const viewFragment = editor.data.toView(selectedContentFragment);
+            const html = editor.data.processor.toData(viewFragment);
+            content = command;
+            selectedContent = html;
         }
         if (this.moderationEnable) {
             const moderateContent = await this.moderateContent(content !== null && content !== void 0 ? content : '');
@@ -107,7 +101,7 @@ export default class AiAgentService {
             aiAgentContext.showLoader(rect);
             const gptPrompt = await this.generateGptPromptBasedOnUserPrompt(content !== null && content !== void 0 ? content : '', parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.innerText, selectedContent);
             if (parent && gptPrompt) {
-                await this.fetchAndProcessGptResponse(gptPrompt, parent);
+                await this.fetchAndProcessGptResponse(!!command, gptPrompt, parent);
             }
         }
         catch (error) {
@@ -132,7 +126,7 @@ export default class AiAgentService {
      * - API errors ("Error in content moderation")
      */
     async moderateContent(input) {
-        var _a;
+        var _a, _b;
         if (!this.moderationKey) {
             return true;
         }
@@ -153,11 +147,12 @@ export default class AiAgentService {
             });
             clearTimeout(timeoutId);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const error = await this.getError(response);
+                throw new Error(error);
             }
             const data = await response.json();
             if (!((_a = data === null || data === void 0 ? void 0 : data.results) === null || _a === void 0 ? void 0 : _a[0])) {
-                throw new Error('Invalid moderation response format');
+                throw new Error(t('Invalid moderation response format'));
             }
             const flags = ALL_MODERATION_FLAGS.filter(flag => !this.disableFlags.includes(flag));
             if (data.results[0].flagged) {
@@ -181,16 +176,20 @@ export default class AiAgentService {
         }
         catch (error) {
             console.error('Moderation error:', error);
-            // Handle specific error cases
-            if (error instanceof TypeError) {
-                aiAgentContext.showError(t('Network error during content moderation'));
-            }
-            else if (error instanceof DOMException && error.name === 'AbortError') {
-                aiAgentContext.showError(t('Content moderation timed out'));
+            let errorMessage = t('We couldn\'t connect to the AI. Please check your internet');
+            const jsonMessage = this.isValidJSON(error === null || error === void 0 ? void 0 : error.message);
+            if (jsonMessage) {
+                const errorObj = JSON.parse(error === null || error === void 0 ? void 0 : error.message);
+                const status = errorObj.status;
+                errorMessage = getErrorMessages(status, editor);
             }
             else {
-                aiAgentContext.showError(t('Error in content moderation'));
+                errorMessage = (_b = error === null || error === void 0 ? void 0 : error.message) === null || _b === void 0 ? void 0 : _b.trim();
+                if (errorMessage === 'ReadableStream not supported') {
+                    errorMessage = t('Browser does not support readable streams');
+                }
             }
+            aiAgentContext.showError(errorMessage);
             // Fail open for moderation errors
             return true;
         }
@@ -206,7 +205,7 @@ export default class AiAgentService {
      * @param retries - The number of retry attempts for the API call (default is the configured retry attempts).
      * @returns A promise that resolves when the response has been processed.
      */
-    async fetchAndProcessGptResponse(prompt, parent, retries = this.retryAttempts) {
+    async fetchAndProcessGptResponse(command, prompt, parent, retries = this.retryAttempts) {
         var _a, _b, _c;
         console.log('Starting fetchAndProcessGptResponse');
         const editor = this.editor;
@@ -238,45 +237,68 @@ export default class AiAgentService {
             });
             clearTimeout(timeoutId);
             if (!response.ok) {
-                throw new Error('Fetch failed');
+                const error = await this.getError(response);
+                throw new Error(error);
             }
             aiAgentContext.hideLoader();
             const reader = response.body.getReader();
             const decoder = new TextDecoder('utf-8');
-            this.clearParentContent(parent);
             // this.editor.enableReadOnlyMode( this.aiAgentFeatureLockId );
-            let insertParent = true;
             this.cancelGenerationButton(blockID, controller);
+            const undoCommand = editor.commands.get('undo');
+            if (undoCommand) {
+                undoCommand.on('execute', () => {
+                    const editorData = editor.getData();
+                    if (editorData.indexOf('ai-tag') > -1) {
+                        editor.execute('undo');
+                    }
+                });
+            }
+            const redoCommand = editor.commands.get('redo');
+            if (redoCommand) {
+                redoCommand.on('execute', () => {
+                    const editorData = editor.getData();
+                    if (editorData.indexOf('ai-tag') > -1) {
+                        editor.execute('redo');
+                    }
+                });
+            }
             editor.model.change(writer => {
-                var _a;
-                const position = editor.model.document.selection.getLastPosition();
+                var _a, _b, _c;
+                const position = this.editor.model.document.selection.getLastPosition();
+                let newPosition;
                 if (position) {
-                    const aiTag = writer.createElement('ai-tag', {
-                        id: blockID
-                    });
-                    const parent = position.parent;
-                    if (parent) {
-                        if (((_a = parent.parent) === null || _a === void 0 ? void 0 : _a.name) === 'tableCell') {
-                            insertParent = false;
+                    if ((position === null || position === void 0 ? void 0 : position.parent.name) === 'inline-slash') {
+                        if ((_a = position === null || position === void 0 ? void 0 : position.parent) === null || _a === void 0 ? void 0 : _a.parent) {
+                            newPosition = writer.createPositionAt(position.parent.parent, 'after');
                         }
-                        else if (parent.getAttribute('listType') === 'bulleted') {
-                            insertParent = false;
-                        }
-                    }
-                    let parentContent = '';
-                    for (const child of parent.getChildren()) {
-                        if (child.is('$text')) {
-                            parentContent += child.data;
+                        if (position === null || position === void 0 ? void 0 : position.parent) {
+                            const parentJson = (_c = (_b = position === null || position === void 0 ? void 0 : position.parent) === null || _b === void 0 ? void 0 : _b.parent) === null || _c === void 0 ? void 0 : _c.toJSON();
+                            if (parentJson.children.length > 1) {
+                                const positionInline = writer.createPositionAt(position.parent, 'after');
+                                const aiTagInline = writer.createElement('ai-tag', {
+                                    id: `${blockID}-inline`
+                                });
+                                writer.insert(aiTagInline, positionInline);
+                            }
                         }
                     }
-                    const nextLinePosition = parentContent ?
-                        writer.createPositionAt(position.parent, 'after') :
-                        writer.createPositionAt(position.parent, 'before');
-                    writer.insert(aiTag, insertParent ? nextLinePosition : position);
-                    const newPosition = writer.createPositionAt(aiTag, 'end');
-                    writer.setSelection(newPosition);
+                    else {
+                        const aiTagInline = writer.createElement('ai-tag', {
+                            id: `${blockID}-inline`
+                        });
+                        writer.insert(aiTagInline, position);
+                        newPosition = writer.createPositionAt(position.parent, 'after');
+                    }
+                    if (newPosition) {
+                        const aiTag = writer.createElement('ai-tag', {
+                            id: blockID
+                        });
+                        writer.insert(aiTag, newPosition);
+                    }
                 }
             });
+            this.clearParentContent(parent, command);
             console.log('Starting to process response');
             for (;;) {
                 const { done, value } = await reader.read();
@@ -317,31 +339,39 @@ export default class AiAgentService {
                 return;
             }
             console.error('Error in fetchAndProcessGptResponse:', error);
-            const errorIdentifier = ((error === null || error === void 0 ? void 0 : error.message) || '').trim() || ((error === null || error === void 0 ? void 0 : error.name) || '').trim();
-            const isRetryableError = [
-                'AbortError',
-                'ReadableStream not supported',
-                'AiAgent: Fetch failed'
-            ].includes(errorIdentifier);
-            if (retries > 0 && isRetryableError) {
-                console.warn(`Retrying... (${retries} attempts left)`);
-                return await this.fetchAndProcessGptResponse(prompt, parent, retries - 1);
+            let errorMessage = t('We couldn\'t connect to the AI. Please check your internet');
+            const jsonMessage = this.isValidJSON(error === null || error === void 0 ? void 0 : error.message);
+            if (jsonMessage) {
+                const errorObj = JSON.parse(error === null || error === void 0 ? void 0 : error.message);
+                const status = errorObj.status;
+                errorMessage = getErrorMessages(status, editor);
+                if (retries > 0) {
+                    console.warn(`Retrying... (${retries} attempts left)`);
+                    return await this.fetchAndProcessGptResponse(command, prompt, parent, retries - 1);
+                }
             }
-            let errorMessage;
-            switch ((error === null || error === void 0 ? void 0 : error.name) || ((_c = error === null || error === void 0 ? void 0 : error.message) === null || _c === void 0 ? void 0 : _c.trim())) {
-                case 'ReadableStream not supported':
-                    errorMessage = t('Browser does not support readable streams');
-                    break;
-                case 'AiAgent: Fetch failed':
-                    errorMessage = t('We couldn\'t connect to the AI. Please check your internet');
-                    break;
-                default:
-                    errorMessage = t('We couldn\'t connect to the AI. Please check your internet');
+            else {
+                errorMessage = (_c = error === null || error === void 0 ? void 0 : error.message) === null || _c === void 0 ? void 0 : _c.trim();
             }
             aiAgentContext.showError(errorMessage);
         }
         finally {
             this.editor.disableReadOnlyMode(this.aiAgentFeatureLockId);
+        }
+    }
+    /**
+     * Checks if a given string is a valid JSON format.
+     *
+     * @param str - The string to be validated as JSON.
+     * @returns True if the string is valid JSON, otherwise false.
+     */
+    isValidJSON(str) {
+        try {
+            JSON.parse(str);
+            return true;
+        }
+        catch (error) {
+            return false;
         }
     }
     /**
@@ -357,10 +387,10 @@ export default class AiAgentService {
         const view = new ButtonView();
         let label = t('Cancel Generation');
         if (env.isMac) {
-            label = t('\u2318 + \u232B Cancel Generation');
+            label = `\u2318 + \u232B ${t('Cancel Generation')}`;
         }
         if (env.isWindows) {
-            label = t('Ctrl + \u232B Cancel Generation');
+            label = `Ctrl + \u232B ${t('Cancel Generation')}`;
         }
         view.set({
             label,
@@ -405,9 +435,15 @@ export default class AiAgentService {
             }
         }
         const editorData = editor.getData();
-        let editorContent = editorData.replace(/<\/ai-tag>\s*<[^>]+>\s*&nbsp;\s*<\/[^>]+>/g, '');
+        let editorContent = editorData.replace(new RegExp(`<ai-tag id="${blockID}-inline">&nbsp;</ai-tag>`, 'g'), '');
+        editorContent = editorContent.replace(new RegExp(`<ai-tag id="${blockID}">&nbsp;</ai-tag>`, 'g'), '');
+        editorContent = editorContent.replace(/<\/ai-tag>\s*<[^>]+>\s*&nbsp;\s*<\/[^>]+>/g, '');
+        editorContent = editorContent.replace(`<ai-tag id="${blockID}-inline">`, '');
         editorContent = editorContent.replace(`<ai-tag id="${blockID}">`, '');
-        editor.setData(editorContent);
+        editor.execute('selectAll');
+        const viewFragment = editor.data.processor.toView(editorContent);
+        const modelFragment = editor.data.toModel(viewFragment);
+        editor.model.insertContent(modelFragment);
     }
     /**
      * Recursively retrieves all child elements of a given view element that match the specified block ID.
@@ -441,21 +477,51 @@ export default class AiAgentService {
      * @private
      */
     async updateContent(newHtml, blockID) {
+        var _a;
         const editor = this.editor;
-        editor.model.change(writer => {
-            const root = editor.model.document.getRoot();
-            if (root) {
-                const childrens = this.getViewChildrens(root, blockID);
-                const targetElement = childrens.length ? childrens[0] : null;
-                if (targetElement) {
-                    const range = editor.model.createRangeIn(targetElement);
-                    writer.remove(range);
-                    const viewFragment = editor.data.processor.toView(newHtml);
-                    const modelFragment = editor.data.toModel(viewFragment);
-                    writer.insert(modelFragment, targetElement, 'end');
+        const tempParagraph = document.createElement('div');
+        tempParagraph.innerHTML = newHtml;
+        let textContent = '';
+        const root = editor.model.document.getRoot();
+        if (root) {
+            const childrens = this.getViewChildrens(root, `${blockID}-inline`);
+            if (childrens.length) {
+                if (tempParagraph.querySelector('ul') === null && tempParagraph.querySelector('li') === null) {
+                    textContent = (_a = tempParagraph.textContent) !== null && _a !== void 0 ? _a : '';
+                    tempParagraph.innerHTML = '';
                 }
             }
-        });
+        }
+        if (textContent) {
+            editor.model.enqueueChange({ isUndoable: false }, writer => {
+                const root = editor.model.document.getRoot();
+                if (root) {
+                    const childrens = this.getViewChildrens(root, `${blockID}-inline`);
+                    const targetElement = childrens.length ? childrens[0] : null;
+                    if (targetElement) {
+                        const range = editor.model.createRangeIn(targetElement);
+                        writer.remove(range);
+                        writer.insertText(textContent, targetElement, 'end');
+                    }
+                }
+            });
+        }
+        if (tempParagraph.innerHTML) {
+            editor.model.enqueueChange({ isUndoable: false }, writer => {
+                const root = editor.model.document.getRoot();
+                if (root) {
+                    const childrens = this.getViewChildrens(root, blockID);
+                    const targetElement = childrens.length ? childrens[0] : null;
+                    if (targetElement) {
+                        const range = editor.model.createRangeIn(targetElement);
+                        writer.remove(range);
+                        const viewFragment = editor.data.processor.toView(tempParagraph.innerHTML);
+                        const modelFragment = editor.data.toModel(viewFragment);
+                        writer.insert(modelFragment, targetElement, 'end');
+                    }
+                }
+            });
+        }
         await new Promise(resolve => setTimeout(resolve));
     }
     /**
@@ -531,18 +597,69 @@ export default class AiAgentService {
      *
      * @param parent - The parent element whose content will be cleared.
      */
-    clearParentContent(parent) {
+    clearParentContent(parent, command) {
         const editor = this.editor;
         const model = editor.model;
         const root = model.document.getRoot();
-        const position = model.document.selection.getLastPosition();
-        const inlineSlash = Array.from(parent.getChildren()).find((child) => child.name === 'inline-slash');
-        if (root && position) {
+        const positionFirst = model.document.selection.getFirstPosition();
+        const positionLast = model.document.selection.getLastPosition();
+        if (root && positionFirst && positionLast) {
             editor.model.change(writer => {
-                const startingPath = (inlineSlash === null || inlineSlash === void 0 ? void 0 : inlineSlash.getPath()) || parent.getPath();
-                const range = model.createRange(model.createPositionFromPath(root, startingPath), model.createPositionFromPath(root, position.path));
-                writer.remove(range);
-                // writer.setSelection( model.createPositionFromPath( root, startingPath ) );
+                var _a, _b, _c;
+                if (command) {
+                    const range = model.createRange(model.createPositionFromPath(root, positionFirst.path), model.createPositionFromPath(root, positionLast.path));
+                    writer.remove(range);
+                    const positionFirstAfterRemove = model.document.selection.getFirstPosition();
+                    if (positionFirstAfterRemove) {
+                        const positionParentFirst = positionFirstAfterRemove.parent;
+                        if (positionFirstAfterRemove.parent.childCount === 0) {
+                            writer.remove(positionParentFirst);
+                        }
+                        else if (positionFirstAfterRemove.parent.childCount === 1) {
+                            const tag = (_a = positionFirstAfterRemove.parent) === null || _a === void 0 ? void 0 : _a.getChild(0);
+                            if (tag.name === 'ai-tag' && positionFirstAfterRemove.parent.name !== '$root') {
+                                writer.remove(positionParentFirst);
+                            }
+                        }
+                    }
+                    const positionLastAfterRemove = model.document.selection.getLastPosition();
+                    if (positionLastAfterRemove) {
+                        const positionParentLast = positionLastAfterRemove.parent;
+                        if (positionLastAfterRemove.parent.childCount === 0) {
+                            writer.remove(positionParentLast);
+                        }
+                        else if (positionLastAfterRemove.parent.childCount === 1) {
+                            const tag = (_b = positionLastAfterRemove.parent) === null || _b === void 0 ? void 0 : _b.getChild(0);
+                            if (tag.name === 'ai-tag' && positionLastAfterRemove.parent.name !== '$root') {
+                                writer.remove(positionParentLast);
+                            }
+                        }
+                    }
+                }
+                else {
+                    const startingPath = parent.getPath();
+                    const range = model.createRange(model.createPositionFromPath(root, startingPath), model.createPositionFromPath(root, positionLast.path));
+                    writer.remove(range);
+                    if (parent.getPath()) {
+                        if (parent.name === 'inline-slash') {
+                            const position = model.document.selection.getLastPosition();
+                            const positionParent = position === null || position === void 0 ? void 0 : position.parent;
+                            let lineEmpty = true;
+                            if (position === null || position === void 0 ? void 0 : position.parent) {
+                                if ((_c = position === null || position === void 0 ? void 0 : position.parent) === null || _c === void 0 ? void 0 : _c.getChildren().next().value) {
+                                    lineEmpty = false;
+                                }
+                            }
+                            if (lineEmpty) {
+                                writer.remove(positionParent);
+                            }
+                        }
+                        else {
+                            const positionParent = parent;
+                            writer.remove(positionParent);
+                        }
+                    }
+                }
             });
         }
     }
@@ -576,5 +693,31 @@ export default class AiAgentService {
             console.error(error);
             return null;
         }
+    }
+    /**
+     * Retrieves and formats the error message from the response object.
+     *
+     * @param response - The response object from the fetch request.
+     * @returns A promise that resolves to a JSON string containing the status and error message.
+     * The error message is extracted based on the content type of the response, which can be
+     * in JSON, HTML, or plain text format.
+     */
+    async getError(response) {
+        let errorData = '';
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            errorData = JSON.stringify(await response.json());
+        }
+        else if (contentType && contentType.includes('text/html')) {
+            errorData = await response.text();
+        }
+        else if (contentType && contentType.includes('text/plain')) {
+            errorData = await response.text();
+        }
+        const error = {
+            status: response.status,
+            error: errorData
+        };
+        return JSON.stringify(error);
     }
 }

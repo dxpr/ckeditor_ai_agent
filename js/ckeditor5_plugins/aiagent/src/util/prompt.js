@@ -6,13 +6,14 @@ import { getDefaultRules } from './default-rules.js';
 import { getAllowedHtmlTags } from './html-utils.js';
 export class PromptHelper {
     constructor(editor, options = {}) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         this.editor = editor;
         const config = editor.config.get('aiAgent');
         this.contextSize = config.contextSize;
         this.promptSettings = (_a = config.promptSettings) !== null && _a !== void 0 ? _a : {};
         this.debugMode = (_b = config.debugMode) !== null && _b !== void 0 ? _b : false;
         this.editorContextRatio = (_c = options.editorContextRatio) !== null && _c !== void 0 ? _c : 0.3;
+        this.contentScope = (_d = config === null || config === void 0 ? void 0 : config.contentScope) !== null && _d !== void 0 ? _d : '';
     }
     getSystemPrompt(isInlineResponse = false) {
         var _a, _b;
@@ -46,12 +47,17 @@ export class PromptHelper {
         return systemPrompt;
     }
     trimContext(prompt, promptContainerText = '') {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         let contentBeforePrompt = '';
         let contentAfterPrompt = '';
         const splitText = promptContainerText !== null && promptContainerText !== void 0 ? promptContainerText : prompt;
         const view = (_d = (_c = (_b = (_a = this.editor) === null || _a === void 0 ? void 0 : _a.editing) === null || _b === void 0 ? void 0 : _b.view) === null || _c === void 0 ? void 0 : _c.domRoots) === null || _d === void 0 ? void 0 : _d.get('main');
-        const context = (_e = view === null || view === void 0 ? void 0 : view.innerText) !== null && _e !== void 0 ? _e : '';
+        let context = (_e = view === null || view === void 0 ? void 0 : view.innerText) !== null && _e !== void 0 ? _e : '';
+        if (this.contentScope) {
+            const activeEditorElement = this.editor.editing.view.getDomRoot();
+            const targetElement = activeEditorElement === null || activeEditorElement === void 0 ? void 0 : activeEditorElement.closest(this.contentScope);
+            context = (_f = targetElement === null || targetElement === void 0 ? void 0 : targetElement.innerHTML) !== null && _f !== void 0 ? _f : '';
+        }
         const matchIndex = context.indexOf(splitText);
         const nextEnterIndex = context.indexOf('\n', matchIndex);
         const firstNewlineIndex = nextEnterIndex !== -1 ? nextEnterIndex : matchIndex + splitText.length;
