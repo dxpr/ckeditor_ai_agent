@@ -15,6 +15,9 @@ ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
         endpointUrl:
           type: string
           label: 'Endpoint URL'
+        contentScope:
+          type: string
+          label: 'Content Scope'
         temperature:
           type: float
           label: 'Temperature'

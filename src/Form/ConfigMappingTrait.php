@@ -30,6 +30,10 @@ trait ConfigMappingTrait {
         'type' => 'string',
         'plugin_key' => 'endpointUrl',
       ],
+      'basic_settings.content_scope' => [
+        'type' => 'string',
+        'plugin_key' => 'contentScope',
+      ],
       'advanced_settings.temperature' => [
         'type' => 'float',
         'plugin_key' => 'temperature',

@@ -87,6 +87,14 @@ trait AiAgentFormTrait {
       '#default_value' => $getConfigValue('endpoint_url'),
     ];
 
+    $elements['basic_settings']['content_scope'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Content Scope'),
+      '#description' => $this->t('CSS selector that extends context gathering to include content from other CKEditor 5 instances found within the first matching ancestor element.'),
+      '#default_value' => $getConfigValue('content_scope'),
+      '#placeholder' => '.node-form',
+    ];
+
     // Advanced Settings.
     $elements['advanced_settings'] = [
       '#type' => 'details',

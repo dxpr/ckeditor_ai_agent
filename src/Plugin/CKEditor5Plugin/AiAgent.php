@@ -36,6 +36,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         'apiKey' => NULL,
         'model' => NULL,
         'endpointUrl' => NULL,
+        'contentScope' => NULL,
         'temperature' => NULL,
         'maxOutputTokens' => NULL,
         'maxInputTokens' => NULL,
@@ -91,8 +92,9 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       // Basic Settings.
       $form['basic_settings']['api_key']['#default_value'] = $config['aiAgent']['apiKey'] ?? '';
       $form['basic_settings']['model']['#default_value'] = $config['aiAgent']['model'] ?? '';
-      $form['advanced_settings']['temperature']['#default_value'] = $config['aiAgent']['temperature'] ?? '';
       $form['basic_settings']['endpoint_url']['#default_value'] = $config['aiAgent']['endpointUrl'] ?? '';
+      $form['basic_settings']['content_scope']['#default_value'] = $config['aiAgent']['contentScope'] ?? '';
+      $form['advanced_settings']['temperature']['#default_value'] = $config['aiAgent']['temperature'] ?? '';
 
       // Advanced Settings.
       if (isset($form['advanced_settings'])) {
