@@ -76,6 +76,7 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $form['basic_settings']['api_key']['#default_value'] = $config->get('api_key');
     $form['basic_settings']['model']['#default_value'] = $config->get('model') ?: 'gpt-4o';
     $form['basic_settings']['endpoint_url']['#default_value'] = $config->get('endpoint_url') ?: 'https://api.openai.com/v1/chat/completions';
+    $form['basic_settings']['content_scope']['#default_value'] = $config->get('content_scope');
 
     $form['advanced_settings']['temperature']['#default_value'] = $config->get('temperature');
     $form['advanced_settings']['tokens']['max_output_tokens']['#default_value'] = $config->get('max_output_tokens');

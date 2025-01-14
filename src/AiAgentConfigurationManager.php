@@ -45,6 +45,7 @@ class AiAgentConfigurationManager {
         'apiKey' => $global_config->get('api_key'),
         'model' => $global_config->get('model'),
         'endpointUrl' => $global_config->get('endpoint_url'),
+        'contentScope' => $global_config->get('content_scope'),
         'temperature' => $global_config->get('temperature'),
         'maxOutputTokens' => $global_config->get('max_output_tokens'),
         'maxInputTokens' => $global_config->get('max_input_tokens'),
