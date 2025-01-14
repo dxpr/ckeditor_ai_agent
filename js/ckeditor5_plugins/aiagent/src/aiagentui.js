@@ -1,12 +1,13 @@
-import { MenuBarMenuView, MenuBarMenuListView, MenuBarMenuListItemView, MenuBarMenuListItemButtonView, createDropdown, SplitButtonView, LabeledFieldView, ListSeparatorView, createLabeledInputText } from 'ckeditor5/src/ui.js';
+import { MenuBarMenuView, MenuBarMenuListView, MenuBarMenuListItemView, MenuBarMenuListItemButtonView, createDropdown, SplitButtonView, LabeledFieldView, ListSeparatorView, createLabeledInputText, ButtonView } from 'ckeditor5/src/ui.js';
 import { Plugin } from 'ckeditor5/src/core.js';
 import aiAgentIcon from '../theme/icons/ai-agent.svg';
-import searchIcon from '../theme/icons/search.svg';
+import arrowIcon from '../theme/icons/arrow.svg';
 import { aiAgentContext } from './aiagentcontext.js';
-import { AI_AGENT_DROPDOWN_MENU, SUPPORTED_LANGUAGES, SHOW_ERROR_DURATION } from './const.js';
+import { SUPPORTED_LANGUAGES, SHOW_ERROR_DURATION } from './const.js';
 import { Widget, toWidget } from 'ckeditor5/src/widget.js';
 import { env } from 'ckeditor5/src/utils.js';
 import AiAgentService from './aiagentservice.js';
+import { getDefaultAiAgentDropdownMenu } from './util/translations.js';
 export default class AiAgentUI extends Plugin {
     constructor(editor) {
         var _a, _b;
@@ -15,10 +16,10 @@ export default class AiAgentUI extends Plugin {
         this.GPT_RESPONSE_LOADER_ID = 'gpt-response-loader';
         this.GPT_RESPONSE_ERROR_ID = 'gpt-error';
         this.showErrorDuration = SHOW_ERROR_DURATION;
-        this.commandsDropdown = AI_AGENT_DROPDOWN_MENU;
+        this.commandsDropdown = getDefaultAiAgentDropdownMenu(this.editor);
         const config = editor.config.get('aiAgent');
         this.showErrorDuration = (_a = config === null || config === void 0 ? void 0 : config.showErrorDuration) !== null && _a !== void 0 ? _a : SHOW_ERROR_DURATION;
-        this.commandsDropdown = (_b = config === null || config === void 0 ? void 0 : config.commandsDropdown) !== null && _b !== void 0 ? _b : AI_AGENT_DROPDOWN_MENU;
+        this.commandsDropdown = (_b = config === null || config === void 0 ? void 0 : config.commandsDropdown) !== null && _b !== void 0 ? _b : getDefaultAiAgentDropdownMenu(editor);
     }
     static get pluginName() {
         return 'AiAgentUI';
@@ -90,11 +91,23 @@ export default class AiAgentUI extends Plugin {
         this.addLoader();
         this.addGptErrorToolTip();
         this.addAiAgentButton();
-        editor.accessibility.addKeystrokeInfos({
+        editor.accessibility.addKeystrokeInfoGroup({
+            id: 'ai-agent',
+            categoryId: 'navigation',
+            label: t('AI Agent'),
             keystrokes: [
                 {
-                    label: t('Insert slash command (AI Agent)'),
+                    label: t('Slash Command: Open the AI Command Menu in an Empty Field'),
                     keystroke: '/'
+                },
+                {
+                    // eslint-disable-next-line max-len
+                    label: t('Force Insert Slash Command: Add a Slash Command Within Existing Text'),
+                    keystroke: env.isMac ? 'Cmd + /' : 'Ctrl + /'
+                },
+                {
+                    label: t('Cancel AI Generation'),
+                    keystroke: env.isMac ? 'Cmd + Backspace' : 'Ctrl + Backspace'
                 }
             ]
         });
@@ -107,21 +120,6 @@ export default class AiAgentUI extends Plugin {
         });
         editor.model.schema.extend('$block', { allowIn: 'ai-tag' });
         this.addCustomTagConversions();
-        let keystroke = '';
-        if (env.isMac) {
-            keystroke = 'Cmd + Backspace';
-        }
-        if (env.isWindows) {
-            keystroke = 'Ctrl + Backspace';
-        }
-        editor.accessibility.addKeystrokeInfos({
-            keystrokes: [
-                {
-                    label: t('Cancel AI Generation'),
-                    keystroke
-                }
-            ]
-        });
     }
     addCustomTagConversions() {
         const editor = this.editor;
@@ -164,9 +162,32 @@ export default class AiAgentUI extends Plugin {
      * usability.
      */
     addAiAgentButton() {
+        const editor = this.editor;
         const t = this.editor.t;
         const model = this.editor.model;
         const viewDocument = this.editor.editing.view.document;
+        const executeAiAgentCommand = (command, labeledFieldView, listView) => {
+            if (labeledFieldView.fieldView.element && command) {
+                const aiAgentService = new AiAgentService(this.editor);
+                this.editor.editing.view.focus();
+                aiAgentService.handleSlashCommand(command);
+                labeledFieldView.isEnabled = false;
+                this.aiAgentListItemUpdate(listView, false);
+            }
+        };
+        const executeCommand = () => {
+            this.editor.model.change(writer => {
+                const position = this.editor.model.document.selection.getLastPosition();
+                if (position) {
+                    const inlineSlashContainer = writer.createElement('inline-slash', { class: 'ck-slash' });
+                    writer.insertText('/', inlineSlashContainer);
+                    writer.insert(inlineSlashContainer, position);
+                    const newPosition = writer.createPositionAt(inlineSlashContainer, 'end');
+                    writer.setSelection(newPosition);
+                }
+            });
+            this.editor.editing.view.focus();
+        };
         this.editor.ui.componentFactory.add('aiAgentButton', locale => {
             const dropdownView = createDropdown(locale, SplitButtonView);
             dropdownView.class = 'ck-ai-commands-list';
@@ -176,40 +197,50 @@ export default class AiAgentUI extends Plugin {
                 icon: aiAgentIcon,
                 tooltip: true
             });
-            // Add the functionality for the dropdown button's execute event
-            buttonView.on('execute', () => {
-                this.editor.model.change(writer => {
-                    const position = this.editor.model.document.selection.getLastPosition();
-                    if (position) {
-                        const inlineSlashContainer = writer.createElement('inline-slash', { class: 'ck-slash' });
-                        writer.insertText('/', inlineSlashContainer);
-                        writer.insert(inlineSlashContainer, position);
-                        const newPosition = writer.createPositionAt(inlineSlashContainer, 'end');
-                        writer.setSelection(newPosition);
-                    }
-                });
-                this.editor.editing.view.focus();
-            });
+            buttonView.on('execute', executeCommand);
             const menuView = new MenuBarMenuView(locale);
             const listView = new MenuBarMenuListView(locale);
             const searchContainer = new MenuBarMenuListItemView(locale, menuView);
             const labeledFieldView = new LabeledFieldView(locale, createLabeledInputText);
-            labeledFieldView.label = t('Search AI command');
-            // Create a wrapper div for the icon and input
-            const wrapper = document.createElement('div');
-            wrapper.className = 'ck-input-icon-wrapper';
-            // Create and add the icon
-            const iconSpan = document.createElement('span');
-            iconSpan.className = 'ck-input-search-icon';
-            iconSpan.innerHTML = searchIcon;
-            wrapper.appendChild(iconSpan);
+            labeledFieldView.label = t('Ask AI to edit');
+            labeledFieldView.isEnabled = false;
+            const button = new ButtonView(locale);
+            button.set({
+                label: t('Submit'),
+                icon: arrowIcon,
+                tooltip: true,
+                class: 'ck-ask-ai-to-edit-button',
+                isEnabled: false
+            });
+            // Execute a command when the button is clicked.
+            button.on('execute', () => {
+                var _a, _b, _c;
+                const command = (_c = (_b = (_a = labeledFieldView.fieldView) === null || _a === void 0 ? void 0 : _a.element) === null || _b === void 0 ? void 0 : _b.value) !== null && _c !== void 0 ? _c : '';
+                executeAiAgentCommand(command, labeledFieldView, listView);
+            });
             labeledFieldView.fieldView.on('input', () => {
                 var _a;
                 if ((_a = labeledFieldView === null || labeledFieldView === void 0 ? void 0 : labeledFieldView.fieldView) === null || _a === void 0 ? void 0 : _a.element) {
-                    const search = labeledFieldView.fieldView.element.value.toLowerCase();
-                    this.aiAgentListItemUpdate(listView, 'search', search);
+                    if (labeledFieldView.fieldView.element.value) {
+                        button.isEnabled = true;
+                    }
+                    else {
+                        button.isEnabled = false;
+                    }
                 }
             });
+            labeledFieldView.fieldView.render();
+            // Add keydown event listener for Enter key
+            if (labeledFieldView.fieldView.element) {
+                labeledFieldView.fieldView.element.addEventListener('keydown', event => {
+                    var _a, _b, _c;
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        const command = (_c = (_b = (_a = labeledFieldView.fieldView) === null || _a === void 0 ? void 0 : _a.element) === null || _b === void 0 ? void 0 : _b.value) !== null && _c !== void 0 ? _c : '';
+                        executeAiAgentCommand(command, labeledFieldView, listView);
+                    }
+                });
+            }
             // Listen for selection changes in the editor
             viewDocument.on('selectionChange', () => {
                 const selection = model.document.selection;
@@ -219,14 +250,13 @@ export default class AiAgentUI extends Plugin {
                         .map(item => item.data)
                         .join('');
                     const isTextSelected = !!selectedText;
-                    this.aiAgentListItemUpdate(listView, 'enable', isTextSelected);
+                    labeledFieldView.isEnabled = isTextSelected;
+                    this.aiAgentListItemUpdate(listView, isTextSelected);
                 }
             });
             searchContainer.children.add(labeledFieldView);
+            searchContainer.children.add(button);
             listView.items.add(searchContainer);
-            if (labeledFieldView.element) {
-                labeledFieldView.element.appendChild(wrapper);
-            }
             for (const group of this.commandsDropdown) {
                 const separatorView = new ListSeparatorView(locale);
                 listView.items.add(separatorView);
@@ -234,7 +264,7 @@ export default class AiAgentUI extends Plugin {
                 const titleView = new MenuBarMenuListItemView(locale, menuView);
                 const titleButton = new MenuBarMenuListItemButtonView(locale);
                 titleButton.set({
-                    label: t(group.title),
+                    label: group.title,
                     class: 'ck-menu-group-title',
                     isEnabled: false
                 });
@@ -245,15 +275,13 @@ export default class AiAgentUI extends Plugin {
                     const listItemView = new MenuBarMenuListItemView(locale, menuView);
                     const buttonView = new MenuBarMenuListItemButtonView(locale);
                     buttonView.set({
-                        label: t(item.title),
+                        label: item.title,
                         class: 'ck-menu-item',
                         isEnabled: false
                     });
                     buttonView.delegate('execute').to(menuView);
                     buttonView.on('execute', () => {
-                        const aiAgentService = new AiAgentService(this.editor);
-                        this.editor.editing.view.focus();
-                        aiAgentService.handleSlashCommand(item.command);
+                        executeAiAgentCommand(item.command, labeledFieldView, listView);
                     });
                     listItemView.children.add(buttonView);
                     listView.items.add(listItemView);
@@ -261,6 +289,11 @@ export default class AiAgentUI extends Plugin {
             }
             dropdownView.panelView.children.add(listView);
             return dropdownView;
+        });
+        editor.editing.view.document.on('keydown', (event, data) => {
+            if ((data.ctrlKey || data.metaKey) && data.keyCode === 191) {
+                executeCommand();
+            }
         });
     }
     /**
@@ -276,7 +309,7 @@ export default class AiAgentUI extends Plugin {
      * @param data - The search string for filtering items when type is 'search', or a boolean indicating
      *               whether to enable or disable items when type is 'enable'.
      */
-    aiAgentListItemUpdate(listView, type, data) {
+    aiAgentListItemUpdate(listView, isEnabled) {
         listView.items.map(itemView => {
             var _a;
             const element = itemView;
@@ -284,17 +317,9 @@ export default class AiAgentUI extends Plugin {
                 const button = element.children.first;
                 if (button.class) {
                     const isTitle = button.class.includes('ck-menu-group-title');
-                    const isSearchInout = button.class.includes('ck-ai-search-input');
-                    const isSeparator = !button.label;
-                    if (!isTitle && !isSeparator && !isSearchInout) {
-                        const label = button.label.toLowerCase();
-                        if (type === 'search') {
-                            element.isVisible = !data || label.includes(data);
-                        }
-                        if (type === 'enable') {
-                            element.isEnabled = data;
-                            button.isEnabled = data;
-                        }
+                    if (!isTitle) {
+                        element.isEnabled = isEnabled;
+                        button.isEnabled = isEnabled;
                     }
                 }
             }
@@ -428,7 +453,6 @@ export default class AiAgentUI extends Plugin {
         const isReadOnlyMode = this.editor.isReadOnly;
         if (ele && rect && !isReadOnlyMode) {
             ele.classList.add('show-place-holder');
-            ele.style.left = `${rect.left}px`;
             ele.style.top = `${rect.top}px`;
         }
         else if (ele) {
