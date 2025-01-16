@@ -10,7 +10,7 @@
     "prepare": "husky",
     "lint": "bash scripts/lint.sh",
     "test": "echo \"No tests specified\" && exit 0",
-    "postinstall": "node scripts/build-aiagent.js"
+    "postinstall": "node scripts/build-aiagent.js && npm run build"
   },
   "devDependencies": {
     "@ckeditor/ckeditor5-dev-build-tools": "^43.0.0",
