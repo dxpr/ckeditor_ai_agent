@@ -46,7 +46,7 @@ trait AiAgentFormTrait {
     // Basic Settings.
     $elements['basic_settings'] = [
       '#type' => 'details',
-      '#title' => $this->t('Basic Settings'),
+      '#title' => $this->t('Connection & Model Settings'),
       '#open' => TRUE,
     ];
 
@@ -87,10 +87,21 @@ trait AiAgentFormTrait {
       '#default_value' => $getConfigValue('endpoint_url'),
     ];
 
+    $elements['basic_settings']['content_scope'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Content Scope'),
+      '#description' => $this->t('CSS selector that extends context gathering to include content from other CKEditor 5 instances found within the first matching ancestor element.'),
+      '#default_value' => $getConfigValue('content_scope'),
+      '#placeholder' => '.node-form',
+    ];
+
+    // Add prompt settings.
+    $this->addPromptSettings($elements, $getConfigValue);
+
     // Advanced Settings.
     $elements['advanced_settings'] = [
       '#type' => 'details',
-      '#title' => $this->t('Advanced Settings'),
+      '#title' => $this->t('AI Response Configuration'),
       '#open' => FALSE,
     ];
 
@@ -161,7 +172,7 @@ trait AiAgentFormTrait {
     // Performance Settings.
     $elements['performance_settings'] = [
       '#type' => 'details',
-      '#title' => $this->t('Performance Settings'),
+      '#title' => $this->t('Request & Performance Settings'),
       '#open' => FALSE,
     ];
 
@@ -193,7 +204,7 @@ trait AiAgentFormTrait {
     // Behavior Settings.
     $elements['behavior_settings'] = [
       '#type' => 'details',
-      '#title' => $this->t('Behavior Settings'),
+      '#title' => $this->t('Debug & Error Settings'),
       '#open' => FALSE,
     ];
 
@@ -224,7 +235,7 @@ trait AiAgentFormTrait {
     // Moderation Settings.
     $elements['moderation_settings'] = [
       '#type' => 'details',
-      '#title' => $this->t('Content Moderation'),
+      '#title' => $this->t('Content Safety & Moderation'),
       '#open' => FALSE,
     ];
 
@@ -284,9 +295,6 @@ trait AiAgentFormTrait {
       ],
     ];
 
-    // Add prompt settings.
-    $this->addPromptSettings($elements, $getConfigValue);
-
     return $elements;
   }
 
@@ -301,7 +309,7 @@ trait AiAgentFormTrait {
   protected function addPromptSettings(array &$elements, \Closure $getConfigValue): void {
     $elements['prompt_settings'] = [
       '#type' => 'details',
-      '#title' => $this->t('Prompt Settings'),
+      '#title' => $this->t('Tone & Prompt Settings'),
       '#open' => FALSE,
     ];
 
