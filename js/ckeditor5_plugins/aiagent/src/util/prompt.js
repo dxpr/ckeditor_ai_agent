@@ -47,7 +47,7 @@ export class PromptHelper {
         return systemPrompt;
     }
     trimContext(prompt, promptContainerText = '') {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         let contentBeforePrompt = '';
         let contentAfterPrompt = '';
         const splitText = promptContainerText !== null && promptContainerText !== void 0 ? promptContainerText : prompt;
