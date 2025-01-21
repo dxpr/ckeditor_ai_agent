@@ -28,9 +28,38 @@ trait AiAgentFormTrait {
 
     // Helper function to get config value based on context.
     $getConfigValue = function ($key, $default = NULL) use ($is_plugin, $config) {
-      return $is_plugin
-            ? ($config['aiAgent'][$key] ?? $default)
-            : ($config->get($key) ?? $default);
+      if ($is_plugin) {
+        $keys = explode('.', $key);
+        $value = $config['aiAgent'] ?? [];
+        
+        // Handle flat keys (api_key, model, etc.)
+        if (count($keys) === 1) {
+          // Convert snake_case to camelCase for these specific keys
+          $camelKey = str_replace('_', '', lcfirst(ucwords($key, '_')));
+          return $value[$camelKey] ?? $default;
+        }
+        
+        // Handle nested keys (promptSettings.overrides.responseRules, etc.)
+        foreach ($keys as $k) {
+          if (!isset($value[$k])) {
+            return $default;
+          }
+          $value = $value[$k];
+        }
+        return $value;
+      }
+      
+      // For global settings form, handle prompt settings differently
+      if (strpos($key, 'promptSettings.') === 0) {
+        $parts = explode('.', $key);
+        $section = $parts[1]; // 'overrides' or 'additions'
+        $component = $parts[2]; // 'responseRules', etc.
+        
+        $settings = $config->get('prompt_settings');
+        return $settings[$section][$component] ?? $default;
+      }
+      
+      return $config->get($key) ?? $default;
     };
 
     // Helper function to get select options with optional global settings.
@@ -335,18 +364,20 @@ trait AiAgentFormTrait {
         $elements['prompt_settings']["override_$key"] = [
           '#type' => 'textarea',
           '#title' => $this->t('@label Override', ['@label' => $label]),
-          '#default_value' => $getConfigValue("prompt_settings.overrides.$key"),
+          '#default_value' => $getConfigValue("promptSettings.overrides.$key"),
           '#placeholder' => $default_rules[$key] ?? '',
           '#description' => $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower((string) $label)]),
           '#rows' => 6,
+          '#ajax' => FALSE,
         ];
 
         $elements['prompt_settings']["additions_$key"] = [
           '#type' => 'textarea',
           '#title' => $this->t('@label Additions', ['@label' => $label]),
-          '#default_value' => $getConfigValue("prompt_settings.additions.$key"),
+          '#default_value' => $getConfigValue("promptSettings.additions.$key"),
           '#description' => $this->t('Add custom @label rules that will be appended to the defaults.', ['@label' => strtolower((string) $label)]),
           '#rows' => 4,
+          '#ajax' => FALSE,
         ];
       }
     }

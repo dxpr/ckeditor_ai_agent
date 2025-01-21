@@ -82,52 +82,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    * @phpstan-return array<string, mixed>
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state): array {
-    $config = $this->getConfiguration();
-
-    // Get common form elements.
-    $form = $this->getCommonFormElements(TRUE);
-
-    // Set default values for all form elements from our configuration.
-    if (isset($config['aiAgent'])) {
-      // Basic Settings.
-      $form['basic_settings']['api_key']['#default_value'] = $config['aiAgent']['apiKey'] ?? '';
-      $form['basic_settings']['model']['#default_value'] = $config['aiAgent']['model'] ?? '';
-      $form['basic_settings']['endpoint_url']['#default_value'] = $config['aiAgent']['endpointUrl'] ?? '';
-      $form['basic_settings']['content_scope']['#default_value'] = $config['aiAgent']['contentScope'] ?? '';
-      $form['advanced_settings']['temperature']['#default_value'] = $config['aiAgent']['temperature'] ?? '';
-
-      // Advanced Settings.
-      if (isset($form['advanced_settings'])) {
-        $form['advanced_settings']['tokens']['max_output_tokens']['#default_value'] = $config['aiAgent']['maxOutputTokens'] ?? '';
-        $form['advanced_settings']['tokens']['max_input_tokens']['#default_value'] = $config['aiAgent']['maxInputTokens'] ?? '';
-        $form['advanced_settings']['context']['context_size']['#default_value'] = $config['aiAgent']['contextSize'] ?? '';
-        $form['advanced_settings']['context']['editor_context_ratio']['#default_value'] = $config['aiAgent']['editorContextRatio'] ?? '';
-      }
-
-      // Performance Settings.
-      if (isset($form['performance_settings'])) {
-        $form['performance_settings']['timeout_duration']['#default_value'] = $config['aiAgent']['timeOutDuration'] ?? '';
-        $form['performance_settings']['retry_attempts']['#default_value'] = $config['aiAgent']['retryAttempts'] ?? '';
-      }
-
-      // Behavior Settings.
-      if (isset($form['behavior_settings'])) {
-        $form['behavior_settings']['debug_mode']['#default_value'] = $config['aiAgent']['debugMode'] ?? '';
-        $form['behavior_settings']['stream_content']['#default_value'] = $config['aiAgent']['streamContent'] ?? '';
-        $form['behavior_settings']['show_error_duration']['#default_value'] = $config['aiAgent']['showErrorDuration'] ?? '';
-      }
-
-      // Moderation Settings.
-      if (isset($form['moderation_settings'])) {
-        $form['moderation_settings']['moderation_enable']['#default_value'] = $config['aiAgent']['moderation']['enable'] ?? '';
-        $form['moderation_settings']['moderation_key']['#default_value'] = $config['aiAgent']['moderation']['key'] ?? '';
-        if (isset($config['aiAgent']['moderation']['disableFlags'])) {
-          $form['moderation_settings']['moderation_disable_flags']['#default_value'] = $config['aiAgent']['moderation']['disableFlags'];
-        }
-      }
-    }
-
-    return $form;
+    return $this->getCommonFormElements(TRUE, $this->configuration);
   }
 
   /**
@@ -137,7 +92,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state): void {
     $values = $form_state->getValues();
-
+    
     $this->configuration['aiAgent'] = $this->processConfigValues(
       $values,
       $this->getConfigMapping(TRUE)
@@ -145,7 +100,9 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
     // Handle moderation and prompt settings.
     $this->configuration['aiAgent']['moderation'] = $this->processModerationSettings($values);
-    $this->configuration['aiAgent']['promptSettings'] = $this->processPromptSettings($values);
+    
+    $prompt_settings = $this->processPromptSettings($values['prompt_settings'] ?? []);
+    $this->configuration['aiAgent']['promptSettings'] = $prompt_settings;
   }
 
   /**
@@ -209,10 +166,10 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         $global_settings = $config->get("prompt_settings.$type") ?? [];
 
         foreach ($this->getPromptComponents() as $component) {
-          if (isset($editor_settings[$component])) {
+          if (!empty($editor_settings[$component])) {
             $result['aiAgent']['promptSettings'][$type][$component] = $editor_settings[$component];
           }
-          elseif (isset($global_settings[$component])) {
+          elseif (!empty($global_settings[$component])) {
             $result['aiAgent']['promptSettings'][$type][$component] = $global_settings[$component];
           }
         }

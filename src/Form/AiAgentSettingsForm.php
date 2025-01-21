@@ -131,10 +131,10 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $moderation = $this->processModerationSettings($values);
     $config->set('moderation', $moderation);
 
-    $prompt_settings = $this->processPromptSettings($values);
+    $prompt_settings = $this->processPromptSettings($values['prompt_settings'] ?? []);
     $config->set('prompt_settings', $prompt_settings);
-
     $config->save();
+    
     parent::submitForm($form, $form_state);
   }
 

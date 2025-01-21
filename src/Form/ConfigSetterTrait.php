@@ -118,7 +118,14 @@ trait ConfigSetterTrait {
       'additions' => [],
     ];
 
-    foreach ($this->getPromptComponents() as $component) {
+    // Load default components from JSON
+    $module_path = \Drupal::service('extension.path.resolver')->getPath('module', 'ckeditor_ai_agent');
+    $default_rules_path = $module_path . '/js/ckeditor5_plugins/aiagent/src/config/default-rules.json';
+    $default_rules = file_exists($default_rules_path)
+      ? json_decode(file_get_contents($default_rules_path), TRUE) ?: []
+      : [];
+
+    foreach (array_keys($default_rules) as $component) {
       $settings['overrides'][$component] = $values["override_$component"] ?? '';
       $settings['additions'][$component] = $values["additions_$component"] ?? '';
     }
