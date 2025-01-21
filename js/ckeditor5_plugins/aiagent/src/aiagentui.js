@@ -1,4 +1,4 @@
-import { MenuBarMenuView, MenuBarMenuListView, MenuBarMenuListItemView, MenuBarMenuListItemButtonView, createDropdown, SplitButtonView, LabeledFieldView, ListSeparatorView, createLabeledInputText, ButtonView } from 'ckeditor5/src/ui.js';
+import { MenuBarMenuView, MenuBarMenuListView, MenuBarMenuListItemView, MenuBarMenuListItemButtonView, createDropdown, SplitButtonView, LabeledFieldView, ListSeparatorView, ButtonView, TextareaView } from 'ckeditor5/src/ui.js';
 import { Plugin } from 'ckeditor5/src/core.js';
 import aiAgentIcon from '../theme/icons/ai-agent.svg';
 import arrowIcon from '../theme/icons/arrow.svg';
@@ -227,9 +227,7 @@ export default class AiAgentUI extends Plugin {
                 labeledFieldView.isEnabled = false;
                 manageDropdown(labeledFieldView, listView);
                 if (labeledFieldView.fieldView) {
-                    labeledFieldView.fieldView.set({
-                        value: ''
-                    });
+                    labeledFieldView.fieldView.value = '';
                 }
             }
         };
@@ -259,8 +257,6 @@ export default class AiAgentUI extends Plugin {
             const menuView = new MenuBarMenuView(locale);
             const listView = new MenuBarMenuListView(locale);
             const searchContainer = new MenuBarMenuListItemView(locale, menuView);
-            const labeledFieldView = new LabeledFieldView(locale, createLabeledInputText);
-            labeledFieldView.label = t('Ask AI to edit');
             const button = new ButtonView(locale);
             button.set({
                 label: t('Submit'),
@@ -269,35 +265,37 @@ export default class AiAgentUI extends Plugin {
                 class: 'ck-ask-ai-to-edit-button',
                 isEnabled: false
             });
-            // Execute a command when the button is clicked.
-            button.on('execute', () => {
-                var _a, _b, _c;
-                const command = (_c = (_b = (_a = labeledFieldView.fieldView) === null || _a === void 0 ? void 0 : _a.element) === null || _b === void 0 ? void 0 : _b.value) !== null && _c !== void 0 ? _c : '';
-                executeAiAgentCommand(command, labeledFieldView, listView);
-            });
-            labeledFieldView.fieldView.on('input', () => {
-                var _a;
-                if ((_a = labeledFieldView === null || labeledFieldView === void 0 ? void 0 : labeledFieldView.fieldView) === null || _a === void 0 ? void 0 : _a.element) {
-                    if (labeledFieldView.fieldView.element.value) {
-                        button.isEnabled = true;
-                    }
-                    else {
-                        button.isEnabled = false;
-                    }
-                }
-            });
-            labeledFieldView.fieldView.render();
-            // Add keydown event listener for Enter key
-            if (labeledFieldView.fieldView.element) {
-                labeledFieldView.fieldView.element.addEventListener('keydown', event => {
-                    var _a, _b, _c;
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
-                        const command = (_c = (_b = (_a = labeledFieldView.fieldView) === null || _a === void 0 ? void 0 : _a.element) === null || _b === void 0 ? void 0 : _b.value) !== null && _c !== void 0 ? _c : '';
+            const labeledFieldView = new LabeledFieldView(locale, (labeledFieldView, viewUid, statusUid) => {
+                const textareaView = new TextareaView(locale);
+                textareaView.set({
+                    id: viewUid,
+                    ariaDescribedById: statusUid,
+                    minRows: 1,
+                    maxRows: 10,
+                    resize: 'vertical',
+                    placeholder: t('Ask AI to edit')
+                });
+                textareaView.on('input', () => {
+                    var _a;
+                    button.isEnabled = !!((_a = textareaView.element) === null || _a === void 0 ? void 0 : _a.value);
+                });
+                textareaView.on('keydown', (evt, data) => {
+                    var _a;
+                    if (data.keyCode === 13 && !data.shiftKey && button.isEnabled) {
+                        data.preventDefault();
+                        const command = ((_a = textareaView.element) === null || _a === void 0 ? void 0 : _a.value) || '';
                         executeAiAgentCommand(command, labeledFieldView, listView);
                     }
                 });
-            }
+                return textareaView;
+            });
+            labeledFieldView.label = '';
+            // Execute a command when the button is clicked
+            button.on('execute', () => {
+                var _a;
+                const command = ((_a = labeledFieldView.fieldView.element) === null || _a === void 0 ? void 0 : _a.value) || '';
+                executeAiAgentCommand(command, labeledFieldView, listView);
+            });
             searchContainer.children.add(labeledFieldView);
             searchContainer.children.add(button);
             listView.items.add(searchContainer);

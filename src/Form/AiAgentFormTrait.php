@@ -309,7 +309,7 @@ trait AiAgentFormTrait {
   protected function addPromptSettings(array &$elements, \Closure $getConfigValue): void {
     $elements['prompt_settings'] = [
       '#type' => 'details',
-      '#title' => $this->t('Tone & Response Settings'),
+      '#title' => $this->t('Tone & Prompt Settings'),
       '#open' => FALSE,
     ];
 
