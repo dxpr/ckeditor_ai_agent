@@ -2,34 +2,55 @@ ckeditor_ai_agent.settings:
   type: config_object
   label: 'CKEditor AI Agent Settings'
   mapping:
-    api_key:
+    apiKey:
       type: string
       label: 'API Key'
     model:
       type: string
       label: 'AI Model'
-    endpoint_url:
+    endpointUrl:
       type: string
       label: 'Endpoint URL'
-    content_scope:
+    contentScope:
       type: string
       label: 'Content Scope'
     temperature:
       type: float
       label: 'Temperature'
-    max_tokens:
+    maxOutputTokens:
       type: integer
-      label: 'Max Tokens'
-    timeout_duration:
+      label: 'Max Output Tokens'
+    maxInputTokens:
+      type: integer
+      label: 'Max Input Tokens'
+    contextSize:
+      type: integer
+      label: 'Context Size'
+    editorContextRatio:
+      type: float
+      label: 'Editor Context Ratio'
+    timeOutDuration:
       type: integer
       label: 'Timeout Duration'
-    retry_attempts:
+    retryAttempts:
       type: integer
       label: 'Retry Attempts'
-    debug_mode:
+    debugMode:
       type: boolean
       label: 'Debug Mode'
-    prompt_settings:
+    streamContent:
+      type: boolean
+      label: 'Stream Content'
+    showErrorDuration:
+      type: integer
+      label: 'Show Error Duration'
+    moderationEnable:
+      type: boolean
+      label: 'Enable Moderation'
+    moderationKey:
+      type: string
+      label: 'Moderation Key'
+    promptSettings:
       type: mapping
       label: 'Prompt Settings'
       mapping:
@@ -89,19 +110,3 @@ ckeditor_ai_agent.settings:
             contextRequirements:
               type: string
               label: 'Context Requirements Additions'
-    moderation:
-      type: mapping
-      label: 'Content Moderation Settings'
-      mapping:
-        enable:
-          type: boolean
-          label: 'Enable Content Moderation'
-        key:
-          type: string
-          label: 'Moderation API Key'
-        disable_flags:
-          type: sequence
-          label: 'Disabled Moderation Categories'
-          sequence:
-            type: string
-            label: 'Category'

@@ -73,27 +73,26 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $form['#tree'] = TRUE;
 
     // Set default values from config.
-    $form['basic_settings']['api_key']['#default_value'] = $config->get('api_key');
+    $form['basic_settings']['apiKey']['#default_value'] = $config->get('apiKey');
     $form['basic_settings']['model']['#default_value'] = $config->get('model') ?: 'gpt-4o';
-    $form['basic_settings']['endpoint_url']['#default_value'] = $config->get('endpoint_url') ?: 'https://api.openai.com/v1/chat/completions';
-    $form['basic_settings']['content_scope']['#default_value'] = $config->get('content_scope');
+    $form['basic_settings']['endpointUrl']['#default_value'] = $config->get('endpointUrl') ?: 'https://api.openai.com/v1/chat/completions';
+    $form['basic_settings']['contentScope']['#default_value'] = $config->get('contentScope');
 
     $form['advanced_settings']['temperature']['#default_value'] = $config->get('temperature');
-    $form['advanced_settings']['tokens']['max_output_tokens']['#default_value'] = $config->get('max_output_tokens');
-    $form['advanced_settings']['tokens']['max_input_tokens']['#default_value'] = $config->get('max_input_tokens');
-    $form['advanced_settings']['context']['context_size']['#default_value'] = $config->get('context_size');
-    $form['advanced_settings']['context']['editor_context_ratio']['#default_value'] = $config->get('editor_context_ratio') ?: 0.3;
+    $form['advanced_settings']['tokens']['maxOutputTokens']['#default_value'] = $config->get('maxOutputTokens');
+    $form['advanced_settings']['tokens']['maxInputTokens']['#default_value'] = $config->get('maxInputTokens');
+    $form['advanced_settings']['context']['contextSize']['#default_value'] = $config->get('contextSize');
+    $form['advanced_settings']['context']['editorContextRatio']['#default_value'] = $config->get('editorContextRatio') ?: 0.3;
 
-    $form['performance_settings']['timeout_duration']['#default_value'] = $config->get('timeout_duration') ?: 45000;
-    $form['performance_settings']['retry_attempts']['#default_value'] = $config->get('retry_attempts') ?: 1;
+    $form['performance_settings']['timeOutDuration']['#default_value'] = $config->get('timeOutDuration') ?: 45000;
+    $form['performance_settings']['retryAttempts']['#default_value'] = $config->get('retryAttempts') ?: 1;
 
-    $form['behavior_settings']['debug_mode']['#default_value'] = $config->get('debug_mode') ? '1' : '0';
-    $form['behavior_settings']['stream_content']['#default_value'] = $config->get('stream_content') ? '1' : '0';
-    $form['behavior_settings']['show_error_duration']['#default_value'] = $config->get('show_error_duration') ?: 5000;
+    $form['behavior_settings']['debugMode']['#default_value'] = $config->get('debugMode') ? '1' : '0';
+    $form['behavior_settings']['streamContent']['#default_value'] = $config->get('streamContent') ? '1' : '0';
+    $form['behavior_settings']['showErrorDuration']['#default_value'] = $config->get('showErrorDuration') ?: 5000;
 
-    $form['moderation_settings']['moderation_enable']['#default_value'] = $config->get('moderation.enable');
-    $form['moderation_settings']['moderation_key']['#default_value'] = $config->get('moderation.key');
-    $form['moderation_settings']['moderation_disable_flags']['#default_value'] = $config->get('moderation.disable_flags') ?: [];
+    $form['moderation_settings']['moderationEnable']['#default_value'] = $config->get('moderationEnable');
+    $form['moderation_settings']['moderationKey']['#default_value'] = $config->get('moderationKey');
 
     return parent::buildForm($form, $form_state);
   }
@@ -121,18 +120,43 @@ class AiAgentSettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $config = $this->config('ckeditor_ai_agent.settings');
     $values = $form_state->getValues();
+    
+    // Helper function to flatten array with dot notation
+    $flatten = function($array, $prefix = '') use (&$flatten) {
+      $result = [];
+      foreach ($array as $key => $value) {
+        // Skip Drupal form system keys
+        if (in_array($key, ['form_build_id', 'form_token', 'form_id', 'op', 'actions'])) {
+          continue;
+        }
+        
+        // Handle nested arrays (except promptSettings which stays nested)
+        if (is_array($value) && $key !== 'promptSettings') {
+          $result = array_merge($result, $flatten($value, $key . '.'));
+        } else {
+          // Convert boolean-like values
+          if (is_string($value) && ($value === '0' || $value === '1')) {
+            $value = (bool) $value;
+          }
+          $result[$key] = $value;
+        }
+      }
+      return $result;
+    };
 
-    $processed = $this->processConfigValues($values, $this->getConfigMapping());
-    foreach ($processed as $key => $value) {
-      $config->set($key, $value);
+    // Flatten form values
+    $flat_values = $flatten($values);
+    
+    // Remove section prefixes from keys
+    foreach ($flat_values as $key => $value) {
+      $clean_key = str_contains($key, '.') ? substr($key, strpos($key, '.') + 1) : $key;
+      $config->set($clean_key, $value);
     }
 
-    // Handle moderation and prompt settings.
-    $moderation = $this->processModerationSettings($values);
-    $config->set('moderation', $moderation);
-
-    $prompt_settings = $this->processPromptSettings($values);
-    $config->set('prompt_settings', $prompt_settings);
+    // Handle prompt settings separately as they maintain their structure
+    if (isset($values['promptSettings'])) {
+      $config->set('promptSettings', $this->processPromptSettings($values['promptSettings']));
+    }
 
     $config->save();
     parent::submitForm($form, $form_state);

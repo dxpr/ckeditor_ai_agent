@@ -1,166 +1,121 @@
-ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
-  type: mapping
-  label: 'CKEditor AI Agent settings'
+ckeditor_ai_agent.settings:
+  type: config_object
+  label: 'CKEditor AI Agent Settings'
   mapping:
-    aiAgent:
-      type: mapping
-      label: 'AI Agent Configuration'
-      mapping:
-        apiKey:
-          type: string
-          label: 'API Key'
-        model:
-          type: string
-          label: 'AI Model'
-        endpointUrl:
-          type: string
-          label: 'Endpoint URL'
-        contentScope:
-          type: string
-          label: 'Content Scope'
-        temperature:
-          type: float
-          label: 'Temperature'
-        maxOutputTokens:
-          type: integer
-          label: 'Max Output Tokens'
-        maxInputTokens:
-          type: integer
-          label: 'Max Input Tokens'
-        contextSize:
-          type: integer
-          label: 'Context Size'
-        editorContextRatio:
-          type: float
-          label: 'Editor Context Ratio'
-        timeOutDuration:
-          type: integer
-          label: 'Timeout Duration'
-        retryAttempts:
-          type: integer
-          label: 'Retry Attempts'
-        debugMode:
-          type: boolean
-          label: 'Debug Mode'
-        streamContent:
-          type: boolean
-          label: 'Stream Content'
-        showErrorDuration:
-          type: integer
-          label: 'Show Error Duration'
-        moderation:
-          type: mapping
-          label: 'Moderation Settings'
-          mapping:
-            enable:
-              type: boolean
-              label: 'Enable Moderation'
-            key:
-              type: string
-              label: 'Moderation Key'
-            disableFlags:
-              type: mapping
-              label: 'Disabled Flags'
-              mapping:
-                sexual:
-                  type: integer
-                  label: 'Sexual'
-                'sexual/minors':
-                  type: integer
-                  label: 'Sexual/Minors'
-                harassment:
-                  type: integer
-                  label: 'Harassment'
-                'harassment/threatening':
-                  type: integer
-                  label: 'Harassment/Threatening'
-                hate:
-                  type: integer
-                  label: 'Hate'
-                'hate/threatening':
-                  type: integer
-                  label: 'Hate/Threatening'
-                illicit:
-                  type: integer
-                  label: 'Illicit'
-                'illicit/violent':
-                  type: integer
-                  label: 'Illicit/Violent'
-                'self-harm':
-                  type: integer
-                  label: 'Self-harm'
-                'self-harm/intent':
-                  type: integer
-                  label: 'Self-harm/Intent'
-                'self-harm/instructions':
-                  type: integer
-                  label: 'Self-harm/Instructions'
-                violence:
-                  type: integer
-                  label: 'Violence'
-                'violence/graphic':
-                  type: integer
-                  label: 'Violence/Graphic'
-        promptSettings:
-          type: mapping
-          label: 'Prompt Settings'
-          mapping:
-            overrides:
-              type: mapping
-              label: 'Prompt Component Overrides'
-              mapping:
-                responseRules:
-                  type: string
-                  label: 'Response Rules Override'
-                htmlFormatting:
-                  type: string
-                  label: 'HTML Formatting Override'
-                contentStructure:
-                  type: string
-                  label: 'Content Structure Override'
-                tone:
-                  type: string
-                  label: 'Tone Override'
-                inlineContent:
-                  type: string
-                  label: 'Inline Content Override'
-                imageHandling:
-                  type: string
-                  label: 'Image Handling Override'
-                referenceGuidelines:
-                  type: string
-                  label: 'Reference Guidelines Override'
-                contextRequirements:
-                  type: string
-                  label: 'Context Requirements Override'
-            additions:
-              type: mapping
-              label: 'Prompt Component Additions'
-              mapping:
-                responseRules:
-                  type: string
-                  label: 'Response Rules Additions'
-                htmlFormatting:
-                  type: string
-                  label: 'HTML Formatting Additions'
-                contentStructure:
-                  type: string
-                  label: 'Content Structure Additions'
-                tone:
-                  type: string
-                  label: 'Tone Additions'
-                inlineContent:
-                  type: string
-                  label: 'Inline Content Additions'
-                imageHandling:
-                  type: string
-                  label: 'Image Handling Additions'
-                referenceGuidelines:
-                  type: string
-                  label: 'Reference Guidelines Additions'
-                contextRequirements:
-                  type: string
-                  label: 'Context Requirements Additions'
-    test_field:
+    # Basic Settings
+    apiKey:
       type: string
-      label: 'Test Field'
+      label: 'API Key'
+    model:
+      type: string
+      label: 'AI Model'
+    endpointUrl:
+      type: string
+      label: 'Endpoint URL'
+    contentScope:
+      type: string
+      label: 'Content Scope'
+
+    # Advanced Settings
+    temperature:
+      type: float
+      label: 'Temperature'
+    maxOutputTokens:
+      type: integer
+      label: 'Max Output Tokens'
+    maxInputTokens:
+      type: integer
+      label: 'Max Input Tokens'
+    contextSize:
+      type: integer
+      label: 'Context Size'
+    editorContextRatio:
+      type: float
+      label: 'Editor Context Ratio'
+
+    # Performance Settings
+    timeOutDuration:
+      type: integer
+      label: 'Timeout Duration'
+    retryAttempts:
+      type: integer
+      label: 'Retry Attempts'
+
+    # Behavior Settings
+    debugMode:
+      type: boolean
+      label: 'Debug Mode'
+    streamContent:
+      type: boolean
+      label: 'Stream Content'
+    showErrorDuration:
+      type: integer
+      label: 'Show Error Duration'
+
+    # Moderation Settings
+    moderation:
+      type: mapping
+      label: 'Moderation Settings'
+      mapping:
+        enable:
+          type: boolean
+          label: 'Enable'
+        key:
+          type: string
+          label: 'Key'
+
+    # Prompt Settings
+    promptSettings:
+      type: mapping
+      label: 'Prompt Settings'
+      mapping:
+        overrides:
+          type: mapping
+          label: 'Overrides'
+          mapping:
+            responseRules:
+              type: string
+              label: 'Response Rules'
+            htmlFormatting:
+              type: string
+              label: 'HTML Formatting'
+            contentStructure:
+              type: string
+              label: 'Content Structure'
+            tone:
+              type: string
+              label: 'Tone'
+            imageHandling:
+              type: string
+              label: 'Image Handling'
+            referenceGuidelines:
+              type: string
+              label: 'Reference Guidelines'
+            contextRequirements:
+              type: string
+              label: 'Context Requirements'
+        additions:
+          type: mapping
+          label: 'Additions'
+          mapping:
+            responseRules:
+              type: string
+              label: 'Response Rules'
+            htmlFormatting:
+              type: string
+              label: 'HTML Formatting'
+            contentStructure:
+              type: string
+              label: 'Content Structure'
+            tone:
+              type: string
+              label: 'Tone'
+            imageHandling:
+              type: string
+              label: 'Image Handling'
+            referenceGuidelines:
+              type: string
+              label: 'Reference Guidelines'
+            contextRequirements:
+              type: string
+              label: 'Context Requirements'

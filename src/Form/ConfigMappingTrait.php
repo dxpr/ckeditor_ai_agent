@@ -18,77 +18,56 @@ trait ConfigMappingTrait {
    */
   protected function getConfigMapping(bool $is_plugin = FALSE): array {
     $base_mapping = [
-      'basic_settings.api_key' => [
+      'basic_settings.apiKey' => [
         'type' => 'string',
-        'plugin_key' => 'apiKey',
       ],
       'basic_settings.model' => [
         'type' => 'string',
-        'plugin_key' => 'model',
       ],
-      'basic_settings.endpoint_url' => [
+      'basic_settings.endpointUrl' => [
         'type' => 'string',
-        'plugin_key' => 'endpointUrl',
       ],
-      'basic_settings.content_scope' => [
+      'basic_settings.contentScope' => [
         'type' => 'string',
-        'plugin_key' => 'contentScope',
       ],
       'advanced_settings.temperature' => [
         'type' => 'float',
-        'plugin_key' => 'temperature',
       ],
-      'advanced_settings.tokens.max_output_tokens' => [
+      'advanced_settings.tokens.maxOutputTokens' => [
         'type' => 'int',
-        'plugin_key' => 'maxOutputTokens',
       ],
-      'advanced_settings.tokens.max_input_tokens' => [
+      'advanced_settings.tokens.maxInputTokens' => [
         'type' => 'int',
-        'plugin_key' => 'maxInputTokens',
       ],
-      'advanced_settings.context.context_size' => [
+      'advanced_settings.context.contextSize' => [
         'type' => 'int',
-        'plugin_key' => 'contextSize',
       ],
-      'advanced_settings.context.editor_context_ratio' => [
+      'advanced_settings.context.editorContextRatio' => [
         'type' => 'float',
-        'plugin_key' => 'editorContextRatio',
       ],
-      'performance_settings.timeout_duration' => [
+      'performance_settings.timeOutDuration' => [
         'type' => 'int',
-        'plugin_key' => 'timeOutDuration',
       ],
-      'performance_settings.retry_attempts' => [
+      'performance_settings.retryAttempts' => [
         'type' => 'int',
-        'plugin_key' => 'retryAttempts',
       ],
-      'behavior_settings.debug_mode' => [
+      'behavior_settings.debugMode' => [
         'type' => 'bool',
-        'plugin_key' => 'debugMode',
       ],
-      'behavior_settings.stream_content' => [
+      'behavior_settings.streamContent' => [
         'type' => 'bool',
-        'plugin_key' => 'streamContent',
       ],
-      'behavior_settings.show_error_duration' => [
+      'behavior_settings.showErrorDuration' => [
         'type' => 'int',
-        'plugin_key' => 'showErrorDuration',
+      ],
+      'moderation_settings.moderationEnable' => [
+        'type' => 'bool',
+      ],
+      'moderation_settings.moderationKey' => [
+        'type' => 'string',
       ],
     ];
 
-    if ($is_plugin) {
-      // For plugin configuration, use the plugin_key.
-      $plugin_mapping = [];
-      foreach ($base_mapping as $path => $settings) {
-        $plugin_mapping[$path] = [
-          'type' => $settings['type'],
-          'config_key' => $settings['plugin_key'],
-        ];
-      }
-      return $plugin_mapping;
-    }
-
-    // For global settings, use the last part of the path as the config key.
     $settings_mapping = [];
     foreach ($base_mapping as $path => $settings) {
       $parts = explode('.', $path);

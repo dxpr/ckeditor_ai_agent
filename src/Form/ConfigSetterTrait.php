@@ -82,28 +82,6 @@ trait ConfigSetterTrait {
   }
 
   /**
-   * Processes moderation settings.
-   *
-   * @param array<string, mixed> $values
-   *   Array of form values.
-   *
-   * @return array<string, mixed>
-   *   An array of moderation configuration properties.
-   */
-  protected function processModerationSettings(array $values): array {
-    // Get moderation settings with defaults.
-    $moderation_settings = $values['moderation_settings'] ?? [];
-
-    return [
-      'enable' => !empty($moderation_settings['moderation_enable']),
-      'key' => (string) ($moderation_settings['moderation_key'] ?? ''),
-      'disableFlags' => !empty($moderation_settings['moderation_disable_flags']) && is_array($moderation_settings['moderation_disable_flags'])
-        ? array_keys(array_filter($moderation_settings['moderation_disable_flags']))
-        : [],
-    ];
-  }
-
-  /**
    * Processes prompt settings.
    *
    * @param array<string, mixed> $values
@@ -118,7 +96,14 @@ trait ConfigSetterTrait {
       'additions' => [],
     ];
 
-    foreach ($this->getPromptComponents() as $component) {
+    // Load default components from JSON
+    $module_path = \Drupal::service('extension.path.resolver')->getPath('module', 'ckeditor_ai_agent');
+    $default_rules_path = $module_path . '/js/ckeditor5_plugins/aiagent/src/config/default-rules.json';
+    $default_rules = file_exists($default_rules_path)
+      ? json_decode(file_get_contents($default_rules_path), TRUE) ?: []
+      : [];
+
+    foreach (array_keys($default_rules) as $component) {
       $settings['overrides'][$component] = $values["override_$component"] ?? '';
       $settings['additions'][$component] = $values["additions_$component"] ?? '';
     }

@@ -1,0 +1,110 @@
+ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
+  type: mapping
+  label: 'CKEditor AI Agent'
+  mapping:
+    aiAgent:
+      type: mapping
+      label: 'AI Agent Settings'
+      mapping:
+        apiKey:
+          type: string
+          label: 'API Key'
+        model:
+          type: string
+          label: 'AI Model'
+        endpointUrl:
+          type: string
+          label: 'Endpoint URL'
+        contentScope:
+          type: string
+          label: 'Content Scope'
+        temperature:
+          type: float
+          label: 'Temperature'
+        maxOutputTokens:
+          type: integer
+          label: 'Max Output Tokens'
+        maxInputTokens:
+          type: integer
+          label: 'Max Input Tokens'
+        contextSize:
+          type: integer
+          label: 'Context Size'
+        editorContextRatio:
+          type: float
+          label: 'Editor Context Ratio'
+        timeOutDuration:
+          type: integer
+          label: 'Timeout Duration'
+        retryAttempts:
+          type: integer
+          label: 'Retry Attempts'
+        debugMode:
+          type: boolean
+          label: 'Debug Mode'
+        streamContent:
+          type: boolean
+          label: 'Stream Content'
+        showErrorDuration:
+          type: integer
+          label: 'Show Error Duration'
+        moderationEnable:
+          type: boolean
+          label: 'Enable Moderation'
+        moderationKey:
+          type: string
+          label: 'Moderation Key'
+        promptSettings:
+          type: mapping
+          label: 'Prompt Settings'
+          mapping:
+            overrides:
+              type: mapping
+              label: 'Overrides'
+              mapping:
+                responseRules:
+                  type: string
+                  label: 'Response Rules'
+                htmlFormatting:
+                  type: string
+                  label: 'HTML Formatting'
+                contentStructure:
+                  type: string
+                  label: 'Content Structure'
+                tone:
+                  type: string
+                  label: 'Tone'
+                imageHandling:
+                  type: string
+                  label: 'Image Handling'
+                referenceGuidelines:
+                  type: string
+                  label: 'Reference Guidelines'
+                contextRequirements:
+                  type: string
+                  label: 'Context Requirements'
+            additions:
+              type: mapping
+              label: 'Additions'
+              mapping:
+                responseRules:
+                  type: string
+                  label: 'Response Rules'
+                htmlFormatting:
+                  type: string
+                  label: 'HTML Formatting'
+                contentStructure:
+                  type: string
+                  label: 'Content Structure'
+                tone:
+                  type: string
+                  label: 'Tone'
+                imageHandling:
+                  type: string
+                  label: 'Image Handling'
+                referenceGuidelines:
+                  type: string
+                  label: 'Reference Guidelines'
+                contextRequirements:
+                  type: string
+                  label: 'Context Requirements'
