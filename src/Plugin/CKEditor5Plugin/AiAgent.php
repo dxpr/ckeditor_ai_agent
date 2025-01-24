@@ -71,7 +71,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
           'additions' => [],
         ],
       ],
-      'test_field' => '',
+      'testField' => '',
     ];
   }
 
@@ -101,7 +101,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     // Handle moderation and prompt settings.
     $this->configuration['aiAgent']['moderation'] = $this->processModerationSettings($values);
     
-    $prompt_settings = $this->processPromptSettings($values['prompt_settings'] ?? []);
+    $prompt_settings = $this->processPromptSettings($values['promptSettings'] ?? []);
     $this->configuration['aiAgent']['promptSettings'] = $prompt_settings;
   }
 
@@ -120,19 +120,19 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
     // Basic settings.
     $settings_map = [
-      'apiKey' => 'api_key',
+      'apiKey' => 'apiKey',
       'model' => 'model',
-      'endpointUrl' => 'endpoint_url',
+      'endpointUrl' => 'endpointUrl',
       'temperature' => 'temperature',
-      'maxOutputTokens' => 'max_output_tokens',
-      'maxInputTokens' => 'max_input_tokens',
-      'contextSize' => 'context_size',
-      'editorContextRatio' => 'editor_context_ratio',
-      'timeOutDuration' => 'timeout_duration',
-      'retryAttempts' => 'retry_attempts',
-      'debugMode' => 'debug_mode',
-      'streamContent' => 'stream_content',
-      'showErrorDuration' => 'show_error_duration',
+      'maxOutputTokens' => 'maxOutputTokens',
+      'maxInputTokens' => 'maxInputTokens',
+      'contextSize' => 'contextSize',
+      'editorContextRatio' => 'editorContextRatio',
+      'timeOutDuration' => 'timeOutDuration',
+      'retryAttempts' => 'retryAttempts',
+      'debugMode' => 'debugMode',
+      'streamContent' => 'streamContent',
+      'showErrorDuration' => 'showErrorDuration',
     ];
 
     foreach ($settings_map as $js_key => $drupal_key) {
@@ -150,12 +150,12 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       $result['aiAgent']['moderation'] = [
         'enable' => $editor_config['moderation']['enable'] ?? $config->get('moderation.enable'),
         'key' => $editor_config['moderation']['key'] ?? $config->get('moderation.key'),
-        'disableFlags' => $editor_config['moderation']['disableFlags'] ?? $config->get('moderation.disable_flags'),
+        'disableFlags' => $editor_config['moderation']['disableFlags'] ?? $config->get('moderation.disableFlags'),
       ];
     }
 
     // Prompt settings.
-    if (isset($editor_config['promptSettings']) || $config->get('prompt_settings')) {
+    if (isset($editor_config['promptSettings']) || $config->get('promptSettings')) {
       $result['aiAgent']['promptSettings'] = [
         'overrides' => [],
         'additions' => [],
@@ -163,7 +163,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
       foreach (['overrides', 'additions'] as $type) {
         $editor_settings = $editor_config['promptSettings'][$type] ?? [];
-        $global_settings = $config->get("prompt_settings.$type") ?? [];
+        $global_settings = $config->get("promptSettings.$type") ?? [];
 
         foreach ($this->getPromptComponents() as $component) {
           if (!empty($editor_settings[$component])) {

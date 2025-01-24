@@ -95,10 +95,10 @@ trait ConfigSetterTrait {
     $moderation_settings = $values['moderation_settings'] ?? [];
 
     return [
-      'enable' => !empty($moderation_settings['moderation_enable']),
-      'key' => (string) ($moderation_settings['moderation_key'] ?? ''),
-      'disableFlags' => !empty($moderation_settings['moderation_disable_flags']) && is_array($moderation_settings['moderation_disable_flags'])
-        ? array_keys(array_filter($moderation_settings['moderation_disable_flags']))
+      'enable' => !empty($moderation_settings['moderationEnable']),
+      'key' => (string) ($moderation_settings['moderationKey'] ?? ''),
+      'disableFlags' => !empty($moderation_settings['moderationDisableFlags']) && is_array($moderation_settings['moderationDisableFlags'])
+        ? array_keys(array_filter($moderation_settings['moderationDisableFlags']))
         : [],
     ];
   }

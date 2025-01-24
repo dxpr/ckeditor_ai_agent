@@ -29,36 +29,9 @@ trait AiAgentFormTrait {
     // Helper function to get config value based on context.
     $getConfigValue = function ($key, $default = NULL) use ($is_plugin, $config) {
       if ($is_plugin) {
-        $keys = explode('.', $key);
         $value = $config['aiAgent'] ?? [];
-        
-        // Handle flat keys (api_key, model, etc.)
-        if (count($keys) === 1) {
-          // Convert snake_case to camelCase for these specific keys
-          $camelKey = str_replace('_', '', lcfirst(ucwords($key, '_')));
-          return $value[$camelKey] ?? $default;
-        }
-        
-        // Handle nested keys (promptSettings.overrides.responseRules, etc.)
-        foreach ($keys as $k) {
-          if (!isset($value[$k])) {
-            return $default;
-          }
-          $value = $value[$k];
-        }
-        return $value;
+        return $value[$key] ?? $default;
       }
-      
-      // For global settings form, handle prompt settings differently
-      if (strpos($key, 'promptSettings.') === 0) {
-        $parts = explode('.', $key);
-        $section = $parts[1]; // 'overrides' or 'additions'
-        $component = $parts[2]; // 'responseRules', etc.
-        
-        $settings = $config->get('prompt_settings');
-        return $settings[$section][$component] ?? $default;
-      }
-      
       return $config->get($key) ?? $default;
     };
 
@@ -79,18 +52,18 @@ trait AiAgentFormTrait {
       '#open' => TRUE,
     ];
 
-    $elements['basic_settings']['api_key'] = [
+    $elements['basic_settings']['apiKey'] = [
       '#type' => 'textfield',
       '#title' => $this->t('OpenAI API Key'),
       '#description' => $is_plugin
-        ? $this->t('Enter your OpenAI API key or leave empty to use the <a href="@settings_url">global settings</a>.', [
-          '@settings_url' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_agent.settings'),
+        ? $this->t('Enter your OpenAI API key or leave empty to use the <a href="@settingsUrl">global settings</a>.', [
+          '@settingsUrl' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_agent.settings'),
         ])
         : $this->t('Enter your OpenAI API key. Required for all AI functionality.'),
       '#required' => !$is_plugin,
       '#size' => 100,
       '#maxlength' => 255,
-      '#default_value' => $getConfigValue('api_key'),
+      '#default_value' => $getConfigValue('apiKey'),
     ];
 
     $model_options = [
@@ -109,18 +82,18 @@ trait AiAgentFormTrait {
       '#default_value' => $getConfigValue('model'),
     ];
 
-    $elements['basic_settings']['endpoint_url'] = [
+    $elements['basic_settings']['endpointUrl'] = [
       '#type' => 'url',
       '#title' => $this->t('API Endpoint URL'),
       '#description' => $this->t('OpenAI API endpoint URL. Only change if using a custom endpoint or proxy.'),
-      '#default_value' => $getConfigValue('endpoint_url'),
+      '#default_value' => $getConfigValue('endpointUrl'),
     ];
 
-    $elements['basic_settings']['content_scope'] = [
+    $elements['basic_settings']['contentScope'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Content Scope'),
       '#description' => $this->t('CSS selector that extends context gathering to include content from other CKEditor 5 instances found within the first matching ancestor element.'),
-      '#default_value' => $getConfigValue('content_scope'),
+      '#default_value' => $getConfigValue('contentScope'),
       '#placeholder' => '.node-form',
     ];
 
@@ -151,7 +124,7 @@ trait AiAgentFormTrait {
       '#title' => $this->t('Token Limits'),
     ];
 
-    $token_fields = ['max_output_tokens', 'max_input_tokens'];
+    $token_fields = ['maxOutputTokens', 'maxInputTokens'];
     foreach ($token_fields as $field) {
       $elements['advanced_settings']['tokens'][$field] = [
         '#type' => 'number',
@@ -170,12 +143,12 @@ trait AiAgentFormTrait {
     ];
 
     $context_fields = [
-      'context_size' => [
+      'contextSize' => [
         'title' => $this->t('Content Window Size'),
         'description' => $this->t('How many tokens to use for surrounding content. Must be less than Total Token Limit. Recommended: 75% of Total Token Limit to leave room for AI instructions.'),
         'min' => 1,
       ],
-      'editor_context_ratio' => [
+      'editorContextRatio' => [
         'title' => $this->t('Editor Context Ratio'),
         'description' => $this->t('Portion of context for editor content. Default: 0.3 (30%).'),
         'min' => 0,
@@ -206,13 +179,13 @@ trait AiAgentFormTrait {
     ];
 
     $performance_fields = [
-      'timeout_duration' => [
+      'timeOutDuration' => [
         'title' => $this->t('Request Timeout'),
         'description' => $this->t('Maximum wait time for AI response. Default: 45000ms (45s)'),
         'min' => 1000,
         'field_suffix' => 'ms',
       ],
-      'retry_attempts' => [
+      'retryAttempts' => [
         'title' => $this->t('Retry Attempts'),
         'description' => $this->t('Number of retry attempts for failed requests. Default: 1'),
         'min' => 0,
@@ -226,7 +199,7 @@ trait AiAgentFormTrait {
         '#description' => $settings['description'],
         '#min' => $settings['min'],
         '#field_suffix' => $settings['field_suffix'] ?? NULL,
-        '#default_value' => $getConfigValue("performance.$field"),
+        '#default_value' => $getConfigValue($field),
       ];
     }
 
@@ -238,7 +211,7 @@ trait AiAgentFormTrait {
     ];
 
     $boolean_options = ['0' => $this->t('Disabled'), '1' => $this->t('Enabled')];
-    $behavior_fields = ['debug_mode'];
+    $behavior_fields = ['debugMode'];
 
     foreach ($behavior_fields as $field) {
       $elements['behavior_settings'][$field] = [
@@ -252,13 +225,13 @@ trait AiAgentFormTrait {
       ];
     }
 
-    $elements['behavior_settings']['show_error_duration'] = [
+    $elements['behavior_settings']['showErrorDuration'] = [
       '#type' => 'number',
       '#title' => $this->t('Error Message Duration'),
       '#min' => 1000,
       '#field_suffix' => 'ms',
       '#description' => $this->t('How long to display error messages. Default: 5000ms (5s)'),
-      '#default_value' => $getConfigValue('behavior.show_error_duration'),
+      '#default_value' => $getConfigValue('behavior.showErrorDuration'),
     ];
 
     // Moderation Settings.
@@ -268,7 +241,7 @@ trait AiAgentFormTrait {
       '#open' => FALSE,
     ];
 
-    $elements['moderation_settings']['moderation_enable'] = $is_plugin
+    $elements['moderation_settings']['moderationEnable'] = $is_plugin
         ? [
           '#type' => 'select',
           '#title' => $this->t('Content Moderation'),
@@ -283,14 +256,14 @@ trait AiAgentFormTrait {
           '#default_value' => $getConfigValue('moderation.enable'),
         ];
 
-    $elements['moderation_settings']['moderation_key'] = [
+    $elements['moderation_settings']['moderationKey'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Moderation API Key'),
       '#description' => $this->t('Separate API key for content moderation service. Required if using a different service than the main AI.'),
       '#default_value' => $getConfigValue('moderation.key'),
       '#states' => [
         'visible' => [
-          ':input[name="moderation_enable"]' => ['checked' => TRUE],
+          ':input[name="moderationEnable"]' => ['checked' => TRUE],
         ],
       ],
     ];
@@ -311,15 +284,15 @@ trait AiAgentFormTrait {
       'violence/graphic' => $this->t('Graphic violence'),
     ];
 
-    $elements['moderation_settings']['moderation_disable_flags'] = [
+    $elements['moderation_settings']['moderationDisableFlags'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Disabled Safety Filters'),
       '#options' => $moderation_flags,
       '#description' => $this->t('Select content types to exclude from moderation. Use with caution.'),
-      '#default_value' => $getConfigValue('moderation.disable_flags', []),
+      '#default_value' => $getConfigValue('moderation.disableFlags', []),
       '#states' => [
         'visible' => [
-          ':input[name="moderation_enable"]' => ['checked' => TRUE],
+          ':input[name="moderationEnable"]' => ['checked' => TRUE],
         ],
       ],
     ];
@@ -336,7 +309,7 @@ trait AiAgentFormTrait {
    *   Helper function to get config value based on context.
    */
   protected function addPromptSettings(array &$elements, \Closure $getConfigValue): void {
-    $elements['prompt_settings'] = [
+    $elements['promptSettings'] = [
       '#type' => 'details',
       '#title' => $this->t('Tone & Prompt Settings'),
       '#open' => FALSE,
@@ -361,7 +334,7 @@ trait AiAgentFormTrait {
             : [];
 
       foreach ($prompt_components as $key => $label) {
-        $elements['prompt_settings']["override_$key"] = [
+        $elements['promptSettings']["override_$key"] = [
           '#type' => 'textarea',
           '#title' => $this->t('@label Override', ['@label' => $label]),
           '#default_value' => $getConfigValue("promptSettings.overrides.$key"),
@@ -371,7 +344,7 @@ trait AiAgentFormTrait {
           '#ajax' => FALSE,
         ];
 
-        $elements['prompt_settings']["additions_$key"] = [
+        $elements['promptSettings']["additions_$key"] = [
           '#type' => 'textarea',
           '#title' => $this->t('@label Additions', ['@label' => $label]),
           '#default_value' => $getConfigValue("promptSettings.additions.$key"),
