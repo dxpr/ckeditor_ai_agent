@@ -50,6 +50,7 @@ trait AiAgentFormTrait {
       '#type' => 'details',
       '#title' => $this->t('Connection & Model Settings'),
       '#open' => TRUE,
+      '#ajax' => FALSE,
     ];
 
     $elements['basic_settings']['apiKey'] = [
@@ -64,6 +65,7 @@ trait AiAgentFormTrait {
       '#size' => 100,
       '#maxlength' => 255,
       '#default_value' => $getConfigValue('apiKey'),
+      '#ajax' => FALSE,
     ];
 
     $model_options = [
@@ -80,6 +82,7 @@ trait AiAgentFormTrait {
         '@description' => 'Select AI model' . ($is_plugin ? ' or use global settings.' : '.'),
       ]),
       '#default_value' => $getConfigValue('model'),
+      '#ajax' => FALSE,
     ];
 
     $elements['basic_settings']['endpointUrl'] = [
@@ -87,6 +90,7 @@ trait AiAgentFormTrait {
       '#title' => $this->t('API Endpoint URL'),
       '#description' => $this->t('OpenAI API endpoint URL. Only change if using a custom endpoint or proxy.'),
       '#default_value' => $getConfigValue('endpointUrl'),
+      '#ajax' => FALSE,
     ];
 
     $elements['basic_settings']['contentScope'] = [
@@ -95,6 +99,7 @@ trait AiAgentFormTrait {
       '#description' => $this->t('CSS selector that extends context gathering to include content from other CKEditor 5 instances found within the first matching ancestor element.'),
       '#default_value' => $getConfigValue('contentScope'),
       '#placeholder' => '.node-form',
+      '#ajax' => FALSE,
     ];
 
     // Add prompt settings.
@@ -105,6 +110,7 @@ trait AiAgentFormTrait {
       '#type' => 'details',
       '#title' => $this->t('AI Response Configuration'),
       '#open' => FALSE,
+      '#ajax' => FALSE,
     ];
 
     $elements['advanced_settings']['temperature'] = [
@@ -116,12 +122,14 @@ trait AiAgentFormTrait {
       '#step' => 0.1,
       '#description' => $this->t('Controls the creativity of AI responses. Low values (0.0-0.5) produce consistent, deterministic responses ideal for factual content. Medium values (0.6-1.0) offer balanced creativity. High values (1.1-2.0) generate more diverse and unexpected responses.'),
       '#default_value' => $getConfigValue('temperature', 0.7),
+      '#ajax' => FALSE,
     ];
 
     // Token Settings.
     $elements['advanced_settings']['tokens'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Token Limits'),
+      '#ajax' => FALSE,
     ];
 
     $token_fields = ['maxOutputTokens', 'maxInputTokens'];
@@ -133,6 +141,7 @@ trait AiAgentFormTrait {
           ['@type' => str_contains($field, 'output') ? 'AI response' : 'combined prompt and context']),
         '#min' => 1,
         '#default_value' => $getConfigValue("tokens.$field"),
+        '#ajax' => FALSE,
       ];
     }
 
@@ -140,6 +149,7 @@ trait AiAgentFormTrait {
     $elements['advanced_settings']['context'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Context Settings'),
+      '#ajax' => FALSE,
     ];
 
     $context_fields = [
@@ -168,6 +178,7 @@ trait AiAgentFormTrait {
         '#step' => $settings['step'] ?? NULL,
         '#field_suffix' => $settings['field_suffix'] ?? NULL,
         '#default_value' => $getConfigValue("context.$field"),
+        '#ajax' => FALSE,
       ];
     }
 
@@ -176,6 +187,7 @@ trait AiAgentFormTrait {
       '#type' => 'details',
       '#title' => $this->t('Request & Performance Settings'),
       '#open' => FALSE,
+      '#ajax' => FALSE,
     ];
 
     $performance_fields = [
@@ -200,6 +212,7 @@ trait AiAgentFormTrait {
         '#min' => $settings['min'],
         '#field_suffix' => $settings['field_suffix'] ?? NULL,
         '#default_value' => $getConfigValue($field),
+        '#ajax' => FALSE,
       ];
     }
 
@@ -208,6 +221,7 @@ trait AiAgentFormTrait {
       '#type' => 'details',
       '#title' => $this->t('Debug & Error Settings'),
       '#open' => FALSE,
+      '#ajax' => FALSE,
     ];
 
     $boolean_options = ['0' => $this->t('Disabled'), '1' => $this->t('Enabled')];
@@ -235,6 +249,7 @@ trait AiAgentFormTrait {
         '#field_suffix' => $settings['field_suffix'] ?? NULL,
         '#options' => $settings['options'] ?? NULL,
         '#default_value' => $getConfigValue($field),
+        '#ajax' => FALSE,
       ];
     }
 
@@ -243,6 +258,7 @@ trait AiAgentFormTrait {
       '#type' => 'details',
       '#title' => $this->t('Content Safety & Moderation'),
       '#open' => FALSE,
+      '#ajax' => FALSE,
     ];
 
     $elements['moderation_settings']['moderationEnable'] = $is_plugin
@@ -252,12 +268,14 @@ trait AiAgentFormTrait {
           '#options' => $getSelectOptions($boolean_options),
           '#description' => $this->t('Enable content safety filtering.'),
           '#default_value' => $getConfigValue('moderation.enable'),
+          '#ajax' => FALSE,
         ]
         : [
           '#type' => 'checkbox',
           '#title' => $this->t('Enable Content Moderation'),
           '#description' => $this->t('Filter inappropriate or unsafe content. Recommended for public-facing implementations.'),
           '#default_value' => $getConfigValue('moderation.enable'),
+          '#ajax' => FALSE,
         ];
 
     $elements['moderation_settings']['moderationKey'] = [
@@ -270,6 +288,7 @@ trait AiAgentFormTrait {
           ':input[name="moderationEnable"]' => ['checked' => TRUE],
         ],
       ],
+      '#ajax' => FALSE,
     ];
 
     $moderation_flags = [
@@ -299,6 +318,7 @@ trait AiAgentFormTrait {
           ':input[name="moderationEnable"]' => ['checked' => TRUE],
         ],
       ],
+      '#ajax' => FALSE,
     ];
 
     return $elements;
@@ -317,6 +337,7 @@ trait AiAgentFormTrait {
       '#type' => 'details',
       '#title' => $this->t('Tone & Prompt Settings'),
       '#open' => FALSE,
+      '#ajax' => FALSE,
     ];
 
     $prompt_components = [
