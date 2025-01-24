@@ -211,28 +211,32 @@ trait AiAgentFormTrait {
     ];
 
     $boolean_options = ['0' => $this->t('Disabled'), '1' => $this->t('Enabled')];
-    $behavior_fields = ['debugMode'];
+    $behavior_fields = [
+      'debugMode' => [
+        'title' => $this->t('Debug Mode'),
+        'description' => $this->t('Enable detailed logging for troubleshooting purposes.'),
+        'type' => 'select',
+        'options' => $boolean_options,
+      ],
+      'showErrorDuration' => [
+        'title' => $this->t('Error Message Duration'),
+        'description' => $this->t('How long to display error messages. Default: 5000ms (5s)'),
+        'min' => 1000,
+        'field_suffix' => 'ms',
+      ],
+    ];
 
-    foreach ($behavior_fields as $field) {
+    foreach ($behavior_fields as $field => $settings) {
       $elements['behavior_settings'][$field] = [
-        '#type' => 'select',
-        '#title' => $this->t('@title', ['@title' => $formatMachineNameAsTitle($field)]),
-        '#options' => $getSelectOptions($boolean_options),
-        '#description' => $this->t('@desc', [
-          '@desc' => 'Enable detailed logging for troubleshooting purposes.',
-        ]),
-        '#default_value' => $getConfigValue("behavior.$field"),
+        '#type' => isset($settings['type']) ? $settings['type'] : 'number',
+        '#title' => $settings['title'],
+        '#description' => $settings['description'],
+        '#min' => $settings['min'] ?? NULL,
+        '#field_suffix' => $settings['field_suffix'] ?? NULL,
+        '#options' => $settings['options'] ?? NULL,
+        '#default_value' => $getConfigValue($field),
       ];
     }
-
-    $elements['behavior_settings']['showErrorDuration'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Error Message Duration'),
-      '#min' => 1000,
-      '#field_suffix' => 'ms',
-      '#description' => $this->t('How long to display error messages. Default: 5000ms (5s)'),
-      '#default_value' => $getConfigValue('behavior.showErrorDuration'),
-    ];
 
     // Moderation Settings.
     $elements['moderation_settings'] = [
