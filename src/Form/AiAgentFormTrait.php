@@ -29,9 +29,18 @@ trait AiAgentFormTrait {
     // Helper function to get config value based on context.
     $getConfigValue = function ($key, $default = NULL) use ($is_plugin, $config) {
       if ($is_plugin) {
+        // For plugin config, values are nested under aiAgent
         $value = $config['aiAgent'] ?? [];
-        return $value[$key] ?? $default;
+        $keys = explode('.', $key);
+        foreach ($keys as $k) {
+          if (!isset($value[$k])) {
+            return $default;
+          }
+          $value = $value[$k];
+        }
+        return $value;
       }
+      // For settings form, use direct config get
       return $config->get($key) ?? $default;
     };
 
