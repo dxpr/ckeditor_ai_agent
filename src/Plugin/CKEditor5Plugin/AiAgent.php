@@ -75,9 +75,11 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state): void {
     $values = $form_state->getValues();
     
+    $config_mapping = $this->getConfigMapping(TRUE);
+    
     $this->configuration['aiAgent'] = $this->processConfigValues(
       $values,
-      $this->getConfigMapping(TRUE)
+      $config_mapping
     );
 
     // Handle prompt settings.
@@ -100,7 +102,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
     // Basic settings.
     $settings_map = $this->getSettingsMap();
-
     foreach ($settings_map as $js_key => $drupal_key) {
       // Only set if either editor config or global config has a non-null value.
       if (isset($editor_config[$js_key]) && !empty($editor_config[$js_key])) {
@@ -145,6 +146,12 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     // Required by interface, but no validation needed.
   }
 
+  /**
+   * Gets the settings map.
+   *
+   * @return array<string, string>
+   *   The settings map.
+   */
   protected function getSettingsMap(): array {
     return [
       'apiKey' => 'apiKey',
@@ -159,6 +166,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       'timeOutDuration' => 'timeOutDuration',
       'retryAttempts' => 'retryAttempts',
       'debugMode' => 'debugMode',
+      'streamContent' => 'streamContent',
       'showErrorDuration' => 'showErrorDuration',
       'moderationEnable' => 'moderationEnable',
       'moderationKey' => 'moderationKey',

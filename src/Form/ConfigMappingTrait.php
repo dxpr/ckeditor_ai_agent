@@ -60,6 +60,12 @@ trait ConfigMappingTrait {
       'behavior_settings.showErrorDuration' => [
         'type' => 'int',
       ],
+      'moderation_settings.moderationEnable' => [
+        'type' => 'bool',
+      ],
+      'moderation_settings.moderationKey' => [
+        'type' => 'string',
+      ],
     ];
 
     $settings_mapping = [];

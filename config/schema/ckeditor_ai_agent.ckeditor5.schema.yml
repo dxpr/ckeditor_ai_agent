@@ -11,7 +11,7 @@ ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
           label: 'API Key'
         model:
           type: string
-          label: 'Model'
+          label: 'AI Model'
         endpointUrl:
           type: string
           label: 'Endpoint URL'

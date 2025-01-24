@@ -44,19 +44,12 @@ ckeditor_ai_agent.settings:
     showErrorDuration:
       type: integer
       label: 'Show Error Duration'
-    moderation:
-      type: mapping
-      label: 'Moderation Settings'
-      mapping:
-        enable:
-          type: boolean
-          label: 'Enable Moderation'
-        key:
-          type: string
-          label: 'Moderation Key'
-          sequence:
-            type: boolean
-            label: 'Flag'
+    moderationEnable:
+      type: boolean
+      label: 'Enable Moderation'
+    moderationKey:
+      type: string
+      label: 'Moderation Key'
     promptSettings:
       type: mapping
       label: 'Prompt Settings'
