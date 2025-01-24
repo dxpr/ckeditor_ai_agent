@@ -125,6 +125,3 @@ ckeditor_ai_agent.settings:
             contextRequirements:
               type: string
               label: 'Context Requirements'
-    testField:
-      type: string
-      label: 'Test Field'

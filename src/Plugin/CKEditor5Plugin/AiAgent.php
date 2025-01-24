@@ -71,7 +71,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
           'additions' => [],
         ],
       ],
-      'testField' => '',
     ];
   }
 
