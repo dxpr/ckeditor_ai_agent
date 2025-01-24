@@ -121,7 +121,7 @@ trait AiAgentFormTrait {
       '#max' => 2,
       '#step' => 0.1,
       '#description' => $this->t('Controls the creativity of AI responses. Low values (0.0-0.5) produce consistent, deterministic responses ideal for factual content. Medium values (0.6-1.0) offer balanced creativity. High values (1.1-2.0) generate more diverse and unexpected responses.'),
-      '#default_value' => $getConfigValue('temperature', 0.7),
+      '#default_value' => $getConfigValue('temperature'),
       '#ajax' => FALSE,
     ];
 
@@ -140,7 +140,7 @@ trait AiAgentFormTrait {
         '#description' => $this->t("Maximum number of tokens for @type. If not set, uses model's maximum limit",
           ['@type' => str_contains($field, 'output') ? 'AI response' : 'combined prompt and context']),
         '#min' => 1,
-        '#default_value' => $getConfigValue("tokens.$field"),
+        '#default_value' => $getConfigValue("$field"),
         '#ajax' => FALSE,
       ];
     }
@@ -177,7 +177,7 @@ trait AiAgentFormTrait {
         '#max' => $settings['max'] ?? NULL,
         '#step' => $settings['step'] ?? NULL,
         '#field_suffix' => $settings['field_suffix'] ?? NULL,
-        '#default_value' => $getConfigValue("context.$field"),
+        '#default_value' => $getConfigValue("$field"),
         '#ajax' => FALSE,
       ];
     }
@@ -267,14 +267,14 @@ trait AiAgentFormTrait {
           '#title' => $this->t('Content Moderation'),
           '#options' => $getSelectOptions($boolean_options),
           '#description' => $this->t('Enable content safety filtering.'),
-          '#default_value' => $getConfigValue('moderation.enable'),
+          '#default_value' => $getConfigValue('moderationEnable'),
           '#ajax' => FALSE,
         ]
         : [
           '#type' => 'checkbox',
           '#title' => $this->t('Enable Content Moderation'),
           '#description' => $this->t('Filter inappropriate or unsafe content. Recommended for public-facing implementations.'),
-          '#default_value' => $getConfigValue('moderation.enable'),
+          '#default_value' => $getConfigValue('moderationEnable'),
           '#ajax' => FALSE,
         ];
 
@@ -282,7 +282,7 @@ trait AiAgentFormTrait {
       '#type' => 'textfield',
       '#title' => $this->t('Moderation API Key'),
       '#description' => $this->t('Separate API key for content moderation service. Required if using a different service than the main AI.'),
-      '#default_value' => $getConfigValue('moderation.key'),
+      '#default_value' => $getConfigValue('moderationKey'),
       '#states' => [
         'visible' => [
           ':input[name="moderationEnable"]' => ['checked' => TRUE],
@@ -305,20 +305,6 @@ trait AiAgentFormTrait {
       'self-harm/instructions' => $this->t('Self-harm instructions'),
       'violence' => $this->t('Violence'),
       'violence/graphic' => $this->t('Graphic violence'),
-    ];
-
-    $elements['moderation_settings']['moderationDisableFlags'] = [
-      '#type' => 'checkboxes',
-      '#title' => $this->t('Disabled Safety Filters'),
-      '#options' => $moderation_flags,
-      '#description' => $this->t('Select content types to exclude from moderation. Use with caution.'),
-      '#default_value' => $getConfigValue('moderation.disableFlags', []),
-      '#states' => [
-        'visible' => [
-          ':input[name="moderationEnable"]' => ['checked' => TRUE],
-        ],
-      ],
-      '#ajax' => FALSE,
     ];
 
     return $elements;

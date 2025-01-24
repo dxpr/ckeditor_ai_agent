@@ -48,22 +48,12 @@ ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
         showErrorDuration:
           type: integer
           label: 'Show Error Duration'
-        moderation:
-          type: mapping
-          label: 'Moderation'
-          mapping:
-            enable:
-              type: boolean
-              label: 'Enable'
-            key:
-              type: string
-              label: 'Key'
-            disableFlags:
-              type: sequence
-              label: 'Disable Flags'
-              sequence:
-                type: integer
-                label: 'Flag Value'
+        moderationEnable:
+          type: boolean
+          label: 'Enable Moderation'
+        moderationKey:
+          type: string
+          label: 'Moderation Key'
         promptSettings:
           type: mapping
           label: 'Prompt Settings'

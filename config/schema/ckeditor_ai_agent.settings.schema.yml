@@ -54,9 +54,6 @@ ckeditor_ai_agent.settings:
         key:
           type: string
           label: 'Moderation Key'
-        disableFlags:
-          type: sequence
-          label: 'Disable Flags'
           sequence:
             type: boolean
             label: 'Flag'

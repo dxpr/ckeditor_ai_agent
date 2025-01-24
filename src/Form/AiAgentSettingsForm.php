@@ -91,9 +91,8 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $form['behavior_settings']['streamContent']['#default_value'] = $config->get('streamContent') ? '1' : '0';
     $form['behavior_settings']['showErrorDuration']['#default_value'] = $config->get('showErrorDuration') ?: 5000;
 
-    $form['moderation_settings']['enable']['#default_value'] = $config->get('moderation.enable');
-    $form['moderation_settings']['key']['#default_value'] = $config->get('moderation.key');
-    $form['moderation_settings']['disableFlags']['#default_value'] = $config->get('moderation.disableFlags') ?: [];
+    $form['moderation_settings']['moderationEnable']['#default_value'] = $config->get('moderationEnable');
+    $form['moderation_settings']['moderationKey']['#default_value'] = $config->get('moderationKey');
 
     return parent::buildForm($form, $form_state);
   }
@@ -121,20 +120,45 @@ class AiAgentSettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $config = $this->config('ckeditor_ai_agent.settings');
     $values = $form_state->getValues();
+    
+    // Helper function to flatten array with dot notation
+    $flatten = function($array, $prefix = '') use (&$flatten) {
+      $result = [];
+      foreach ($array as $key => $value) {
+        // Skip Drupal form system keys
+        if (in_array($key, ['form_build_id', 'form_token', 'form_id', 'op', 'actions'])) {
+          continue;
+        }
+        
+        // Handle nested arrays (except promptSettings which stays nested)
+        if (is_array($value) && $key !== 'promptSettings') {
+          $result = array_merge($result, $flatten($value, $key . '.'));
+        } else {
+          // Convert boolean-like values
+          if (is_string($value) && ($value === '0' || $value === '1')) {
+            $value = (bool) $value;
+          }
+          $result[$key] = $value;
+        }
+      }
+      return $result;
+    };
 
-    $processed = $this->processConfigValues($values, $this->getConfigMapping());
-    foreach ($processed as $key => $value) {
-      $config->set($key, $value);
+    // Flatten form values
+    $flat_values = $flatten($values);
+    
+    // Remove section prefixes from keys
+    foreach ($flat_values as $key => $value) {
+      $clean_key = str_contains($key, '.') ? substr($key, strpos($key, '.') + 1) : $key;
+      $config->set($clean_key, $value);
     }
 
-    // Handle moderation and prompt settings.
-    $moderation = $this->processModerationSettings($values);
-    $config->set('moderation', $moderation);
+    // Handle prompt settings separately as they maintain their structure
+    if (isset($values['promptSettings'])) {
+      $config->set('promptSettings', $this->processPromptSettings($values['promptSettings']));
+    }
 
-    $promptSettings = $this->processPromptSettings($values['promptSettings'] ?? []);
-    $config->set('promptSettings', $promptSettings);
     $config->save();
-    
     parent::submitForm($form, $form_state);
   }
 

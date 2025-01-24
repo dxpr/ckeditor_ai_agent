@@ -63,12 +63,6 @@ ckeditor_ai_agent.settings:
         key:
           type: string
           label: 'Key'
-        disableFlags:
-          type: sequence
-          label: 'Disable Flags'
-          sequence:
-            type: string
-            label: 'Flag'
 
     # Prompt Settings
     promptSettings:

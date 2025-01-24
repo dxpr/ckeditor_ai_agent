@@ -55,11 +55,8 @@ class AiAgentConfigurationManager {
         'retryAttempts' => $global_config->get('retryAttempts'),
         'debugMode' => $global_config->get('debugMode'),
         'showErrorDuration' => $global_config->get('showErrorDuration'),
-        'moderation' => [
-          'enable' => $global_config->get('moderation.enable'),
-          'key' => $global_config->get('moderation.key'),
-          'disableFlags' => $global_config->get('moderation.disableFlags'),
-        ],
+        'moderationEnable' => $global_config->get('moderationEnable'),
+        'moderationKey' => $global_config->get('moderationKey'),
         'promptSettings' => [
           'overrides' => $global_config->get('promptSettings.overrides'),
           'additions' => $global_config->get('promptSettings.additions'),

@@ -82,28 +82,6 @@ trait ConfigSetterTrait {
   }
 
   /**
-   * Processes moderation settings.
-   *
-   * @param array<string, mixed> $values
-   *   Array of form values.
-   *
-   * @return array<string, mixed>
-   *   An array of moderation configuration properties.
-   */
-  protected function processModerationSettings(array $values): array {
-    // Get moderation settings with defaults.
-    $moderation_settings = $values['moderation_settings'] ?? [];
-
-    return [
-      'enable' => !empty($moderation_settings['moderationEnable']),
-      'key' => (string) ($moderation_settings['moderationKey'] ?? ''),
-      'disableFlags' => !empty($moderation_settings['moderationDisableFlags']) && is_array($moderation_settings['moderationDisableFlags'])
-        ? array_keys(array_filter($moderation_settings['moderationDisableFlags']))
-        : [],
-    ];
-  }
-
-  /**
    * Processes prompt settings.
    *
    * @param array<string, mixed> $values
