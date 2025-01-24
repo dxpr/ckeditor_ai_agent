@@ -42,3 +42,19 @@ function ckeditor_ai_agent_ckeditor5_plugin_info_alter(array &$plugin_definition
     $plugin_definitions['ckeditor_ai_agent_ai_agent'] = new CKEditor5PluginDefinition($plugin_config);
   }
 }
+
+/**
+ * Implements hook_ai_brand_voice_alter().
+ */
+function ckeditor_ai_agent_ai_brand_voice_alter(string &$brand_voice) {
+  $config = \Drupal::config('ckeditor_ai_agent.settings');
+  $tone_override = $config->get('promptSettings.overrides.tone');
+  $tone_additions = $config->get('promptSettings.additions.tone');
+
+  if (!empty($tone_override)) {
+    $brand_voice = $tone_override;
+    if (!empty($tone_additions)) {
+      $brand_voice .= "\n\n" . $tone_additions;
+    }
+  }
+}
