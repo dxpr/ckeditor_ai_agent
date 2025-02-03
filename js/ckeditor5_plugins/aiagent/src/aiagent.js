@@ -1,30 +1,48 @@
 import { Plugin } from 'ckeditor5/src/core.js';
 import AiAgentUI from './aiagentui.js';
 import AiAgentEditing from './aiagentediting.js';
-import { TOKEN_LIMITS } from './const.js';
+import { TOKEN_LIMITS, AI_CUSTOM_ENGINE, AI_CUSTOM_MODEL } from './const.js';
+import { loadModels } from 'multi-llm-ts/dist/index.js';
 export default class AiAgent extends Plugin {
     constructor(editor) {
+        var _a, _b, _c, _d;
         super(editor);
+        this.DEFAULT_GPT_ENGINE = 'openai';
         this.DEFAULT_GPT_MODEL = 'gpt-4o';
-        this.DEFAULT_AI_END_POINT = 'https://api.openai.com/v1/chat/completions';
         const config = editor.config.get('aiAgent') || {};
         // Set default values and merge with provided config
         const defaultConfig = {
+            engine: this.DEFAULT_GPT_ENGINE,
             model: this.DEFAULT_GPT_MODEL,
             apiKey: '',
-            endpointUrl: this.DEFAULT_AI_END_POINT,
-            temperature: 0.7,
+            endpointUrl: '',
             timeOutDuration: 45000,
-            maxOutputTokens: TOKEN_LIMITS[this.DEFAULT_GPT_MODEL].maxOutputTokens,
-            maxInputTokens: TOKEN_LIMITS[this.DEFAULT_GPT_MODEL].maxInputContextTokens,
             retryAttempts: 1,
-            contextSize: TOKEN_LIMITS[this.DEFAULT_GPT_MODEL].maxInputContextTokens * 0.75,
             stopSequences: [],
             promptSettings: {},
             debugMode: false,
             streamContent: true // Default streaming mode
         };
-        const updatedConfig = { ...defaultConfig, ...config };
+        let tokenLimits = {};
+        if (config.model && AI_CUSTOM_ENGINE.includes(config.engine)) {
+            const maxOutputTokens = (_b = (_a = TOKEN_LIMITS[config.model]) === null || _a === void 0 ? void 0 : _a.maxOutputTokens) !== null && _b !== void 0 ? _b : 0;
+            const maxInputTokens = (_d = (_c = TOKEN_LIMITS[config.model]) === null || _c === void 0 ? void 0 : _c.maxOutputTokens) !== null && _d !== void 0 ? _d : 0;
+            tokenLimits = {
+                maxOutputTokens,
+                maxInputTokens,
+                contextSize: maxInputTokens * 0.75
+            };
+        }
+        // First merge defaults with user config to preserve user settings
+        const mergedConfig = {
+            ...defaultConfig,
+            ...config
+        };
+        // Then add token limits if needed
+        const updatedConfig = {
+            ...mergedConfig,
+            ...tokenLimits
+        };
         // Set the merged config back to the editor
         editor.config.set('aiAgent', updatedConfig);
         // Validate configuration
@@ -36,27 +54,63 @@ export default class AiAgent extends Plugin {
     static get pluginName() {
         return 'AiAgent';
     }
-    validateConfiguration(config) {
+    async validateConfiguration(config) {
+        var _a, _b;
+        // 1. First check if API key exists since it's required for all engines
         if (!config.apiKey) {
             throw new Error('AiAgent: apiKey is required.');
         }
+        // 2. Check engine-specific requirements
+        if (AI_CUSTOM_ENGINE.includes(config.engine)) {
+            if (!AI_CUSTOM_MODEL.includes(config.model)) {
+                throw new Error(`AiAgent: model is not allowed for ${config.engine}`);
+            }
+            if (!config.endpointUrl) {
+                throw new Error('AiAgent: endpointUrl is required for custom engine.');
+            }
+        }
+        else if (config.engine) {
+            try {
+                const models = await loadModels(config.engine, { apiKey: config.apiKey });
+                // If models fails to load, it's likely an API key issue
+                if (!((_a = models === null || models === void 0 ? void 0 : models.chat) === null || _a === void 0 ? void 0 : _a.length)) {
+                    throw new Error(`Unable to load models - please verify your ${config.engine} API key`);
+                }
+                const model = models.chat.find((model) => model.id === config.model);
+                if (!model) {
+                    const modelsList = models.chat.map(model => model.id).join(' | ');
+                    throw new Error(`Invalid AI model specified. Available models: ${modelsList}`);
+                }
+            }
+            catch (error) {
+                // Prioritize API key errors
+                if (error.status === 401 || error.code === 'invalid_api_key' ||
+                    ((_b = error.message) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes('api key'))) {
+                    throw new Error(`Invalid ${config.engine} API key - please check your configuration`);
+                }
+                throw error; // Let other errors propagate normally
+            }
+        }
+        // 3. Validate common settings
         if (config.temperature && (config.temperature < 0 || config.temperature > 2)) {
             throw new Error('AiAgent: Temperature must be a number between 0 and 2.');
         }
         const limits = TOKEN_LIMITS[config.model];
-        // Validate output tokens
-        if (config.maxOutputTokens !== undefined) {
-            if (config.maxOutputTokens < limits.minOutputTokens ||
-                config.maxOutputTokens > limits.maxOutputTokens) {
-                throw new Error(`AiAgent: maxOutputTokens must be between ${limits.minOutputTokens} ` +
-                    `and ${limits.maxOutputTokens} for ${config.model}`);
+        if (limits) {
+            // Validate output tokens
+            if (config.maxOutputTokens !== undefined) {
+                if (config.maxOutputTokens < limits.minOutputTokens ||
+                    config.maxOutputTokens > limits.maxOutputTokens) {
+                    throw new Error(`AiAgent: maxOutputTokens must be between ${limits.minOutputTokens} ` +
+                        `and ${limits.maxOutputTokens} for ${config.model}`);
+                }
             }
-        }
-        // Validate input tokens
-        if (config.maxInputTokens !== undefined &&
-            config.maxInputTokens > limits.maxInputContextTokens) {
-            throw new Error(`AiAgent: maxInputTokens cannot exceed ${limits.maxInputContextTokens} ` +
-                `for ${config.model}`);
+            // Validate input tokens
+            if (config.maxInputTokens !== undefined &&
+                config.maxInputTokens > limits.maxInputContextTokens) {
+                throw new Error(`AiAgent: maxInputTokens cannot exceed ${limits.maxInputContextTokens} ` +
+                    `for ${config.model}`);
+            }
         }
     }
     init() {

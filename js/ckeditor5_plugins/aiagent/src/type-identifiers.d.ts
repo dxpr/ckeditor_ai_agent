@@ -1,5 +1,6 @@
-import type { ALL_MODERATION_FLAGS } from './const.js';
-export type AiModel = 'gpt-3.5-turbo' | 'gpt-4o' | 'gpt-4o-mini' | 'kavya-m1';
+import type { ALL_MODERATION_FLAGS, AI_ENGINE, AI_CUSTOM_ENGINE, AI_CUSTOM_MODEL } from './const.js';
+export type AiEngine = typeof AI_ENGINE[number] | typeof AI_CUSTOM_ENGINE[number];
+export type AiModel = typeof AI_CUSTOM_MODEL[number];
 export type PromptComponentKey = 'responseRules' | 'htmlFormatting' | 'contentStructure' | 'tone' | 'inlineContent' | 'imageHandling' | 'referenceGuidelines' | 'contextRequirements';
 export interface PromptSettings {
     overrides?: Partial<Record<PromptComponentKey, string>>;
@@ -11,7 +12,8 @@ export interface ModelTokenLimits {
     maxInputContextTokens: number;
 }
 export interface AiAgentConfig {
-    model?: AiModel;
+    engine?: AiEngine;
+    model?: string;
     apiKey: string;
     temperature?: number;
     maxOutputTokens?: number;
@@ -25,6 +27,18 @@ export interface AiAgentConfig {
     promptSettings?: PromptSettings;
     streamContent?: boolean;
     debugMode?: boolean;
+    showErrorDuration?: number;
+    moderationKey?: string;
+    moderationEnable?: boolean;
+    moderationDisableFlags?: Array<ModerationFlagsTypes>;
+    commandsDropdown?: Array<{
+        title: string;
+        items: Array<{
+            title: string;
+            command: string;
+        }>;
+    }>;
+    contentScope?: string;
 }
 export interface MarkdownContent {
     content: string;

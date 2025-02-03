@@ -1,4 +1,7 @@
-import type { AiModel, ModelTokenLimits } from './type-identifiers.js';
+import type { ModelTokenLimits, AiModel } from './type-identifiers.js';
+export declare const AI_ENGINE: readonly ["anthropic", "cerebras", "deepseek", "google", "groq", "mistralai", "ollama", "openai", "openrouter", "xai"];
+export declare const AI_CUSTOM_ENGINE: readonly ["kavya"];
+export declare const AI_CUSTOM_MODEL: readonly ["gpt-4o"];
 export declare const TOKEN_LIMITS: Record<AiModel, ModelTokenLimits>;
 export declare const SUPPORTED_LANGUAGES: string[];
 export declare const MODERATION_URL = "https://api.openai.com/v1/moderations";

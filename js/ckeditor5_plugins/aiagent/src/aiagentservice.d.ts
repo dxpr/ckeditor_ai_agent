@@ -1,6 +1,7 @@
 import type { Editor } from 'ckeditor5/src/core.js';
 export default class AiAgentService {
     private editor;
+    private aiEngine;
     private aiModel;
     private apiKey;
     private endpointUrl;
@@ -13,13 +14,12 @@ export default class AiAgentService {
     private aiAgentFeatureLockId;
     private promptHelper;
     private htmlParser;
-    private buffer;
-    private openTags;
     private isInlineInsertion;
     private abortGeneration;
     private moderationKey;
     private moderationEnable;
     private disableFlags;
+    private s;
     /**
      * Initializes the AiAgentService with the provided editor and configuration settings.
      *
@@ -54,13 +54,8 @@ export default class AiAgentService {
      * @returns A promise that resolves when the response has been processed.
      */
     private fetchAndProcessGptResponse;
-    /**
-     * Checks if a given string is a valid JSON format.
-     *
-     * @param str - The string to be validated as JSON.
-     * @returns True if the string is valid JSON, otherwise false.
-     */
-    private isValidJSON;
+    private handleStreamingResponse;
+    private handleNonStreamingResponse;
     /**
      * Creates and configures a cancel generation button with keyboard shortcut support.
      *
@@ -130,12 +125,25 @@ export default class AiAgentService {
     */
     private generateGptPromptBasedOnUserPrompt;
     /**
-     * Retrieves and formats the error message from the response object.
+     * Handles the undo and redo commands for the editor.
      *
-     * @param response - The response object from the fetch request.
-     * @returns A promise that resolves to a JSON string containing the status and error message.
-     * The error message is extracted based on the content type of the response, which can be
-     * in JSON, HTML, or plain text format.
+     * This function adds event listeners to the undo and redo commands.
+     * If the editor's data contains any AI tags, executing the undo or redo command
+     * will trigger the respective command, allowing for proper management of AI-generated content.
+     *
+     * @returns void
      */
-    private getError;
+    private undoRedoHandler;
+    /**
+     * Inserts AI tags into the editor at the current selection position.
+     *
+     * This function creates two AI tags: one inline tag and one block tag.
+     * The inline tag is inserted immediately after the current selection,
+     * while the block tag is inserted after the parent element of the selection.
+     *
+     * @param blockID - The unique identifier for the AI block, used to set the ID of the tags.
+     *
+     * @returns A Promise that resolves when the tags have been successfully inserted.
+     */
+    private insertAiTag;
 }

@@ -3,8 +3,11 @@ import { PromptHelper } from './util/prompt.js';
 import { HtmlParser } from './util/htmlparser.js';
 import { ButtonView } from 'ckeditor5/src/ui.js';
 import { env } from 'ckeditor5/src/utils.js';
-import { ALL_MODERATION_FLAGS, MODERATION_URL } from './const.js';
+import { ALL_MODERATION_FLAGS, MODERATION_URL, AI_ENGINE } from './const.js';
 import { getErrorMessages } from './util/translations.js';
+import { igniteEngine, Message } from 'multi-llm-ts/dist/index.js';
+import { AIApi } from './util/ai-api.js';
+import CustomError, { getError } from './util/custom-error.js';
 export default class AiAgentService {
     /**
      * Initializes the AiAgentService with the provided editor and configuration settings.
@@ -12,10 +15,8 @@ export default class AiAgentService {
      * @param editor - The CKEditor instance to be used with the AI assist service.
      */
     constructor(editor) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f;
         this.aiAgentFeatureLockId = Symbol('ai-agent-feature');
-        this.buffer = '';
-        this.openTags = [];
         this.isInlineInsertion = false;
         this.abortGeneration = false;
         this.disableFlags = [];
@@ -25,6 +26,7 @@ export default class AiAgentService {
         const config = editor.config.get('aiAgent');
         this.aiModel = config.model;
         this.apiKey = config.apiKey;
+        this.aiEngine = config.engine;
         this.endpointUrl = config.endpointUrl;
         this.temperature = config.temperature;
         this.timeOutDuration = (_a = config.timeOutDuration) !== null && _a !== void 0 ? _a : 45000;
@@ -32,9 +34,9 @@ export default class AiAgentService {
         this.retryAttempts = config.retryAttempts;
         this.stopSequences = config.stopSequences;
         this.streamContent = (_c = config.streamContent) !== null && _c !== void 0 ? _c : true;
-        this.moderationKey = (_e = (_d = config.moderation) === null || _d === void 0 ? void 0 : _d.key) !== null && _e !== void 0 ? _e : '';
-        this.moderationEnable = (_g = (_f = config.moderation) === null || _f === void 0 ? void 0 : _f.enable) !== null && _g !== void 0 ? _g : false;
-        this.disableFlags = (_j = (_h = config.moderation) === null || _h === void 0 ? void 0 : _h.disableFlags) !== null && _j !== void 0 ? _j : [];
+        this.moderationKey = (_d = config.moderationKey) !== null && _d !== void 0 ? _d : '';
+        this.moderationEnable = (_e = config.moderationEnable) !== null && _e !== void 0 ? _e : false;
+        this.disableFlags = (_f = config.moderationDisableFlags) !== null && _f !== void 0 ? _f : [];
     }
     /**
      * Handles the slash command input from the user, processes it, and interacts with the AI model.
@@ -147,8 +149,8 @@ export default class AiAgentService {
             });
             clearTimeout(timeoutId);
             if (!response.ok) {
-                const error = await this.getError(response);
-                throw new Error(error);
+                const { error, status } = await getError(response);
+                throw new CustomError(error, status);
             }
             const data = await response.json();
             if (!((_a = data === null || data === void 0 ? void 0 : data.results) === null || _a === void 0 ? void 0 : _a[0])) {
@@ -177,11 +179,8 @@ export default class AiAgentService {
         catch (error) {
             console.error('Moderation error:', error);
             let errorMessage = t('We couldn\'t connect to the AI. Please check your internet');
-            const jsonMessage = this.isValidJSON(error === null || error === void 0 ? void 0 : error.message);
-            if (jsonMessage) {
-                const errorObj = JSON.parse(error === null || error === void 0 ? void 0 : error.message);
-                const status = errorObj.status;
-                errorMessage = getErrorMessages(status, editor);
+            if (error.status) {
+                errorMessage = getErrorMessages(error.status, editor);
             }
             else {
                 errorMessage = (_b = error === null || error === void 0 ? void 0 : error.message) === null || _b === void 0 ? void 0 : _b.trim();
@@ -206,138 +205,60 @@ export default class AiAgentService {
      * @returns A promise that resolves when the response has been processed.
      */
     async fetchAndProcessGptResponse(command, prompt, parent, retries = this.retryAttempts) {
-        var _a, _b, _c;
+        var _a;
         console.log('Starting fetchAndProcessGptResponse');
         const editor = this.editor;
         const t = editor.t;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeOutDuration);
-        let buffer = '';
-        let contentBuffer = '';
         const blockID = `ai-${new Date().getTime()}`;
         try {
-            const response = await fetch(this.endpointUrl, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${this.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: this.aiModel,
-                    messages: [
-                        { role: 'system', content: this.promptHelper.getSystemPrompt(this.isInlineInsertion) },
-                        { role: 'user', content: prompt }
-                    ],
+            let llm;
+            let response;
+            if (AI_ENGINE.includes(this.aiEngine)) {
+                const config = {
+                    apiKey: this.apiKey
+                };
+                llm = igniteEngine(this.aiEngine, config);
+                const messages = [
+                    new Message('system', this.promptHelper.getSystemPrompt(this.isInlineInsertion)),
+                    new Message('user', prompt)
+                ];
+                const completionOpts = {
+                    maxTokens: this.maxTokens,
+                    ...(this.temperature !== undefined && { temperature: this.temperature })
+                };
+                if (this.streamContent) {
+                    // Streaming path
+                    const stream = llm.generate(this.aiModel, messages, completionOpts);
+                    await this.handleStreamingResponse(stream, blockID, parent, command, controller, llm);
+                }
+                else {
+                    // Non-streaming path
+                    const result = await llm.complete(this.aiModel, messages, completionOpts);
+                    if (!result.content) {
+                        throw new Error(t('Empty response from AI model'));
+                    }
+                    await this.handleNonStreamingResponse(result.content, blockID, parent, command);
+                }
+            }
+            else {
+                const config = {
+                    apiKey: this.apiKey,
+                    baseURL: this.endpointUrl
+                };
+                const llmCustom = new AIApi(config);
+                const messages = {
+                    system: this.promptHelper.getSystemPrompt(this.isInlineInsertion),
+                    user: prompt
+                };
+                response = llmCustom.fetchAIStream(this.aiModel, messages, {
                     temperature: this.temperature,
                     max_tokens: this.maxTokens,
-                    stop: this.stopSequences,
-                    stream: true
-                }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            if (!response.ok) {
-                const error = await this.getError(response);
-                throw new Error(error);
+                    stop: this.stopSequences
+                }, controller, retries);
+                await this.handleStreamingResponse(response, blockID, parent, command, controller, llm);
             }
-            aiAgentContext.hideLoader();
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder('utf-8');
-            // this.editor.enableReadOnlyMode( this.aiAgentFeatureLockId );
-            this.cancelGenerationButton(blockID, controller);
-            const undoCommand = editor.commands.get('undo');
-            if (undoCommand) {
-                undoCommand.on('execute', () => {
-                    const editorData = editor.getData();
-                    if (editorData.indexOf('ai-tag') > -1) {
-                        editor.execute('undo');
-                    }
-                });
-            }
-            const redoCommand = editor.commands.get('redo');
-            if (redoCommand) {
-                redoCommand.on('execute', () => {
-                    const editorData = editor.getData();
-                    if (editorData.indexOf('ai-tag') > -1) {
-                        editor.execute('redo');
-                    }
-                });
-            }
-            editor.model.change(writer => {
-                var _a, _b, _c;
-                const position = this.editor.model.document.selection.getLastPosition();
-                let newPosition;
-                if (position) {
-                    if ((position === null || position === void 0 ? void 0 : position.parent.name) === 'inline-slash') {
-                        if ((_a = position === null || position === void 0 ? void 0 : position.parent) === null || _a === void 0 ? void 0 : _a.parent) {
-                            newPosition = writer.createPositionAt(position.parent.parent, 'after');
-                        }
-                        if (position === null || position === void 0 ? void 0 : position.parent) {
-                            const parentJson = (_c = (_b = position === null || position === void 0 ? void 0 : position.parent) === null || _b === void 0 ? void 0 : _b.parent) === null || _c === void 0 ? void 0 : _c.toJSON();
-                            if (parentJson.children.length > 1) {
-                                const positionInline = writer.createPositionAt(position.parent, 'after');
-                                const aiTagInline = writer.createElement('ai-tag', {
-                                    id: `${blockID}-inline`
-                                });
-                                writer.insert(aiTagInline, positionInline);
-                            }
-                        }
-                    }
-                    else {
-                        const aiTagInline = writer.createElement('ai-tag', {
-                            id: `${blockID}-inline`
-                        });
-                        writer.insert(aiTagInline, position);
-                        newPosition = writer.createPositionAt(position.parent, 'after');
-                    }
-                    if (newPosition) {
-                        const aiTag = writer.createElement('ai-tag', {
-                            id: blockID
-                        });
-                        writer.insert(aiTag, newPosition);
-                    }
-                }
-            });
-            this.clearParentContent(parent, command);
-            console.log('Starting to process response');
-            for (;;) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    console.log('Finished reading response');
-                    break;
-                }
-                const chunk = decoder.decode(value, { stream: true });
-                buffer += chunk;
-                let newlineIndex;
-                while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-                    const line = buffer.slice(0, newlineIndex).trim();
-                    buffer = buffer.slice(newlineIndex + 1);
-                    if (line.startsWith('data: ')) {
-                        const jsonStr = line.slice(5).trim();
-                        if (jsonStr === '[DONE]') {
-                            console.log('Received [DONE] signal');
-                            break;
-                        }
-                        try {
-                            const data = JSON.parse(jsonStr);
-                            if (data.method === 'agent/status') {
-                                await this.animatedStatusMessages(data.params.status, blockID);
-                            }
-                            else {
-                                const content = (_b = (_a = data.choices[0]) === null || _a === void 0 ? void 0 : _a.delta) === null || _b === void 0 ? void 0 : _b.content;
-                                if (content !== null && content !== undefined) {
-                                    contentBuffer += content;
-                                }
-                                await this.updateContent(contentBuffer, blockID);
-                            }
-                        }
-                        catch (parseError) {
-                            console.warn('Error parsing JSON:', parseError);
-                        }
-                    }
-                }
-            }
-            this.processCompleted(blockID);
         }
         catch (error) {
             if (this.abortGeneration) {
@@ -345,39 +266,50 @@ export default class AiAgentService {
             }
             console.error('Error in fetchAndProcessGptResponse:', error);
             let errorMessage = t('We couldn\'t connect to the AI. Please check your internet');
-            const jsonMessage = this.isValidJSON(error === null || error === void 0 ? void 0 : error.message);
-            if (jsonMessage) {
-                const errorObj = JSON.parse(error === null || error === void 0 ? void 0 : error.message);
-                const status = errorObj.status;
-                errorMessage = getErrorMessages(status, editor);
-                if (retries > 0) {
-                    console.warn(`Retrying... (${retries} attempts left)`);
-                    return await this.fetchAndProcessGptResponse(command, prompt, parent, retries - 1);
-                }
+            if (error === null || error === void 0 ? void 0 : error.status) {
+                errorMessage = getErrorMessages(error.status, editor);
             }
             else {
-                errorMessage = (_c = error === null || error === void 0 ? void 0 : error.message) === null || _c === void 0 ? void 0 : _c.trim();
+                errorMessage = (_a = error === null || error === void 0 ? void 0 : error.message) === null || _a === void 0 ? void 0 : _a.trim();
             }
             aiAgentContext.showError(errorMessage);
+            this.processCompleted(blockID);
         }
         finally {
+            clearTimeout(timeoutId);
             this.editor.disableReadOnlyMode(this.aiAgentFeatureLockId);
         }
     }
-    /**
-     * Checks if a given string is a valid JSON format.
-     *
-     * @param str - The string to be validated as JSON.
-     * @returns True if the string is valid JSON, otherwise false.
-     */
-    isValidJSON(str) {
-        try {
-            JSON.parse(str);
-            return true;
+    async handleStreamingResponse(stream, blockID, parent, command, controller, llm) {
+        let isFirstChunk = true;
+        let contentBuffer = '';
+        for await (const c of stream) {
+            if (isFirstChunk) {
+                aiAgentContext.hideLoader();
+                this.cancelGenerationButton(blockID, controller, llm, stream);
+                this.undoRedoHandler();
+                this.insertAiTag(blockID);
+                this.clearParentContent(parent, command);
+                isFirstChunk = false;
+            }
+            this.s = c;
+            const chunk = c;
+            if (chunk.type === 'status') {
+                await this.animatedStatusMessages(chunk.text, blockID);
+            }
+            if (chunk.type === 'content') {
+                contentBuffer += chunk.text;
+            }
+            await this.updateContent(contentBuffer, blockID);
         }
-        catch (error) {
-            return false;
-        }
+        this.processCompleted(blockID);
+    }
+    async handleNonStreamingResponse(content, blockID, parent, command) {
+        aiAgentContext.hideLoader();
+        this.insertAiTag(blockID);
+        this.clearParentContent(parent, command);
+        await this.htmlParser.insertSimpleHtml(content);
+        this.processCompleted(blockID);
     }
     /**
      * Creates and configures a cancel generation button with keyboard shortcut support.
@@ -386,7 +318,7 @@ export default class AiAgentService {
      * @param controller - AbortController to cancel the ongoing AI generation
      * @private
      */
-    cancelGenerationButton(blockID, controller) {
+    cancelGenerationButton(blockID, controller, llm, stream) {
         const editor = this.editor;
         const t = editor.t;
         const view = new ButtonView();
@@ -404,14 +336,24 @@ export default class AiAgentService {
         });
         view.on('execute', () => {
             this.abortGeneration = true;
-            controller.abort();
+            if (llm) {
+                llm.stop(llm);
+            }
+            else {
+                controller.abort();
+            }
             this.processCompleted(blockID);
         });
         view.render();
         editor.keystrokes.set('Ctrl+Backspace', (keyEvtData, cancel) => {
             if (keyEvtData.ctrlKey || keyEvtData.metaKey) {
                 this.abortGeneration = true;
-                controller.abort();
+                if (llm) {
+                    llm.stop(stream);
+                }
+                else {
+                    controller.abort();
+                }
                 this.processCompleted(blockID);
             }
             cancel();
@@ -434,8 +376,9 @@ export default class AiAgentService {
      */
     processCompleted(blockID) {
         const editor = this.editor;
-        if (editor.ui.view.element) {
-            const cancelButton = editor.ui.view.element.querySelector('.ck-cancel-request-button');
+        const toolbarElement = editor.ui.view.toolbar.element;
+        if (toolbarElement) {
+            const cancelButton = toolbarElement.querySelector('.ck-cancel-request-button');
             if (cancelButton) {
                 cancelButton.remove();
             }
@@ -739,29 +682,82 @@ export default class AiAgentService {
         }
     }
     /**
-     * Retrieves and formats the error message from the response object.
+     * Handles the undo and redo commands for the editor.
      *
-     * @param response - The response object from the fetch request.
-     * @returns A promise that resolves to a JSON string containing the status and error message.
-     * The error message is extracted based on the content type of the response, which can be
-     * in JSON, HTML, or plain text format.
+     * This function adds event listeners to the undo and redo commands.
+     * If the editor's data contains any AI tags, executing the undo or redo command
+     * will trigger the respective command, allowing for proper management of AI-generated content.
+     *
+     * @returns void
      */
-    async getError(response) {
-        let errorData = '';
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            errorData = JSON.stringify(await response.json());
+    undoRedoHandler() {
+        const editor = this.editor;
+        const undoCommand = editor.commands.get('undo');
+        if (undoCommand) {
+            undoCommand.on('execute', () => {
+                const editorData = editor.getData();
+                if (editorData.indexOf('ai-tag') > -1) {
+                    editor.execute('undo');
+                }
+            });
         }
-        else if (contentType && contentType.includes('text/html')) {
-            errorData = await response.text();
+        const redoCommand = editor.commands.get('redo');
+        if (redoCommand) {
+            redoCommand.on('execute', () => {
+                const editorData = editor.getData();
+                if (editorData.indexOf('ai-tag') > -1) {
+                    editor.execute('redo');
+                }
+            });
         }
-        else if (contentType && contentType.includes('text/plain')) {
-            errorData = await response.text();
-        }
-        const error = {
-            status: response.status,
-            error: errorData
-        };
-        return JSON.stringify(error);
+    }
+    /**
+     * Inserts AI tags into the editor at the current selection position.
+     *
+     * This function creates two AI tags: one inline tag and one block tag.
+     * The inline tag is inserted immediately after the current selection,
+     * while the block tag is inserted after the parent element of the selection.
+     *
+     * @param blockID - The unique identifier for the AI block, used to set the ID of the tags.
+     *
+     * @returns A Promise that resolves when the tags have been successfully inserted.
+     */
+    async insertAiTag(blockID) {
+        const editor = this.editor;
+        editor.model.change(writer => {
+            var _a, _b, _c;
+            const position = this.editor.model.document.selection.getLastPosition();
+            let newPosition;
+            if (position) {
+                if ((position === null || position === void 0 ? void 0 : position.parent.name) === 'inline-slash') {
+                    if ((_a = position === null || position === void 0 ? void 0 : position.parent) === null || _a === void 0 ? void 0 : _a.parent) {
+                        newPosition = writer.createPositionAt(position.parent.parent, 'after');
+                    }
+                    if (position === null || position === void 0 ? void 0 : position.parent) {
+                        const parentJson = (_c = (_b = position === null || position === void 0 ? void 0 : position.parent) === null || _b === void 0 ? void 0 : _b.parent) === null || _c === void 0 ? void 0 : _c.toJSON();
+                        if (parentJson.children.length > 1) {
+                            const positionInline = writer.createPositionAt(position.parent, 'after');
+                            const aiTagInline = writer.createElement('ai-tag', {
+                                id: `${blockID}-inline`
+                            });
+                            writer.insert(aiTagInline, positionInline);
+                        }
+                    }
+                }
+                else {
+                    const aiTagInline = writer.createElement('ai-tag', {
+                        id: `${blockID}-inline`
+                    });
+                    writer.insert(aiTagInline, position);
+                    newPosition = writer.createPositionAt(position.parent, 'after');
+                }
+                if (newPosition) {
+                    const aiTag = writer.createElement('ai-tag', {
+                        id: blockID
+                    });
+                    writer.insert(aiTag, newPosition);
+                }
+            }
+        });
     }
 }
