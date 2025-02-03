@@ -5,6 +5,9 @@ ckeditor_ai_agent.settings:
     apiKey:
       type: string
       label: 'API Key'
+    engine:
+      type: string
+      label: 'AI Engine'
     model:
       type: string
       label: 'AI Model'

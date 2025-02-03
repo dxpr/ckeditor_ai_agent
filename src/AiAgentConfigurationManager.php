@@ -28,6 +28,51 @@ class AiAgentConfigurationManager {
   }
 
   /**
+   * Gets the configuration.
+   *
+   * @return array<string, mixed>
+   *   The configuration array.
+   */
+  public function getConfiguration(): array {
+    $config = $this->configFactory->get('ckeditor_ai_agent.settings');
+    $result = [];
+
+    // Get basic settings
+    $result['apiKey'] = $config->get('apiKey');
+    
+    // Handle engine/model
+    $model = $config->get('model');
+    if ($model && str_contains($model, ':')) {
+      [$engine, $model_name] = explode(':', $model, 2);
+      $result['engine'] = $engine;
+      $result['model'] = $model_name;
+    } else {
+      // Fallback for legacy configurations
+      $result['engine'] = 'openai';
+      $result['model'] = $model ?: 'gpt-4o';
+    }
+
+    // Get other settings
+    $result['endpointUrl'] = $config->get('endpointUrl');
+    $result['contentScope'] = $config->get('contentScope');
+    $result['temperature'] = $config->get('temperature');
+    $result['maxOutputTokens'] = $config->get('maxOutputTokens');
+    $result['maxInputTokens'] = $config->get('maxInputTokens');
+    $result['contextSize'] = $config->get('contextSize');
+    $result['editorContextRatio'] = $config->get('editorContextRatio');
+    $result['timeOutDuration'] = $config->get('timeOutDuration');
+    $result['retryAttempts'] = $config->get('retryAttempts');
+    $result['debugMode'] = $config->get('debugMode');
+    $result['streamContent'] = $config->get('streamContent');
+    $result['showErrorDuration'] = $config->get('showErrorDuration');
+    $result['moderationEnable'] = $config->get('moderationEnable');
+    $result['moderationKey'] = $config->get('moderationKey');
+    $result['promptSettings'] = $config->get('promptSettings') ?: [];
+
+    return $result;
+  }
+
+  /**
    * Gets the CKEditor configuration.
    *
    * @param \Drupal\editor\Entity\Editor|null $editor

@@ -2,10 +2,13 @@
 
 namespace Drupal\ckeditor_ai_agent\Form;
 
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+
 /**
  * Provides common form elements for AI Agent configuration.
  */
 trait AiAgentFormTrait {
+  use StringTranslationTrait;
 
   /**
    * Gets the common form elements for AI Agent configuration.
@@ -77,18 +80,31 @@ trait AiAgentFormTrait {
       '#ajax' => FALSE,
     ];
 
-    $model_options = [
-      'gpt-4o' => $this->t('GPT-4o (Most capable).'),
-      'gpt-4o-mini' => $this->t('GPT-4o Mini (Balanced).'),
-      'gpt-3.5-turbo' => $this->t('GPT-3.5 Turbo (Fastest).'),
-    ];
+    // Load supported models from JSON file
+    $supported_models = [];
+    $json_path = \Drupal::service('extension.path.resolver')->getPath('module', 'ckeditor_ai_agent') . '/js/ckeditor5_plugins/aiagent/src/SUPPORTED_MODELS.json';
+    if (file_exists($json_path)) {
+      $supported_models = json_decode(file_get_contents($json_path), TRUE) ?: [];
+    }
+
+    // Create model options grouped by engine
+    $model_options = [];
+    foreach ($supported_models as $engine => $models) {
+      $model_options[$engine] = [];
+      foreach ($models as $model) {
+        $model_options[$engine][$engine . ':' . $model] = $model;
+      }
+    }
+
+    // Add ollama as a special case
+    $model_options['ollama'] = ['ollama:custom' => $this->t('Custom Model (specify in endpoint URL)')];
 
     $elements['basic_settings']['model'] = [
       '#type' => 'select',
-      '#title' => $this->t('AI Model'),
+      '#title' => $this->t('AI Engine/Model'),
       '#options' => $getSelectOptions($model_options),
       '#description' => $this->t('@description', [
-        '@description' => 'Select AI model' . ($is_plugin ? ' or use global settings.' : '.'),
+        '@description' => 'Select AI engine and model' . ($is_plugin ? ' or use global settings.' : '.'),
       ]),
       '#default_value' => $getConfigValue('model'),
       '#ajax' => FALSE,

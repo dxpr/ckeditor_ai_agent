@@ -34,6 +34,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     return [
       'aiAgent' => [
         'apiKey' => NULL,
+        'engine' => NULL,
         'model' => NULL,
         'endpointUrl' => NULL,
         'contentScope' => NULL,
@@ -110,6 +111,18 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       elseif ($config->get($drupal_key) !== NULL && !empty($config->get($drupal_key))) {
         $result['aiAgent'][$js_key] = $config->get($drupal_key);
       }
+    }
+
+    // Handle engine/model
+    $model = $result['aiAgent']['model'] ?? 'openai:gpt-4o';
+    if (str_contains($model, ':')) {
+      [$engine, $model_name] = explode(':', $model, 2);
+      $result['aiAgent']['engine'] = $engine;
+      $result['aiAgent']['model'] = $model_name;
+    } else {
+      // Fallback for legacy configurations
+      $result['aiAgent']['engine'] = 'openai';
+      $result['aiAgent']['model'] = $model ?: 'gpt-4o';
     }
 
     // Prompt settings.
