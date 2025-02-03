@@ -34,6 +34,10 @@ trait AiAgentFormTrait {
       if ($is_plugin) {
         // For plugin config, values are nested under aiAgent
         $value = $config['aiAgent'] ?? [];
+        // Special case for ollamaModel to match the structure in settings
+        if ($key === 'ollamaModel') {
+          return $value['ollamaModel'] ?? $default;
+        }
         $keys = explode('.', $key);
         foreach ($keys as $k) {
           if (!isset($value[$k])) {
@@ -97,8 +101,9 @@ trait AiAgentFormTrait {
     }
 
     // Add ollama as a special case
-    $model_options['ollama'] = ['ollama:custom' => $this->t('Custom Model (specify in endpoint URL)')];
+    $model_options['ollama'] = ['ollama:custom' => $this->t('Custom Model')];
 
+    $model_field_name = $is_plugin ? 'aiAgent[model]' : 'model';
     $elements['basic_settings']['model'] = [
       '#type' => 'select',
       '#title' => $this->t('AI Engine/Model'),
@@ -109,6 +114,25 @@ trait AiAgentFormTrait {
       '#default_value' => $getConfigValue('model'),
       '#ajax' => FALSE,
     ];
+
+    $elements['basic_settings']['ollamaModel'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Ollama Model Name'),
+      '#description' => $this->t('Enter the model name when using Ollama (e.g., llama2, mistral, codellama).'),
+      '#default_value' => $getConfigValue('ollamaModel'),
+      '#ajax' => FALSE,
+      '#states' => [
+        'visible' => [
+          ':input[name="editor[settings][plugins][ckeditor_ai_agent_ai_agent][aiAgent][model]"]' => ['value' => 'ollama:custom'],
+        ],
+      ],
+    ];
+
+    // For plugin context, ensure ollamaModel is saved under aiAgent
+    if ($is_plugin) {
+      $elements['basic_settings']['ollamaModel']['#description'] = $this->t('Not available in plugin context due to ckeditor5 module limitations.');
+      $elements['basic_settings']['ollamaModel']['#disabled'] = TRUE;
+    }
 
     $elements['basic_settings']['endpointUrl'] = [
       '#type' => 'url',

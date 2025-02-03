@@ -36,6 +36,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         'apiKey' => NULL,
         'engine' => NULL,
         'model' => NULL,
+        'ollamaModel' => NULL,
         'endpointUrl' => NULL,
         'contentScope' => NULL,
         'temperature' => NULL,
@@ -76,14 +77,23 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state): void {
     $values = $form_state->getValues();
     
+    // Get the configuration mapping
     $config_mapping = $this->getConfigMapping(TRUE);
     
-    $this->configuration['aiAgent'] = $this->processConfigValues(
-      $values,
-      $config_mapping
-    );
+    // Initialize aiAgent configuration
+    $this->configuration['aiAgent'] = [];
+    
+    // Handle basic settings
+    foreach ($this->getSettingsMap() as $js_key => $drupal_key) {
+      if (isset($values[$js_key])) {
+        $this->configuration['aiAgent'][$js_key] = $values[$js_key];
+      }
+      elseif (isset($values['basic_settings'][$js_key])) {
+        $this->configuration['aiAgent'][$js_key] = $values['basic_settings'][$js_key];
+      }
+    }
 
-    // Handle prompt settings.
+    // Handle prompt settings
     $prompt_settings = $this->processPromptSettings($values['promptSettings'] ?? []);
     $this->configuration['aiAgent']['promptSettings'] = $prompt_settings;
   }
@@ -118,7 +128,12 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     if (str_contains($model, ':')) {
       [$engine, $model_name] = explode(':', $model, 2);
       $result['aiAgent']['engine'] = $engine;
-      $result['aiAgent']['model'] = $model_name;
+      if ($engine === 'ollama') {
+        // For Ollama, use the ollamaModel value
+        $result['aiAgent']['model'] = $result['aiAgent']['ollamaModel'] ?? $config->get('ollamaModel') ?? '';
+      } else {
+        $result['aiAgent']['model'] = $model_name;
+      }
     } else {
       // Fallback for legacy configurations
       $result['aiAgent']['engine'] = 'openai';
@@ -169,6 +184,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     return [
       'apiKey' => 'apiKey',
       'model' => 'model',
+      'ollamaModel' => 'ollamaModel',
       'endpointUrl' => 'endpointUrl',
       'contentScope' => 'contentScope',
       'temperature' => 'temperature',

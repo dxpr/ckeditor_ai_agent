@@ -11,6 +11,9 @@ ckeditor_ai_agent.settings:
     model:
       type: string
       label: 'AI Model'
+    ollamaModel:
+      type: string
+      label: 'Ollama Model Name'
     endpointUrl:
       type: string
       label: 'Endpoint URL'

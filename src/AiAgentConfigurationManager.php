@@ -45,7 +45,11 @@ class AiAgentConfigurationManager {
     if ($model && str_contains($model, ':')) {
       [$engine, $model_name] = explode(':', $model, 2);
       $result['engine'] = $engine;
-      $result['model'] = $model_name;
+      if ($engine === 'ollama') {
+        $result['model'] = $config->get('ollamaModel') ?: '';
+      } else {
+        $result['model'] = $model_name;
+      }
     } else {
       // Fallback for legacy configurations
       $result['engine'] = 'openai';
@@ -68,6 +72,7 @@ class AiAgentConfigurationManager {
     $result['moderationEnable'] = $config->get('moderationEnable');
     $result['moderationKey'] = $config->get('moderationKey');
     $result['promptSettings'] = $config->get('promptSettings') ?: [];
+    $result['ollamaModel'] = $config->get('ollamaModel');
 
     return $result;
   }
@@ -89,6 +94,7 @@ class AiAgentConfigurationManager {
       'aiAgent' => [
         'apiKey' => $global_config->get('apiKey'),
         'model' => $global_config->get('model'),
+        'ollamaModel' => $global_config->get('ollamaModel'),
         'endpointUrl' => $global_config->get('endpointUrl'),
         'contentScope' => $global_config->get('contentScope'),
         'temperature' => $global_config->get('temperature'),
