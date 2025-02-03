@@ -74,6 +74,7 @@ try {
     // Read source directory
     const files = fs.readdirSync(source);
 
+    // Copy all files including .js, .json, and other assets
     files.forEach(file => {
       const sourcePath = path.join(source, file);
       const destPath = path.join(destination, file);
@@ -95,6 +96,20 @@ try {
   copyRecursively(sourceDir, destinationDir);
 
   console.log('Files successfully copied to destination directory.');
+
+  // Copy SUPPORTED_MODELS.json from package root
+  const supportedModelsSource = path.join(
+    __dirname,
+    '../node_modules/@dxpr/ckeditor5-ai-agent/SUPPORTED_MODELS.json'
+  );
+  const supportedModelsDest = path.join(destinationDir, 'SUPPORTED_MODELS.json');
+
+  if (fs.existsSync(supportedModelsSource)) {
+    fs.copyFileSync(supportedModelsSource, supportedModelsDest);
+    console.log('Copied SUPPORTED_MODELS.json to destination directory.');
+  } else {
+    console.warn('SUPPORTED_MODELS.json not found in package root.');
+  }
 
   // Paths to specific files to modify
   const aiagentFile = path.join(destinationDir, 'aiagent.js');
