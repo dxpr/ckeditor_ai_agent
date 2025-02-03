@@ -67,12 +67,12 @@ trait AiAgentFormTrait {
 
     $elements['basic_settings']['apiKey'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('OpenAI API Key'),
+      '#title' => $this->t('API Key'),
       '#description' => $is_plugin
-        ? $this->t('Enter your OpenAI API key or leave empty to use the <a href="@settingsUrl">global settings</a>.', [
+        ? $this->t('Enter your API key or leave empty to use the <a href="@settingsUrl">global settings</a>.', [
           '@settingsUrl' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_agent.settings'),
         ])
-        : $this->t('Enter your OpenAI API key. Required for all AI functionality.'),
+        : $this->t('Enter your API key. Required for all AI functionality.'),
       '#required' => !$is_plugin,
       '#size' => 100,
       '#maxlength' => 255,
@@ -113,7 +113,7 @@ trait AiAgentFormTrait {
     $elements['basic_settings']['endpointUrl'] = [
       '#type' => 'url',
       '#title' => $this->t('API Endpoint URL'),
-      '#description' => $this->t('OpenAI API endpoint URL. Only change if using a custom endpoint or proxy.'),
+      '#description' => $this->t('API endpoint URL. Only change if using a custom endpoint or proxy.'),
       '#default_value' => $getConfigValue('endpointUrl'),
       '#ajax' => FALSE,
     ];
