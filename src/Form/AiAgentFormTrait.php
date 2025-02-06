@@ -103,6 +103,14 @@ trait AiAgentFormTrait {
     // Add ollama as a special case
     $model_options['ollama'] = ['ollama:custom' => $this->t('Custom Model')];
 
+    // Add kavya as a new engine
+    $model_options['kavya'] = [
+      'kavya:gpt-4o' => 'gpt-4o',
+      'kavya:gpt-4o-mini' => 'gpt-4o-mini'
+    ];
+
+    ksort($model_options);
+
     $model_field_name = $is_plugin ? 'aiAgent[model]' : 'model';
     $elements['basic_settings']['model'] = [
       '#type' => 'select',
