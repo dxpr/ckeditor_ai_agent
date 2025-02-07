@@ -65,7 +65,7 @@ settings.
 | **Basic Settings** ||||
 | `apiKey` | `string` | - | Your OpenAI API key. Required for all AI functionality |
 | `model` | `string` | `'gpt-4o'` | Select AI model: GPT-4o (Most capable), GPT-4o Mini (Balanced), or GPT-3.5 Turbo (Fastest) |
-| `endpointUrl` | `string` | `https://api.openai.com/v1/chat/completions` | OpenAI API endpoint URL. Only change if using a custom endpoint or proxy |
+| `endpointUrl` | `string` | - | OpenAI API endpoint URL. Only change if using a custom endpoint or proxy |
 | **Advanced Settings** ||||
 | `temperature` | `number` | `0.7` | Controls the creativity of AI responses. Low values (0.0-0.5) produce consistent, deterministic responses ideal for factual content. Medium values (0.6-1.0) offer balanced creativity. High values (1.1-2.0) generate more diverse and unexpected responses |
 | `maxOutputTokens` | `number` | Model's max limit | Maximum number of tokens for AI response. If not set, uses model's maximum limit |

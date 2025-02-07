@@ -1,9 +1,12 @@
 import CustomError, { getError } from './custom-error.js';
+import { getAllowedHtmlTags } from './html-utils.js';
 export class AIApi {
     constructor(config) {
         var _a;
         this.apiKey = (_a = config.apiKey) !== null && _a !== void 0 ? _a : '';
         this.baseURL = config.baseURL;
+        this.engine = config.engine;
+        this.editor = config.editor;
     }
     /**
      * Asynchronously streams data from a ReadableStream.
@@ -42,21 +45,27 @@ export class AIApi {
      * @throws CustomError if the response is not ok after the specified number of retries.
      */
     async fetchAI(aiModel, messages, config, controller, retries) {
+        const requestBody = {
+            model: aiModel,
+            messages: [
+                { role: 'system', content: messages.system },
+                { role: 'user', content: messages.user }
+            ],
+            stream: true,
+            ...config
+        };
+        // Add allowed_html_tags only for Kavya engine
+        if (this.engine === 'kavya') {
+            const allowedTags = getAllowedHtmlTags(this.editor);
+            requestBody.allowed_html_tags = allowedTags.join(', ');
+        }
         const response = await fetch(this.baseURL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${this.apiKey}` // Add your API key here
+                Authorization: `Bearer ${this.apiKey}`
             },
-            body: JSON.stringify({
-                model: aiModel,
-                messages: [
-                    { role: 'system', content: messages.system },
-                    { role: 'user', content: messages.user }
-                ],
-                stream: true,
-                ...config
-            }),
+            body: JSON.stringify(requestBody),
             signal: controller.signal
         });
         if (!response.ok) {

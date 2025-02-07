@@ -1,11 +1,10 @@
-import type { AiModel } from '../type-identifiers.js';
+import type { AiModel, AIApiConfig } from '../type-identifiers.js';
 export declare class AIApi {
     private apiKey;
     private baseURL;
-    constructor(config: {
-        apiKey: string | undefined;
-        baseURL: string;
-    });
+    private engine;
+    private editor;
+    constructor(config: AIApiConfig);
     /**
      * Asynchronously streams data from a ReadableStream.
      * @param stream - The ReadableStream to read from.

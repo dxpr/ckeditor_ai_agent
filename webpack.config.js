@@ -16,6 +16,17 @@ module.exports = [];
 getDirectories('./js/ckeditor5_plugins').forEach((dir) => {
   const bc = {
     mode: 'production',
+    externals: {
+      '@anthropic-ai/sdk': 'AnthropicAI',
+      'openai': 'OpenAI',
+      'groq-sdk': 'GroqSDK',
+      'zod': 'Zod',
+      'zod-to-json-schema': 'ZodToJsonSchema',
+      '@google/generative-ai': 'GoogleGenerativeAI',
+      '@mistralai/mistralai': 'MistralAI',
+      'ollama': 'Ollama',
+      'minimatch': 'Minimatch'
+    },
     optimization: {
       minimize: true,
       minimizer: [

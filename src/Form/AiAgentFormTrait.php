@@ -106,7 +106,12 @@ trait AiAgentFormTrait {
     // Add kavya as a new engine
     $model_options['kavya'] = [
       'kavya:gpt-4o' => 'gpt-4o',
-      'kavya:gpt-4o-mini' => 'gpt-4o-mini'
+      'kavya:gpt-4o-mini' => 'gpt-4o-mini',
+      'kavya:router-mf-0.1' => 'router-mf-0.1',
+      'kavya:router-mf-0.2' => 'router-mf-0.2',
+      'kavya:router-mf-0.5' => 'router-mf-0.5',
+      'kavya:router-mf-0.8' => 'router-mf-0.8',
+      'kavya:router-mf-0.9' => 'router-mf-0.9'
     ];
 
     ksort($model_options);

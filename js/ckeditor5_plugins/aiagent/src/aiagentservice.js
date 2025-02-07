@@ -5,7 +5,7 @@ import { ButtonView } from 'ckeditor5/src/ui.js';
 import { env } from 'ckeditor5/src/utils.js';
 import { ALL_MODERATION_FLAGS, MODERATION_URL, AI_ENGINE } from './const.js';
 import { getErrorMessages } from './util/translations.js';
-import { igniteEngine, Message } from 'multi-llm-ts/dist/index.js';
+import { igniteEngine, Message, loadModels } from 'multi-llm-ts/dist/index.js';
 import { AIApi } from './util/ai-api.js';
 import CustomError, { getError } from './util/custom-error.js';
 export default class AiAgentService {
@@ -20,6 +20,7 @@ export default class AiAgentService {
         this.isInlineInsertion = false;
         this.abortGeneration = false;
         this.disableFlags = [];
+        this.STORAGE_PREFIX = 'ck5-ai-agent';
         this.editor = editor;
         this.promptHelper = new PromptHelper(editor);
         this.htmlParser = new HtmlParser(editor);
@@ -210,7 +211,16 @@ export default class AiAgentService {
         const editor = this.editor;
         const t = editor.t;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.timeOutDuration);
+        // Create a timeout that can be reset
+        let timeoutId;
+        const resetTimeout = () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+            timeoutId = setTimeout(() => controller.abort(), this.timeOutDuration);
+        };
+        // Set initial timeout
+        resetTimeout();
         const blockID = `ai-${new Date().getTime()}`;
         try {
             let llm;
@@ -219,6 +229,11 @@ export default class AiAgentService {
                 const config = {
                     apiKey: this.apiKey
                 };
+                const { success, error } = await this.checkModel(this.aiEngine, this.aiModel, this.apiKey);
+                if (!success) {
+                    aiAgentContext.showError(`${t('Invalid AI model specified. Available models')}: ${error} `);
+                    return;
+                }
                 llm = igniteEngine(this.aiEngine, config);
                 const messages = [
                     new Message('system', this.promptHelper.getSystemPrompt(this.isInlineInsertion)),
@@ -231,7 +246,7 @@ export default class AiAgentService {
                 if (this.streamContent) {
                     // Streaming path
                     const stream = llm.generate(this.aiModel, messages, completionOpts);
-                    await this.handleStreamingResponse(stream, blockID, parent, command, controller, llm);
+                    await this.handleStreamingResponse(stream, blockID, parent, command, controller, llm, resetTimeout);
                 }
                 else {
                     // Non-streaming path
@@ -245,7 +260,9 @@ export default class AiAgentService {
             else {
                 const config = {
                     apiKey: this.apiKey,
-                    baseURL: this.endpointUrl
+                    baseURL: this.endpointUrl,
+                    engine: this.aiEngine,
+                    editor: this.editor
                 };
                 const llmCustom = new AIApi(config);
                 const messages = {
@@ -257,7 +274,7 @@ export default class AiAgentService {
                     max_tokens: this.maxTokens,
                     stop: this.stopSequences
                 }, controller, retries);
-                await this.handleStreamingResponse(response, blockID, parent, command, controller, llm);
+                await this.handleStreamingResponse(response, blockID, parent, command, controller, llm, resetTimeout);
             }
         }
         catch (error) {
@@ -276,11 +293,82 @@ export default class AiAgentService {
             this.processCompleted(blockID);
         }
         finally {
-            clearTimeout(timeoutId);
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
             this.editor.disableReadOnlyMode(this.aiAgentFeatureLockId);
         }
     }
-    async handleStreamingResponse(stream, blockID, parent, command, controller, llm) {
+    /**
+     * Checks if the specified AI model exists for the given engine.
+     * If the models are not cached, it fetches them from the API and caches them.
+     *
+     * @param engine - The AI engine to check the model against.
+     * @param model - The model identifier to verify.
+     * @param apiKey - Optional API key for authentication with the AI engine.
+     * @returns A promise that resolves to an object containing:
+     * - `success`: A boolean indicating whether the model exists.
+     * - `error`: An optional string containing error details if the model is invalid.
+     *
+     * @throws Will throw an error if unable to load models from the API.
+     */
+    async checkModel(engine, model, apiKey) {
+        var _a;
+        const models = this.getCachedModels(engine);
+        if (!models.length) {
+            const apiModels = await loadModels(engine, { apiKey });
+            if (!((_a = apiModels === null || apiModels === void 0 ? void 0 : apiModels.chat) === null || _a === void 0 ? void 0 : _a.length)) {
+                throw new Error(`Unable to load models - please verify your ${engine} API key`);
+            }
+            const modelIds = apiModels.chat.map(model => model.id);
+            this.cacheModels(engine, modelIds);
+            models.push(...modelIds);
+        }
+        const modelExists = models.find((item) => item === model);
+        if (!modelExists) {
+            console.error('Invalid AI model specified. Available models:', models);
+            return {
+                success: false,
+                error: models.join(' | ')
+            };
+        }
+        return {
+            success: true
+        };
+    }
+    /**
+     * Retrieves cached models from local storage based on the provided key.
+     * If the cached models are expired, they are removed from local storage.
+     *
+     * @param engine - The key used to access the cached models in local storage.
+     * @returns An array of model identifiers retrieved from local storage, or an empty array if no valid models are found.
+     */
+    getCachedModels(engine) {
+        const key = `${this.STORAGE_PREFIX}:${engine}_models`;
+        let models = [];
+        const localStorageModels = localStorage.getItem(key);
+        const now = new Date();
+        if (localStorageModels) {
+            const item = JSON.parse(localStorageModels);
+            if (now.getTime() <= item.expiry) {
+                models = item.models;
+            }
+            else {
+                localStorage.removeItem(key);
+            }
+        }
+        return models;
+    }
+    cacheModels(engine, models) {
+        const key = `${this.STORAGE_PREFIX}:${engine}_models`;
+        const now = new Date();
+        const data = {
+            expiry: now.getTime() + 24 * 60 * 60 * 1000,
+            models
+        };
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+    async handleStreamingResponse(stream, blockID, parent, command, controller, llm, resetTimeout) {
         let isFirstChunk = true;
         let contentBuffer = '';
         for await (const c of stream) {
@@ -301,6 +389,8 @@ export default class AiAgentService {
                 contentBuffer += chunk.text;
             }
             await this.updateContent(contentBuffer, blockID);
+            // Reset timeout when data is received
+            resetTimeout();
         }
         this.processCompleted(blockID);
     }

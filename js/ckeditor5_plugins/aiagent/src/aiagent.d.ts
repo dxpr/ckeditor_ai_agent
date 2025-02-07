@@ -6,7 +6,7 @@ import type { AiEngine } from './type-identifiers.js';
 import '../theme/style.css';
 export default class AiAgent extends Plugin {
     DEFAULT_GPT_ENGINE: AiEngine;
-    DEFAULT_GPT_MODEL: "gpt-4o";
+    DEFAULT_GPT_MODEL: "gpt-4o" | "o1" | "claude-3" | "gemini-1.5" | "mistral-large" | "deepseek-r1" | "grok-beta";
     constructor(editor: Editor);
     static get requires(): readonly [typeof AiAgentUI, typeof AiAgentEditing];
     static get pluginName(): "AiAgent";

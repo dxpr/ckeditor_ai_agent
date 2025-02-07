@@ -4,16 +4,80 @@ import { countTokens, trimLLMContentByTokens } from './token-utils.js';
 import { fetchUrlContent } from './url-utils.js';
 import { getDefaultRules } from './default-rules.js';
 import { getAllowedHtmlTags } from './html-utils.js';
+// Default token limits if no specific match is found
+const DEFAULT_MAX_INPUT_TOKENS = 128000;
+export function getModelTokenLimits(model) {
+    // OpenAI models
+    if (model.includes('o1')) {
+        return { maxInputContextTokens: 200000 };
+    }
+    if (model.includes('o3-mini')) {
+        return { maxInputContextTokens: 200000 };
+    }
+    if (model.includes('gpt-4o')) {
+        return { maxInputContextTokens: 128000 };
+    }
+    // Anthropic models
+    if (model.includes('claude-2.0')) {
+        return { maxInputContextTokens: 100000 };
+    }
+    if (model.includes('claude')) {
+        return { maxInputContextTokens: 200000 };
+    }
+    // Google models
+    if (model.includes('gemini-1.5-pro')) {
+        return { maxInputContextTokens: 2000000 };
+    }
+    if (model.includes('gemini') && model.includes('flash')) {
+        return { maxInputContextTokens: 1000000 };
+    }
+    if (model.includes('gemma')) {
+        return { maxInputContextTokens: 8192 };
+    }
+    // Mistral models
+    if (model.includes('codestral-mamba')) {
+        return { maxInputContextTokens: 256000 };
+    }
+    if (model.includes('mixtral-8x22b')) {
+        return { maxInputContextTokens: 65000 };
+    }
+    if (model.includes('mixtral-8x7b-32768')) {
+        return { maxInputContextTokens: 32768 };
+    }
+    if (model.includes('mixtral') ||
+        model.includes('mistral-medium') ||
+        model.includes('mistral-small') ||
+        model.includes('mistral-tiny')) {
+        return { maxInputContextTokens: 33000 };
+    }
+    if (model.includes('mistral-large') || model.includes('ministral')) {
+        return { maxInputContextTokens: 128000 };
+    }
+    // Default for all other models
+    return { maxInputContextTokens: DEFAULT_MAX_INPUT_TOKENS };
+}
 export class PromptHelper {
     constructor(editor, options = {}) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f;
         this.editor = editor;
         const config = editor.config.get('aiAgent');
-        this.contextSize = config.contextSize;
-        this.promptSettings = (_a = config.promptSettings) !== null && _a !== void 0 ? _a : {};
-        this.debugMode = (_b = config.debugMode) !== null && _b !== void 0 ? _b : false;
-        this.editorContextRatio = (_c = options.editorContextRatio) !== null && _c !== void 0 ? _c : 0.3;
-        this.contentScope = (_d = config === null || config === void 0 ? void 0 : config.contentScope) !== null && _d !== void 0 ? _d : '';
+        const model = ((_a = config.model) !== null && _a !== void 0 ? _a : 'gpt-4o');
+        // Get model's maxInputContextTokens based on pattern matching
+        const { maxInputContextTokens } = getModelTokenLimits(model);
+        this.contextSize = (_b = config.contextSize) !== null && _b !== void 0 ? _b : Math.floor(maxInputContextTokens * 0.75);
+        this.promptSettings = (_c = config.promptSettings) !== null && _c !== void 0 ? _c : {};
+        this.debugMode = (_d = config.debugMode) !== null && _d !== void 0 ? _d : false;
+        this.editorContextRatio = (_e = options.editorContextRatio) !== null && _e !== void 0 ? _e : 0.3;
+        this.contentScope = (_f = config === null || config === void 0 ? void 0 : config.contentScope) !== null && _f !== void 0 ? _f : '';
+        if (this.debugMode) {
+            console.log('[Context Init]', {
+                model,
+                maxInputContextTokens,
+                defaultContextSize: Math.floor(maxInputContextTokens * 0.75),
+                configuredContextSize: config.contextSize,
+                finalContextSize: this.contextSize
+            });
+        }
     }
     getSystemPrompt(isInlineResponse = false) {
         var _a, _b;
@@ -53,6 +117,12 @@ export class PromptHelper {
         const splitText = promptContainerText !== null && promptContainerText !== void 0 ? promptContainerText : prompt;
         const view = (_d = (_c = (_b = (_a = this.editor) === null || _a === void 0 ? void 0 : _a.editing) === null || _b === void 0 ? void 0 : _b.view) === null || _c === void 0 ? void 0 : _c.domRoots) === null || _d === void 0 ? void 0 : _d.get('main');
         let context = (_e = view === null || view === void 0 ? void 0 : view.innerText) !== null && _e !== void 0 ? _e : '';
+        if (this.debugMode) {
+            console.log('[Context]', {
+                contextSize: this.contextSize,
+                editorContextRatio: this.editorContextRatio
+            });
+        }
         if (this.contentScope) {
             const activeEditorElement = this.editor.editing.view.getDomRoot();
             const targetElement = activeEditorElement === null || activeEditorElement === void 0 ? void 0 : activeEditorElement.closest(this.contentScope);
@@ -71,6 +141,13 @@ export class PromptHelper {
         const afterNewline = context.substring(firstNewlineIndex + 1);
         const contextParts = [beforeNewline, afterNewline];
         const allocatedEditorContextToken = Math.floor(this.contextSize * this.editorContextRatio);
+        if (this.debugMode) {
+            console.log('[Context Size]', {
+                allocatedTokens: allocatedEditorContextToken,
+                beforeLength: contextParts[0].length,
+                afterLength: contextParts[1].length
+            });
+        }
         if (contextParts.length > 1) {
             if (contextParts[0].length < contextParts[1].length) {
                 contentBeforePrompt = extractEditorContent(contextParts[0], allocatedEditorContextToken / 2, true, this.editor);

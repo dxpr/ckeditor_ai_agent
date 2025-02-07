@@ -20,6 +20,7 @@ export default class AiAgentService {
     private moderationEnable;
     private disableFlags;
     private s;
+    private readonly STORAGE_PREFIX;
     /**
      * Initializes the AiAgentService with the provided editor and configuration settings.
      *
@@ -54,6 +55,29 @@ export default class AiAgentService {
      * @returns A promise that resolves when the response has been processed.
      */
     private fetchAndProcessGptResponse;
+    /**
+     * Checks if the specified AI model exists for the given engine.
+     * If the models are not cached, it fetches them from the API and caches them.
+     *
+     * @param engine - The AI engine to check the model against.
+     * @param model - The model identifier to verify.
+     * @param apiKey - Optional API key for authentication with the AI engine.
+     * @returns A promise that resolves to an object containing:
+     * - `success`: A boolean indicating whether the model exists.
+     * - `error`: An optional string containing error details if the model is invalid.
+     *
+     * @throws Will throw an error if unable to load models from the API.
+     */
+    private checkModel;
+    /**
+     * Retrieves cached models from local storage based on the provided key.
+     * If the cached models are expired, they are removed from local storage.
+     *
+     * @param engine - The key used to access the cached models in local storage.
+     * @returns An array of model identifiers retrieved from local storage, or an empty array if no valid models are found.
+     */
+    private getCachedModels;
+    private cacheModels;
     private handleStreamingResponse;
     private handleNonStreamingResponse;
     /**

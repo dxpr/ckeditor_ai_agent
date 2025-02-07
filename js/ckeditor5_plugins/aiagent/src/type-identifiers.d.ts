@@ -1,4 +1,5 @@
 import type { ALL_MODERATION_FLAGS, AI_ENGINE, AI_CUSTOM_ENGINE, AI_CUSTOM_MODEL } from './const.js';
+import type { Editor } from 'ckeditor5/src/core.js';
 export type AiEngine = typeof AI_ENGINE[number] | typeof AI_CUSTOM_ENGINE[number];
 export type AiModel = typeof AI_CUSTOM_MODEL[number];
 export type PromptComponentKey = 'responseRules' | 'htmlFormatting' | 'contentStructure' | 'tone' | 'inlineContent' | 'imageHandling' | 'referenceGuidelines' | 'contextRequirements';
@@ -52,4 +53,10 @@ export interface ModerationResponse {
         categories: Record<ModerationFlagsTypes, boolean>;
         category_scores: Record<ModerationFlagsTypes, number>;
     }>;
+}
+export interface AIApiConfig {
+    apiKey: string | undefined;
+    baseURL: string;
+    engine: AiEngine;
+    editor: Editor;
 }
