@@ -1123,10 +1123,10 @@
   resolved "https://registry.npmjs.org/@dual-bundle/import-meta-resolve/-/import-meta-resolve-4.1.0.tgz"
   integrity sha512-+nxncfwHM5SgAtrVzgpzJOI1ol0PkumhVo469KCf9lUi21IGcY90G98VuHm9VRrUypmAzawAHO9bs6hqeADaVg==
 
-"@dxpr/ckeditor5-ai-agent@^1.0.0-beta28":
-  version "1.0.0-beta28"
-  resolved "https://registry.npmjs.org/@dxpr/ckeditor5-ai-agent/-/ckeditor5-ai-agent-1.0.0-beta28.tgz"
-  integrity sha512-DR9enNnkuNa8UJ7XXVsmKhIFcoODJXA3TjA3pEOXpmZ8N7weEtp4xpaPOQ99mf29Qm5PlPx36gk5SIhnqqAdaA==
+"@dxpr/ckeditor5-ai-agent@^1.0.0-beta31":
+  version "1.0.0-beta31"
+  resolved "https://registry.npmjs.org/@dxpr/ckeditor5-ai-agent/-/ckeditor5-ai-agent-1.0.0-beta31.tgz"
+  integrity sha512-J+c4MSEenQSE1O/bMkVcEn1AljMY/ztzu/g6xwUS8pAJwcOpIPxpMATIeYUfNBL58CeAUoUz527Mf88+m7H9og==
   dependencies:
     "@ckeditor/ckeditor5-core" "^43.3.1"
     "@ckeditor/ckeditor5-utils" "^43.0.0"
@@ -5922,9 +5922,9 @@ ms@2.1.1:
   integrity sha512-tgp+dl5cGk28utYktBsrFqA7HKgrhgPsg6Z/EfhWI4gl1Hwq8B/GmY/0oXZ6nF8hDVesS/FpnYaD/kOWhYQvyg==
 
 multi-llm-ts@^2.10.5:
-  version "2.10.6"
-  resolved "https://registry.npmjs.org/multi-llm-ts/-/multi-llm-ts-2.10.6.tgz"
-  integrity sha512-oDlg+HRuDDbvtiURloYLyFMMZvK3UlrEHPFMvyaVmGIzcT1GFULbL20lyBgKKQFaJjywN4XT0uncaUax10DE2g==
+  version "2.11.1"
+  resolved "https://registry.npmjs.org/multi-llm-ts/-/multi-llm-ts-2.11.1.tgz"
+  integrity sha512-Lwj5+GbDqJK5xAyms46jnGA7v4EGQ6r6HdSwkg5a2OkPbXF2pTLiv/lFn9S1D+UEg8Biuea4jm9TR3rInGRfwA==
   dependencies:
     "@anthropic-ai/sdk" "^0.33.1"
     "@google/generative-ai" "^0.21.0"

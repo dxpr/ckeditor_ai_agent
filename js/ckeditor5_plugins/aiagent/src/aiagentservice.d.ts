@@ -19,8 +19,10 @@ export default class AiAgentService {
     private moderationKey;
     private moderationEnable;
     private disableFlags;
-    private s;
+    private stream;
+    private writesPerSecond;
     private readonly STORAGE_PREFIX;
+    private readonly FILTERED_STRINGS;
     /**
      * Initializes the AiAgentService with the provided editor and configuration settings.
      *
@@ -110,7 +112,6 @@ export default class AiAgentService {
      *
      * @param newHtml - The new HTML content to insert
      * @param blockID - The unique identifier of the AI block to update
-     * @param insertParent - Whether to insert at parent level or child level
      * @returns Promise that resolves when the update is complete
      * @private
      */
@@ -170,4 +171,17 @@ export default class AiAgentService {
      * @returns A Promise that resolves when the tags have been successfully inserted.
      */
     private insertAiTag;
+    /**
+     * Generates a stream of messages from the specified language model (LLM) based on the provided input thread.
+     * This method handles the streaming of responses, yielding each message as it is received.
+     *
+     * @param llm - The language model instance used for generating responses.
+     * @param model - The identifier of the model to be used for generation.
+     * @param thread - An array of messages that form the context for the generation.
+     * @param opts - Options for the LLM completion, such as max tokens and temperature.
+     * @returns An async generator that yields messages from the LLM as they are received.
+     *
+     * @throws Will throw an error if the streaming process fails or if the model is invalid.
+     */
+    private generate;
 }

@@ -12,6 +12,7 @@ export interface ModelTokenLimits {
     maxOutputTokens: number;
     maxInputContextTokens: number;
 }
+type WritesPerSecond = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export interface AiAgentConfig {
     engine?: AiEngine;
     model?: string;
@@ -40,6 +41,7 @@ export interface AiAgentConfig {
         }>;
     }>;
     contentScope?: string;
+    writesPerSecond?: WritesPerSecond;
 }
 export interface MarkdownContent {
     content: string;
@@ -60,3 +62,4 @@ export interface AIApiConfig {
     engine: AiEngine;
     editor: Editor;
 }
+export {};

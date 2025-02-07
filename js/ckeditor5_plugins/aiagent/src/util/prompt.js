@@ -1,11 +1,11 @@
 import { aiAgentContext } from '../aiagentcontext.js';
 import { removeLeadingSpaces, extractEditorContent, trimMultilineString } from './text-utils.js';
 import { countTokens, trimLLMContentByTokens } from './token-utils.js';
-import { fetchUrlContent } from './url-utils.js';
+import { fetchMultipleUrls } from './url-utils.js';
 import { getDefaultRules } from './default-rules.js';
 import { getAllowedHtmlTags } from './html-utils.js';
 // Default token limits if no specific match is found
-const DEFAULT_MAX_INPUT_TOKENS = 128000;
+const DEFAULT_MAX_INPUT_TOKENS = 1000000;
 export function getModelTokenLimits(model) {
     // OpenAI models
     if (model.includes('o1')) {
@@ -100,8 +100,10 @@ export class PromptHelper {
             if ((_b = this.promptSettings.additions) === null || _b === void 0 ? void 0 : _b[componentId]) {
                 content += '\n' + this.promptSettings.additions[componentId];
             }
-            // Add the component to the system prompt
-            systemPrompt += trimMultilineString(content) + ('\n\n');
+            // Convert componentId to uppercase for XML tag
+            const xmlTag = componentId.replace(/([A-Z])/g, '_$1').toUpperCase();
+            // Add the component to the system prompt with XML tags
+            systemPrompt += `<${xmlTag}>\n${trimMultilineString(content)}\n</${xmlTag}>\n\n`;
         }
         if (this.debugMode) {
             console.group('AiAgent System Prompt Debug');
@@ -235,23 +237,18 @@ export class PromptHelper {
     }
     async generateMarkDownForUrls(urls) {
         try {
+            const results = await fetchMultipleUrls(urls);
             const markdownContents = [];
-            for (const url of urls) {
-                try {
-                    const content = await fetchUrlContent(url);
-                    if (content) {
-                        markdownContents.push({
-                            content,
-                            url,
-                            tokenCount: countTokens(content)
-                        });
-                    }
+            for (const result of results) {
+                if (result.content && !result.error) {
+                    markdownContents.push({
+                        content: result.content,
+                        url: result.url,
+                        tokenCount: countTokens(result.content)
+                    });
                 }
-                catch (error) {
-                    if (this.debugMode) {
-                        console.error(`Failed to fetch content from ${url}:`, error);
-                    }
-                    aiAgentContext.showError(`Failed to fetch content from ${url}`);
+                else if (this.debugMode) {
+                    console.error(`Failed to fetch content from ${result.url}:`, result.error);
                 }
             }
             return this.allocateTokensToFetchedContent(this.getSystemPrompt(), markdownContents);

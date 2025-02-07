@@ -15,12 +15,13 @@ export default class AiAgentService {
      * @param editor - The CKEditor instance to be used with the AI assist service.
      */
     constructor(editor) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g;
         this.aiAgentFeatureLockId = Symbol('ai-agent-feature');
         this.isInlineInsertion = false;
         this.abortGeneration = false;
         this.disableFlags = [];
         this.STORAGE_PREFIX = 'ck5-ai-agent';
+        this.FILTERED_STRINGS = /```html|```|html\n/g;
         this.editor = editor;
         this.promptHelper = new PromptHelper(editor);
         this.htmlParser = new HtmlParser(editor);
@@ -38,6 +39,7 @@ export default class AiAgentService {
         this.moderationKey = (_d = config.moderationKey) !== null && _d !== void 0 ? _d : '';
         this.moderationEnable = (_e = config.moderationEnable) !== null && _e !== void 0 ? _e : false;
         this.disableFlags = (_f = config.moderationDisableFlags) !== null && _f !== void 0 ? _f : [];
+        this.writesPerSecond = (_g = config.writesPerSecond) !== null && _g !== void 0 ? _g : 10;
     }
     /**
      * Handles the slash command input from the user, processes it, and interacts with the AI model.
@@ -245,7 +247,7 @@ export default class AiAgentService {
                 };
                 if (this.streamContent) {
                     // Streaming path
-                    const stream = llm.generate(this.aiModel, messages, completionOpts);
+                    const stream = this.generate(llm, this.aiModel, messages, completionOpts);
                     await this.handleStreamingResponse(stream, blockID, parent, command, controller, llm, resetTimeout);
                 }
                 else {
@@ -371,26 +373,43 @@ export default class AiAgentService {
     async handleStreamingResponse(stream, blockID, parent, command, controller, llm, resetTimeout) {
         let isFirstChunk = true;
         let contentBuffer = '';
-        for await (const c of stream) {
-            if (isFirstChunk) {
-                aiAgentContext.hideLoader();
-                this.cancelGenerationButton(blockID, controller, llm, stream);
-                this.undoRedoHandler();
-                this.insertAiTag(blockID);
-                this.clearParentContent(parent, command);
-                isFirstChunk = false;
+        const updateInterval = 1000 / this.writesPerSecond; // Calculate interval in ms
+        const updateContent = async () => {
+            if (contentBuffer) {
+                await this.updateContent(contentBuffer, blockID);
             }
-            this.s = c;
-            const chunk = c;
-            if (chunk.type === 'status') {
-                await this.animatedStatusMessages(chunk.text, blockID);
+        };
+        const updateContentTimer = setInterval(updateContent, updateInterval);
+        try {
+            for await (const c of stream) {
+                if (isFirstChunk) {
+                    aiAgentContext.hideLoader();
+                    this.cancelGenerationButton(blockID, controller, llm);
+                    this.undoRedoHandler();
+                    this.insertAiTag(blockID);
+                    this.clearParentContent(parent, command);
+                    isFirstChunk = false;
+                }
+                const chunk = c;
+                if (chunk.type === 'status') {
+                    await this.animatedStatusMessages(chunk.text, blockID);
+                }
+                // Filter out markdown code blocks and normalize content
+                const filteredText = chunk.text
+                    .replace(this.FILTERED_STRINGS, '')
+                    .trim();
+                if (chunk.type === 'content') {
+                    contentBuffer += filteredText;
+                }
+                // Reset timeout when data is received
+                resetTimeout();
             }
-            if (chunk.type === 'content') {
-                contentBuffer += chunk.text;
-            }
-            await this.updateContent(contentBuffer, blockID);
-            // Reset timeout when data is received
-            resetTimeout();
+        }
+        finally {
+            clearInterval(updateContentTimer);
+            await updateContent();
+            this.processCompleted(blockID);
+            contentBuffer = '';
         }
         this.processCompleted(blockID);
     }
@@ -398,7 +417,13 @@ export default class AiAgentService {
         aiAgentContext.hideLoader();
         this.insertAiTag(blockID);
         this.clearParentContent(parent, command);
-        await this.htmlParser.insertSimpleHtml(content);
+        // Filter out markdown code blocks and normalize content
+        const filteredContent = content
+            .replace(this.FILTERED_STRINGS, '')
+            .trim();
+        if (filteredContent) {
+            await this.htmlParser.insertSimpleHtml(filteredContent);
+        }
         this.processCompleted(blockID);
     }
     /**
@@ -408,7 +433,7 @@ export default class AiAgentService {
      * @param controller - AbortController to cancel the ongoing AI generation
      * @private
      */
-    cancelGenerationButton(blockID, controller, llm, stream) {
+    cancelGenerationButton(blockID, controller, llm) {
         const editor = this.editor;
         const t = editor.t;
         const view = new ButtonView();
@@ -427,7 +452,7 @@ export default class AiAgentService {
         view.on('execute', () => {
             this.abortGeneration = true;
             if (llm) {
-                llm.stop(llm);
+                llm.stop(this.stream);
             }
             else {
                 controller.abort();
@@ -439,7 +464,7 @@ export default class AiAgentService {
             if (keyEvtData.ctrlKey || keyEvtData.metaKey) {
                 this.abortGeneration = true;
                 if (llm) {
-                    llm.stop(stream);
+                    llm.stop(this.stream);
                 }
                 else {
                     controller.abort();
@@ -549,12 +574,11 @@ export default class AiAgentService {
      *
      * @param newHtml - The new HTML content to insert
      * @param blockID - The unique identifier of the AI block to update
-     * @param insertParent - Whether to insert at parent level or child level
      * @returns Promise that resolves when the update is complete
      * @private
      */
     async updateContent(newHtml, blockID) {
-        var _a;
+        var _a, _b;
         const editor = this.editor;
         const tempParagraph = document.createElement('div');
         tempParagraph.innerHTML = newHtml;
@@ -569,7 +593,16 @@ export default class AiAgentService {
                 }
             }
         }
+        // Skip empty content
+        if (!(textContent === null || textContent === void 0 ? void 0 : textContent.trim()) && !((_b = tempParagraph.innerHTML) === null || _b === void 0 ? void 0 : _b.trim())) {
+            return;
+        }
         if (textContent) {
+            // Filter out markdown code blocks and empty content
+            const filteredText = textContent.replace(this.FILTERED_STRINGS, '').trim();
+            if (!filteredText) {
+                return;
+            }
             editor.model.enqueueChange({ isUndoable: false }, writer => {
                 const root = editor.model.document.getRoot();
                 if (root) {
@@ -578,12 +611,17 @@ export default class AiAgentService {
                     if (targetElement) {
                         const range = editor.model.createRangeIn(targetElement);
                         writer.remove(range);
-                        writer.insertText(textContent, targetElement, 'end');
+                        writer.insertText(filteredText, targetElement, 'end');
                     }
                 }
             });
         }
         if (tempParagraph.innerHTML) {
+            // Filter out markdown code blocks from HTML content
+            const filteredHtml = tempParagraph.innerHTML.replace(this.FILTERED_STRINGS, '').trim();
+            if (!filteredHtml) {
+                return;
+            }
             editor.model.enqueueChange({ isUndoable: false }, writer => {
                 const root = editor.model.document.getRoot();
                 if (root) {
@@ -592,7 +630,7 @@ export default class AiAgentService {
                     if (targetElement) {
                         const range = editor.model.createRangeIn(targetElement);
                         writer.remove(range);
-                        const viewFragment = editor.data.processor.toView(tempParagraph.innerHTML);
+                        const viewFragment = editor.data.processor.toView(filteredHtml);
                         const modelFragment = editor.data.toModel(viewFragment);
                         writer.insert(modelFragment, targetElement, 'end');
                     }
@@ -613,20 +651,29 @@ export default class AiAgentService {
         try {
             console.log('--- Start of processContent ---');
             console.log('Processing content:', content, this.isInlineInsertion);
+            // Skip empty content early
+            if (!(content === null || content === void 0 ? void 0 : content.trim())) {
+                return;
+            }
+            // Filter out markdown code blocks
+            const filteredContent = content.replace(this.FILTERED_STRINGS, '').trim();
+            if (!filteredContent) {
+                return;
+            }
             if (this.isInlineInsertion) {
                 const position = this.editor.model.document.selection.getLastPosition();
                 const tempParagraph = document.createElement('div');
-                tempParagraph.innerHTML = content;
+                tempParagraph.innerHTML = filteredContent;
                 await this.htmlParser.insertAsText(tempParagraph || '', position !== null && position !== void 0 ? position : undefined, this.streamContent);
             }
             else {
                 if (this.streamContent) {
                     // Existing complex content processing logic
-                    await this.proceedHtmlResponse(content);
+                    await this.proceedHtmlResponse(filteredContent);
                 }
                 else {
                     // Use the simple HTML insertion method
-                    await this.htmlParser.insertSimpleHtml(content);
+                    await this.htmlParser.insertSimpleHtml(filteredContent);
                 }
             }
             console.log('--- End of processContent ---');
@@ -849,5 +896,35 @@ export default class AiAgentService {
                 }
             }
         });
+    }
+    /**
+     * Generates a stream of messages from the specified language model (LLM) based on the provided input thread.
+     * This method handles the streaming of responses, yielding each message as it is received.
+     *
+     * @param llm - The language model instance used for generating responses.
+     * @param model - The identifier of the model to be used for generation.
+     * @param thread - An array of messages that form the context for the generation.
+     * @param opts - Options for the LLM completion, such as max tokens and temperature.
+     * @returns An async generator that yields messages from the LLM as they are received.
+     *
+     * @throws Will throw an error if the streaming process fails or if the model is invalid.
+     */
+    async *generate(llm, model, thread, opts) {
+        this.stream = await llm.stream(model, thread, opts);
+        while (this.stream != null) {
+            let stream2 = null;
+            for await (const chunk of this.stream) {
+                const stream3 = llm.nativeChunkToLlmChunk(chunk);
+                for await (const msg of stream3) {
+                    if (msg.type === 'stream') {
+                        stream2 = msg.stream;
+                    }
+                    else {
+                        yield msg;
+                    }
+                }
+            }
+            this.stream = stream2;
+        }
     }
 }
