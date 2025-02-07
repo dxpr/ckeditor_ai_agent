@@ -21,7 +21,7 @@ export default class AiAgentService {
         this.abortGeneration = false;
         this.disableFlags = [];
         this.STORAGE_PREFIX = 'ck5-ai-agent';
-        this.FILTERED_STRINGS = /```html|```|html\n/g;
+        this.FILTERED_STRINGS = /```html|```|html\n|@@@cursor@@@/g;
         this.editor = editor;
         this.promptHelper = new PromptHelper(editor);
         this.htmlParser = new HtmlParser(editor);
@@ -396,8 +396,7 @@ export default class AiAgentService {
                 }
                 // Filter out markdown code blocks and normalize content
                 const filteredText = chunk.text
-                    .replace(this.FILTERED_STRINGS, '')
-                    .trim();
+                    .replace(this.FILTERED_STRINGS, '');
                 if (chunk.type === 'content') {
                     contentBuffer += filteredText;
                 }
@@ -419,8 +418,7 @@ export default class AiAgentService {
         this.clearParentContent(parent, command);
         // Filter out markdown code blocks and normalize content
         const filteredContent = content
-            .replace(this.FILTERED_STRINGS, '')
-            .trim();
+            .replace(this.FILTERED_STRINGS, '');
         if (filteredContent) {
             await this.htmlParser.insertSimpleHtml(filteredContent);
         }
@@ -599,7 +597,7 @@ export default class AiAgentService {
         }
         if (textContent) {
             // Filter out markdown code blocks and empty content
-            const filteredText = textContent.replace(this.FILTERED_STRINGS, '').trim();
+            const filteredText = textContent.replace(this.FILTERED_STRINGS, '');
             if (!filteredText) {
                 return;
             }
@@ -618,7 +616,7 @@ export default class AiAgentService {
         }
         if (tempParagraph.innerHTML) {
             // Filter out markdown code blocks from HTML content
-            const filteredHtml = tempParagraph.innerHTML.replace(this.FILTERED_STRINGS, '').trim();
+            const filteredHtml = tempParagraph.innerHTML.replace(this.FILTERED_STRINGS, '');
             if (!filteredHtml) {
                 return;
             }
@@ -656,7 +654,7 @@ export default class AiAgentService {
                 return;
             }
             // Filter out markdown code blocks
-            const filteredContent = content.replace(this.FILTERED_STRINGS, '').trim();
+            const filteredContent = content.replace(this.FILTERED_STRINGS, '');
             if (!filteredContent) {
                 return;
             }
