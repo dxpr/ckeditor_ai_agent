@@ -4,6 +4,8 @@ import { countTokens, trimLLMContentByTokens } from './token-utils.js';
 import { fetchMultipleUrls } from './url-utils.js';
 import { getDefaultRules } from './default-rules.js';
 import { getAllowedHtmlTags } from './html-utils.js';
+import { DEFAULT_HTML_CLEANUP_CONFIG } from '../types/html-cleanup.js';
+import { HtmlCleanupService } from './html-cleanup.js';
 // Default token limits if no specific match is found
 const DEFAULT_MAX_INPUT_TOKENS = 1000000;
 export function getModelTokenLimits(model) {
@@ -78,6 +80,7 @@ export class PromptHelper {
                 finalContextSize: this.contextSize
             });
         }
+        this.htmlCleanup = new HtmlCleanupService({ editor, config: DEFAULT_HTML_CLEANUP_CONFIG });
     }
     getSystemPrompt(isInlineResponse = false) {
         var _a, _b;
@@ -113,27 +116,40 @@ export class PromptHelper {
         return systemPrompt;
     }
     trimContext(prompt, promptContainerText = '') {
-        var _a, _b, _c, _d, _e;
         let contentBeforePrompt = '';
         let contentAfterPrompt = '';
         const splitText = promptContainerText !== null && promptContainerText !== void 0 ? promptContainerText : prompt;
-        const view = (_d = (_c = (_b = (_a = this.editor) === null || _a === void 0 ? void 0 : _a.editing) === null || _b === void 0 ? void 0 : _b.view) === null || _c === void 0 ? void 0 : _c.domRoots) === null || _d === void 0 ? void 0 : _d.get('main');
-        let context = (_e = view === null || view === void 0 ? void 0 : view.innerText) !== null && _e !== void 0 ? _e : '';
+        let context = '';
         if (this.debugMode) {
-            console.log('[Context]', {
-                contextSize: this.contextSize,
-                editorContextRatio: this.editorContextRatio
-            });
+            console.group('HTML Content Debug');
+            console.log('1. Initial context:', context);
         }
+        // Get raw HTML content based on configuration
         if (this.contentScope) {
+            // Use contentScope if configured
             const activeEditorElement = this.editor.editing.view.getDomRoot();
             const targetElement = activeEditorElement === null || activeEditorElement === void 0 ? void 0 : activeEditorElement.closest(this.contentScope);
-            const ckContents = targetElement === null || targetElement === void 0 ? void 0 : targetElement.querySelectorAll('.ck-content');
-            if (ckContents === null || ckContents === void 0 ? void 0 : ckContents.length) {
-                context = '';
-                Array.from(ckContents).map(item => {
-                    context += context ? `\n${item.innerHTML}` : item.innerHTML;
-                });
+            if (targetElement) {
+                context = this.htmlCleanup.clean(targetElement.innerHTML);
+            }
+        }
+        else {
+            // Otherwise get content directly from editor
+            const editorElement = this.editor.editing.view.getDomRoot();
+            if (editorElement) {
+                context = this.htmlCleanup.clean(editorElement.innerHTML);
+            }
+        }
+        if (this.debugMode) {
+            console.log('2. Editor HTML (cleaned):', context);
+            console.log('3. Character count before splitting:', context.length);
+        }
+        // Ensure we don't exceed limits from the start
+        const maxChars = Math.floor(this.contextSize * this.editorContextRatio) * 4;
+        if (context.length > maxChars) {
+            context = context.substring(0, maxChars);
+            if (this.debugMode) {
+                console.log('3a. Content trimmed to length limit:', context);
             }
         }
         const matchIndex = context.indexOf(splitText);
@@ -142,14 +158,15 @@ export class PromptHelper {
         const beforeNewline = context.substring(0, firstNewlineIndex);
         const afterNewline = context.substring(firstNewlineIndex + 1);
         const contextParts = [beforeNewline, afterNewline];
-        const allocatedEditorContextToken = Math.floor(this.contextSize * this.editorContextRatio);
         if (this.debugMode) {
-            console.log('[Context Size]', {
-                allocatedTokens: allocatedEditorContextToken,
-                beforeLength: contextParts[0].length,
-                afterLength: contextParts[1].length
+            console.log('4. Split context parts:', {
+                beforeNewline,
+                afterNewline,
+                beforeLength: beforeNewline.length,
+                afterLength: afterNewline.length
             });
         }
+        const allocatedEditorContextToken = Math.floor(this.contextSize * this.editorContextRatio);
         if (contextParts.length > 1) {
             if (contextParts[0].length < contextParts[1].length) {
                 contentBeforePrompt = extractEditorContent(contextParts[0], allocatedEditorContextToken / 2, true, this.editor);
@@ -160,19 +177,33 @@ export class PromptHelper {
                 contentBeforePrompt = extractEditorContent(contextParts[0], allocatedEditorContextToken - contentAfterPrompt.length / 4, true, this.editor);
             }
         }
+        if (this.debugMode) {
+            console.log('5. After extractEditorContent:', {
+                contentBeforePrompt,
+                contentAfterPrompt,
+                beforeLength: contentBeforePrompt.length,
+                afterLength: contentAfterPrompt.length,
+                totalLength: contentBeforePrompt.length + contentAfterPrompt.length
+            });
+        }
         // Combine the trimmed context with the cursor placeholder
         const escapedPrompt = prompt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escapes special characters
         contentBeforePrompt = contentBeforePrompt.trim()
             .replace(new RegExp(escapedPrompt.slice(1)), '@@@cursor@@@')
             .replace('/@@@cursor@@@', '@@@cursor@@@'); // Remove forward slash if present
         const trimmedContext = `${contentBeforePrompt}\n${contentAfterPrompt}`;
+        if (this.debugMode) {
+            console.log('6. Final trimmed context:', trimmedContext);
+            console.log('Final character count:', trimmedContext.length);
+            console.groupEnd();
+        }
         return trimmedContext.trim();
     }
     formatFinalPrompt(request, context, selectedContent, markDownContents, isEditorEmpty = false) {
         if (this.debugMode) {
             console.group('formatFinalPrompt Debug');
             console.log('Request:', request);
-            console.log('Context:', context);
+            console.log('Context received:', context);
             console.log('MarkDownContents:', markDownContents);
             console.log('IsEditorEmpty:', isEditorEmpty);
         }

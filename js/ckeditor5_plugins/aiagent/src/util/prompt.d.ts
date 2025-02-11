@@ -11,6 +11,7 @@ export declare class PromptHelper {
     private debugMode;
     private editorContextRatio;
     private contentScope;
+    private htmlCleanup;
     constructor(editor: Editor, options?: {
         editorContextRatio?: number;
     });
