@@ -1,0 +1,84 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the CKEditor AI Agent module.
+ */
+
+use Drupal\Core\Config\FileStorage;
+
+/**
+ * Migrate API keys to Key module if available.
+ */
+function ckeditor_ai_agent_update_9001(): void {
+  if (!\Drupal::moduleHandler()->moduleExists('key')) {
+    return;
+  }
+
+  $config_factory = \Drupal::configFactory();
+  $entity_type_manager = \Drupal::entityTypeManager();
+  $key_repository = \Drupal::service('key.repository');
+
+  // Migrate global settings key
+  $settings = $config_factory->getEditable('ckeditor_ai_agent.settings');
+  $api_key = $settings->get('apiKey');
+  if ($api_key) {
+    // Create a new key entity
+    $values = [
+      'id' => 'ckeditor_ai_agent_key',
+      'label' => 'CKEditor AI Agent API Key',
+      'key_type' => 'authentication',
+      'key_provider' => 'config',
+      'key_provider_settings' => [
+        'key_value' => $api_key,
+      ],
+      'key_input' => 'text_field',
+    ];
+    $storage = $entity_type_manager->getStorage('key');
+    $key = $storage->create($values);
+    $key->save();
+
+    // Update settings to use the key
+    $settings
+      ->set('api_key_storage', 'key')
+      ->set('key_provider', 'ckeditor_ai_agent_key')
+      ->set('apiKey', NULL)
+      ->save();
+  }
+
+  // Migrate editor-specific keys
+  $editors = $entity_type_manager->getStorage('editor')->loadMultiple();
+  foreach ($editors as $editor) {
+    $settings = $editor->getSettings();
+    if (isset($settings['plugins']['aiagent']['apiKey'])) {
+      $api_key = $settings['plugins']['aiagent']['apiKey'];
+      if ($api_key) {
+        // Create a new key entity
+        $key_id = 'ckeditor_ai_agent_key_' . $editor->id();
+        $values = [
+          'id' => $key_id,
+          'label' => 'CKEditor AI Agent API Key - ' . $editor->label(),
+          'key_type' => 'authentication',
+          'key_provider' => 'config',
+          'key_provider_settings' => [
+            'key_value' => $api_key,
+          ],
+          'key_input' => 'text_field',
+        ];
+        $storage = $entity_type_manager->getStorage('key');
+        $key = $storage->create($values);
+        $key->save();
+
+        // Update editor settings
+        $settings['plugins']['aiagent']['api_key_storage'] = 'key';
+        $settings['plugins']['aiagent']['key_provider'] = $key_id;
+        $settings['plugins']['aiagent']['apiKey'] = NULL;
+        $editor->setSettings($settings);
+        $editor->save();
+      }
+    }
+  }
+
+  // Clear caches to ensure new services are discovered
+  drupal_flush_all_caches();
+} 

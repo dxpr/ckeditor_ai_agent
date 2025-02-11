@@ -7,6 +7,7 @@
 
 use Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
 
 /**
  * Implements hook_ckeditor5_plugin_info_alter().
@@ -32,8 +33,23 @@ function ckeditor_ai_agent_ckeditor5_plugin_info_alter(array &$plugin_definition
       $editor = $route_match->getParameter('editor');
     }
 
+    // Get our configuration
+    $our_config = $config_manager->getCKEditorConfig($editor);
+    
+    // Log the configuration for debugging
+    \Drupal::logger('ckeditor_ai_agent')->debug('CKEditor config before merge: @config', [
+      '@config' => print_r($config, TRUE),
+    ]);
+    \Drupal::logger('ckeditor_ai_agent')->debug('Our config: @config', [
+      '@config' => print_r($our_config, TRUE),
+    ]);
+
     // Merge with our configuration.
-    $config = array_merge($config, $config_manager->getCKEditorConfig($editor));
+    $config = array_merge($config, $our_config);
+
+    \Drupal::logger('ckeditor_ai_agent')->debug('Final merged config: @config', [
+      '@config' => print_r($config, TRUE),
+    ]);
 
     // Update the plugin configuration.
     $plugin_config['ckeditor5']['config'] = $config;
@@ -57,4 +73,58 @@ function ckeditor_ai_agent_ai_brand_voice_alter(string &$brand_voice) {
       $brand_voice .= "\n\n" . $tone_additions;
     }
   }
+}
+
+/**
+ * Implements hook_help().
+ */
+function ckeditor_ai_agent_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.ckeditor_ai_agent':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The CKEditor AI Agent module adds AI-powered content generation capabilities to CKEditor 5.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function ckeditor_ai_agent_requirements($phase) {
+  $requirements = [];
+
+  if ($phase === 'runtime') {
+    $key_exists = \Drupal::moduleHandler()->moduleExists('key');
+    $config = \Drupal::config('ckeditor_ai_agent.settings');
+    $key_service = \Drupal::service('ckeditor_ai_agent.key_service');
+
+    if (!$key_exists) {
+      $requirements['ckeditor_ai_agent_key'] = [
+        'title' => t('CKEditor AI Agent'),
+        'description' => t('The Key module is required but not installed. Please install and enable the <a href="@url">Key module</a>.', [
+          '@url' => 'https://www.drupal.org/project/key',
+        ]),
+        'severity' => REQUIREMENT_ERROR,
+      ];
+    }
+    elseif (!$key_service->getApiKey()) {
+      $requirements['ckeditor_ai_agent_key'] = [
+        'title' => t('CKEditor AI Agent'),
+        'description' => t('No API key has been configured. Please configure an API key in the <a href="@url">module settings</a>.', [
+          '@url' => Url::fromRoute('ckeditor_ai_agent.settings')->toString(),
+        ]),
+        'severity' => REQUIREMENT_ERROR,
+      ];
+    }
+    else {
+      $requirements['ckeditor_ai_agent_key'] = [
+        'title' => t('CKEditor AI Agent'),
+        'description' => t('API key is configured and stored securely.'),
+        'severity' => REQUIREMENT_OK,
+      ];
+    }
+  }
+
+  return $requirements;
 }

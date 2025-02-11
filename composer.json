@@ -5,5 +5,8 @@
     "keywords": ["Drupal"],
     "license": "GPL-2.0+",
     "minimum-stability": "dev",
-    "require": {}
+    "require": {
+        "drupal/core": "^10.3 || ^11",
+        "drupal/key": "^1.16"
+    }
 }

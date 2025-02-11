@@ -69,18 +69,28 @@ trait AiAgentFormTrait {
       '#ajax' => FALSE,
     ];
 
-    $elements['basic_settings']['apiKey'] = [
-      '#type' => 'textfield',
+    // Get available keys
+    $key_options = [];
+    $key_storage = \Drupal::entityTypeManager()->getStorage('key');
+    $keys = $key_storage->loadMultiple();
+    foreach ($keys as $key) {
+      $key_options[$key->id()] = $key->label();
+    }
+
+    $elements['basic_settings']['key_provider'] = [
+      '#type' => 'select',
       '#title' => $this->t('API Key'),
       '#description' => $is_plugin
-        ? $this->t('Enter your API key or leave empty to use the <a href="@settingsUrl">global settings</a>.', [
-          '@settingsUrl' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_agent.settings'),
+        ? $this->t('Select the key that contains your API credentials or use the <a href="@url">global settings</a>. <a href="@keys_url">Manage keys</a>', [
+          '@url' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_agent.settings'),
+          '@keys_url' => '/admin/config/system/keys',
         ])
-        : $this->t('Enter your API key. Required for all AI functionality.'),
+        : $this->t('Select the key that contains your API credentials. <a href="@url">Manage keys</a>', [
+          '@url' => '/admin/config/system/keys',
+        ]),
+      '#options' => $key_options,
+      '#default_value' => $getConfigValue('key_provider'),
       '#required' => !$is_plugin,
-      '#size' => 100,
-      '#maxlength' => 255,
-      '#default_value' => $getConfigValue('apiKey'),
       '#ajax' => FALSE,
     ];
 

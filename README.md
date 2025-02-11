@@ -11,26 +11,31 @@ generating, modifying, and enhancing content directly within your editor.
 - Drupal 10.4+ or 11
 - CKEditor 5
 - PHP 8.1 or higher
+- Key module (for secure API key storage)
 - OpenAI API key
 
 ## Installation
 
 1. **Install the Module**
-   - Download and place the module in your Drupal installation's modules
-   directory
-   - Enable the module through Drupal's admin interface or using Drush:
-     ```bash
-     drush en ckeditor_ai_agent
-     ```
+   ```bash
+   composer require drupal/ckeditor_ai_agent
+   drush en ckeditor_ai_agent
+   ```
 
-2. **Configure CKEditor Integration**
+2. **Configure API Key Storage**
+   - Go to **Administration > Configuration > System > Keys** (`admin/config/system/keys`)
+   - Add a new key for your OpenAI API credentials
+   - Select "Authentication" as the key type
+   - Enter your OpenAI API key value
+
+3. **Configure CKEditor Integration**
    - Go to **Administration > Configuration > Content authoring > Text formats
    and editors** (`admin/config/content/formats`)
    - Edit your desired text format (typically Full HTML)
    - Drag and drop the "AI Agent" button into the CKEditor toolbar to make it
    available for content editors
 
-3. **Development**
+4. **Development**
 
    - **Code Quality Checks**
 
@@ -63,7 +68,7 @@ settings.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | **Basic Settings** ||||
-| `apiKey` | `string` | - | Your OpenAI API key. Required for all AI functionality |
+| `key_provider` | `string` | - | Select the key that contains your OpenAI API credentials |
 | `model` | `string` | `'gpt-4o'` | Select AI model: GPT-4o (Most capable), GPT-4o Mini (Balanced), or GPT-3.5 Turbo (Fastest) |
 | `endpointUrl` | `string` | - | OpenAI API endpoint URL. Only change if using a custom endpoint or proxy |
 | **Advanced Settings** ||||

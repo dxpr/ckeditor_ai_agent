@@ -1,19 +1,16 @@
 ckeditor_ai_agent.settings:
   type: config_object
-  label: 'CKEditor AI Agent Settings'
+  label: 'CKEditor AI Agent settings'
   mapping:
-    apiKey:
+    key_provider:
       type: string
       label: 'API Key'
-    engine:
-      type: string
-      label: 'AI Engine'
     model:
       type: string
       label: 'AI Model'
     ollamaModel:
       type: string
-      label: 'Ollama Model Name'
+      label: 'Ollama Model'
     endpointUrl:
       type: string
       label: 'Endpoint URL'
@@ -61,58 +58,12 @@ ckeditor_ai_agent.settings:
       label: 'Prompt Settings'
       mapping:
         overrides:
-          type: mapping
-          label: 'Prompt Component Overrides'
-          mapping:
-            responseRules:
-              type: string
-              label: 'Response Rules Override'
-            htmlFormatting:
-              type: string
-              label: 'HTML Formatting Override'
-            contentStructure:
-              type: string
-              label: 'Content Structure Override'
-            tone:
-              type: string
-              label: 'Tone Override'
-            inlineContent:
-              type: string
-              label: 'Inline Content Override'
-            imageHandling:
-              type: string
-              label: 'Image Handling Override'
-            referenceGuidelines:
-              type: string
-              label: 'Reference Guidelines Override'
-            contextRequirements:
-              type: string
-              label: 'Context Requirements Override'
+          type: sequence
+          label: 'Prompt Overrides'
+          sequence:
+            type: string
         additions:
-          type: mapping
-          label: 'Prompt Component Additions'
-          mapping:
-            responseRules:
-              type: string
-              label: 'Response Rules Additions'
-            htmlFormatting:
-              type: string
-              label: 'HTML Formatting Additions'
-            contentStructure:
-              type: string
-              label: 'Content Structure Additions'
-            tone:
-              type: string
-              label: 'Tone Additions'
-            inlineContent:
-              type: string
-              label: 'Inline Content Additions'
-            imageHandling:
-              type: string
-              label: 'Image Handling Additions'
-            referenceGuidelines:
-              type: string
-              label: 'Reference Guidelines Additions'
-            contextRequirements:
-              type: string
-              label: 'Context Requirements Additions'
+          type: sequence
+          label: 'Prompt Additions'
+          sequence:
+            type: string

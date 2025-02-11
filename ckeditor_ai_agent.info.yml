@@ -1,8 +1,9 @@
 name: CKEditor AI Agent
 type: module
-description: AI integration for CKEditor 5
-package: CKEditor 5
+description: 'Adds AI-powered content generation capabilities to CKEditor 5.'
+package: CKEditor
 core_version_requirement: ^10.3 || ^11
 dependencies:
   - drupal:ckeditor5
+  - key:key
 configure: ckeditor_ai_agent.settings

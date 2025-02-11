@@ -4,6 +4,7 @@ namespace Drupal\ckeditor_ai_agent;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\editor\Entity\Editor;
+use Drupal\ckeditor_ai_agent\Service\AiAgentKeyService;
 
 /**
  * Manages configuration for the CKEditor AI Agent plugin.
@@ -18,13 +19,26 @@ class AiAgentConfigurationManager {
   protected $configFactory;
 
   /**
+   * The key service.
+   *
+   * @var \Drupal\ckeditor_ai_agent\Service\AiAgentKeyService
+   */
+  protected $keyService;
+
+  /**
    * Constructs a new AiAgentConfigurationManager.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
+   * @param \Drupal\ckeditor_ai_agent\Service\AiAgentKeyService $key_service
+   *   The key service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory) {
+  public function __construct(
+    ConfigFactoryInterface $config_factory,
+    AiAgentKeyService $key_service
+  ) {
     $this->configFactory = $config_factory;
+    $this->keyService = $key_service;
   }
 
   /**
@@ -38,7 +52,7 @@ class AiAgentConfigurationManager {
     $result = [];
 
     // Get basic settings
-    $result['apiKey'] = $config->get('apiKey');
+    $result['apiKey'] = $this->keyService->getApiKey();
     
     // Handle engine/model
     $model = $config->get('model');
@@ -92,7 +106,7 @@ class AiAgentConfigurationManager {
     // Structure the config to match the aiAgent JS configuration.
     $config = [
       'aiAgent' => [
-        'apiKey' => $global_config->get('apiKey'),
+        'apiKey' => $editor ? $this->keyService->getApiKey($editor->id()) : $this->keyService->getApiKey(),
         'model' => $global_config->get('model'),
         'ollamaModel' => $global_config->get('ollamaModel'),
         'endpointUrl' => $global_config->get('endpointUrl'),

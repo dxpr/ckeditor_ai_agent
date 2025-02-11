@@ -1,4 +1,7 @@
 services:
   ckeditor_ai_agent.configuration_manager:
     class: Drupal\ckeditor_ai_agent\AiAgentConfigurationManager
-    arguments: ['@config.factory']
+    arguments: ['@config.factory', '@ckeditor_ai_agent.key_service']
+  ckeditor_ai_agent.key_service:
+    class: Drupal\ckeditor_ai_agent\Service\AiAgentKeyService
+    arguments: ['@config.factory', '@module_handler', '@entity_type.manager', '@?key.repository']
