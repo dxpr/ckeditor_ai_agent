@@ -78,14 +78,23 @@ class AiAgentKeyService {
       $editor_config = $this->configFactory->get('editor.editor.' . $editor_id);
       if ($editor_config && $editor_config->get('settings.plugins.ckeditor_ai_agent_ai_agent.aiAgent.key_provider')) {
         $key_id = $editor_config->get('settings.plugins.ckeditor_ai_agent_ai_agent.aiAgent.key_provider');
-        return $this->getKeyValue($key_id);
+        if ($key_id !== '') {
+          $key_value = $this->getKeyValue($key_id);
+          if ($key_value) {
+            return $key_value;
+          }
+        }
       }
     }
 
     // Get global key.
     $config = $this->configFactory->get('ckeditor_ai_agent.settings');
     $key_id = $config->get('key_provider');
-    return $this->getKeyValue($key_id);
+    if ($key_id && $key_id !== '') {
+      return $this->getKeyValue($key_id);
+    }
+
+    return NULL;
   }
 
   /**

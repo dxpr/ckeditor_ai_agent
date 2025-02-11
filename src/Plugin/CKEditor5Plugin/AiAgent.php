@@ -134,7 +134,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         ]);
 
         // First check for editor-specific key provider
-        if (isset($editor_config['key_provider'])) {
+        if (isset($editor_config['key_provider']) && $editor_config['key_provider'] !== '') {
           \Drupal::logger('ckeditor_ai_agent')->debug('Using editor-specific key provider: @key_provider', [
             '@key_provider' => $editor_config['key_provider'],
           ]);
@@ -145,7 +145,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         }
         // Then fall back to global key
         else {
-          \Drupal::logger('ckeditor_ai_agent')->debug('No editor-specific key found, falling back to global key');
+          \Drupal::logger('ckeditor_ai_agent')->debug('No editor-specific key found or empty value, falling back to global key');
           $result['aiAgent'][$js_key] = $key_service->getApiKey();
           \Drupal::logger('ckeditor_ai_agent')->debug('Global key value retrieved: @key_value', [
             '@key_value' => substr($result['aiAgent'][$js_key] ?? '', 0, 10) . '...',

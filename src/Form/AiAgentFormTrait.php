@@ -88,7 +88,7 @@ trait AiAgentFormTrait {
         : $this->t('Select the key that contains your API credentials. <a href="@url">Manage keys</a>', [
           '@url' => '/admin/config/system/keys',
         ]),
-      '#options' => $key_options,
+      '#options' => $is_plugin ? $getSelectOptions($key_options) : $key_options,
       '#default_value' => $getConfigValue('key_provider'),
       '#required' => !$is_plugin,
       '#ajax' => FALSE,
