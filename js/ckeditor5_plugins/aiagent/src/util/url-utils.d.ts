@@ -1,18 +1,8 @@
-interface FetchResult {
-    url: string;
-    content: string;
-    error?: string;
-}
 /**
- * Fetches content from multiple URLs in parallel with a maximum concurrency of 5.
+ * Fetches the content of a given URL and returns it as a string.
  *
- * @param urls - Array of URLs to fetch content from
- * @param maxConcurrent - Maximum number of concurrent requests (default: 5)
- * @returns Promise resolving to an array of FetchResult objects
- */
-export declare function fetchMultipleUrls(urls: Array<string>, maxConcurrent?: number): Promise<Array<FetchResult>>;
-/**
- * @deprecated Use fetchMultipleUrls instead for better performance
+ * @param url - The URL to fetch content from.
+ * @returns A promise that resolves to the fetched content as a string.
+ * @throws Will throw an error if the URL is invalid or if the fetch fails.
  */
 export declare function fetchUrlContent(url: string): Promise<string>;
-export {};
