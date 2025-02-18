@@ -113,10 +113,10 @@ trait AiAgentFormTrait {
     // Add ollama as a special case
     $model_options['ollama'] = ['ollama:custom' => $this->t('Custom Model')];
 
-    // Add kavya as a new engine
-    $model_options['kavya'] = [
-      'kavya:kavya-m1' => 'Kavya M1',
-      'kavya:kavya-m1' => 'Kavya M1 European Union'
+    // Add DXAI as a new engine
+    $model_options['dxai'] = [
+      'dxai:kavya-m1' => 'Kavya M1',
+      'dxai:kavya-m1' => 'Kavya M1 European Union'
     ];
 
     ksort($model_options);
