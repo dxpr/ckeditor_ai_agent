@@ -116,7 +116,7 @@ trait AiAgentFormTrait {
     // Add DXAI as a new engine
     $model_options['dxai'] = [
       'dxai:kavya-m1' => 'Kavya M1',
-      'dxai:kavya-m1' => 'Kavya M1 European Union'
+      'dxai:kavya-m1-eu' => 'Kavya M1 European Union'
     ];
 
     ksort($model_options);
