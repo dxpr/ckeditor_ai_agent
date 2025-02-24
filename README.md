@@ -52,6 +52,23 @@ generating, modifying, and enhancing content directly within your editor.
      docker compose run drupal-check
      ```
 
+   - **Updating the Build**
+
+     When updating the CKEditor AI Agent plugin or making changes to the build:
+
+     ```bash
+     # Update and build the plugin (this will trigger the postinstall hook)
+     npm install
+
+     # Clear Drupal cache
+     drush cr
+     ```
+
+     Note: After updating, test the plugin functionality in your text formats 
+     where CKEditor AI Agent is enabled. During development, you can use:
+     - `npm run watch` for automatic rebuilds while making changes
+     - Check the browser console for any JavaScript errors
+
    - **Configuration**
 
      These checks use:
@@ -78,7 +95,7 @@ settings.
 | `contextSize` | `number` | 75% of max input tokens | How many tokens to use for surrounding content. Must be less than Total Token Limit. Recommended: 75% of Total Token Limit to leave room for AI instructions |
 | `editorContextRatio` | `number` | `0.3` | Portion of context for editor content. Default: 0.3 (30%) |
 | **Performance Settings** ||||
-| `timeoutDuration` | `number` | `45000` | Maximum wait time for AI response in milliseconds |
+| `timeoutDuration` | `number` | `120000` | Maximum wait time for AI response in milliseconds |
 | `retryAttempts` | `number` | `1` | Number of retry attempts for failed requests |
 | **Behavior Settings** ||||
 | `debugMode` | `boolean` | `false` | Enable detailed logging for troubleshooting purposes |
