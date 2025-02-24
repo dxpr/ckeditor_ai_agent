@@ -84,7 +84,7 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $form['advanced_settings']['context']['contextSize']['#default_value'] = $config->get('contextSize');
     $form['advanced_settings']['context']['editorContextRatio']['#default_value'] = $config->get('editorContextRatio') ?: 0.3;
 
-    $form['performance_settings']['timeOutDuration']['#default_value'] = $config->get('timeOutDuration') ?: 45000;
+    $form['performance_settings']['timeOutDuration']['#default_value'] = $config->get('timeOutDuration') ?: 120000;
     $form['performance_settings']['retryAttempts']['#default_value'] = $config->get('retryAttempts') ?: 1;
 
     $form['behavior_settings']['debugMode']['#default_value'] = $config->get('debugMode') ? '1' : '0';

@@ -260,7 +260,7 @@ trait AiAgentFormTrait {
     $performance_fields = [
       'timeOutDuration' => [
         'title' => $this->t('Request Timeout'),
-        'description' => $this->t('Maximum wait time for AI response. Default: 45000ms (45s)'),
+        'description' => $this->t('Maximum wait time for AI response. Default: 120000ms (45s)'),
         'min' => 1000,
         'field_suffix' => 'ms',
       ],
