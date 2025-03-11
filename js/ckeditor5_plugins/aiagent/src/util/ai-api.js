@@ -1,12 +1,17 @@
 import CustomError, { getError } from './custom-error.js';
-import { getAllowedHtmlTags } from './html-utils.js';
+import { getAllowedHtmlTags, getAllowedHtmlClasses } from './html-utils.js';
 export class AIApi {
+    apiKey;
+    baseURL;
+    engine;
+    editor;
+    providers;
     constructor(config) {
-        var _a;
-        this.apiKey = (_a = config.apiKey) !== null && _a !== void 0 ? _a : '';
+        this.apiKey = config.apiKey ?? '';
         this.baseURL = config.baseURL;
         this.engine = config.engine;
         this.editor = config.editor;
+        this.providers = config.providers;
     }
     /**
      * Asynchronously streams data from a ReadableStream.
@@ -54,10 +59,19 @@ export class AIApi {
             stream: true,
             ...config
         };
-        // Add allowed_html_tags only for DXAI engine
+        // Add allowed_html_tags and allowed_html_classes only for DXAI engine
         if (this.engine === 'dxai') {
             const allowedTags = getAllowedHtmlTags(this.editor);
             requestBody.allowed_html_tags = allowedTags.join(', ');
+            // Add allowed_html_classes if available
+            const allowedClasses = getAllowedHtmlClasses(this.editor);
+            if (allowedClasses.length > 0) {
+                requestBody.allowed_html_classes = allowedClasses.join(', ');
+            }
+            // Add providers if available
+            if (this.providers) {
+                requestBody.providers = this.providers;
+            }
         }
         const response = await fetch(this.baseURL, {
             method: 'POST',
@@ -97,7 +111,6 @@ export class AIApi {
      * @throws CustomError if the response cannot be parsed or if an error occurs during the fetch operation.
      */
     async *fetchAIStream(aiModel, messages, config, controller, retries) {
-        var _a, _b;
         try {
             const response = await this.fetchAI(aiModel, messages, config, controller, retries);
             const decoder = new TextDecoder('utf-8');
@@ -124,7 +137,7 @@ export class AIApi {
                                     text = parsedData.params.status;
                                 }
                                 else {
-                                    const content = (_b = (_a = parsedData.choices[0]) === null || _a === void 0 ? void 0 : _a.delta) === null || _b === void 0 ? void 0 : _b.content;
+                                    const content = parsedData.choices[0]?.delta?.content;
                                     if (content !== null && content !== undefined) {
                                         text = content;
                                     }
@@ -143,7 +156,7 @@ export class AIApi {
             }
         }
         catch (error) {
-            throw new CustomError(error, error === null || error === void 0 ? void 0 : error.status);
+            throw new CustomError(error, error?.status);
         }
     }
 }

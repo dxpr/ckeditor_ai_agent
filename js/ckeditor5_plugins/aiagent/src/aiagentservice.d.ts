@@ -14,6 +14,7 @@ export default class AiAgentService {
     private aiAgentFeatureLockId;
     private promptHelper;
     private htmlParser;
+    private providers?;
     private isInlineInsertion;
     private abortGeneration;
     private moderationKey;

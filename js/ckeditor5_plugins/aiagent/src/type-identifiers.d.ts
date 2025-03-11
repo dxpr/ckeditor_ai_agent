@@ -26,6 +26,7 @@ export interface AiAgentConfig {
     contextSize?: number;
     timeOutDuration?: number;
     endpointUrl?: string;
+    providers?: string;
     promptSettings?: PromptSettings;
     streamContent?: boolean;
     debugMode?: boolean;
@@ -61,5 +62,6 @@ export interface AIApiConfig {
     baseURL: string;
     engine: AiEngine;
     editor: Editor;
+    providers?: string;
 }
 export {};

@@ -1,5 +1,4 @@
 export function getErrorMessages(status, editor) {
-    var _a;
     const t = editor.t;
     const messages = {
         100: t('Continue: The server has received the request headers and the client should proceed to send the request body.'),
@@ -79,7 +78,7 @@ export function getErrorMessages(status, editor) {
         510: t('Not Extended. Further extensions to the request are required for the server to fulfill it.'),
         511: t('Network Authentication Required. The client needs to authenticate to gain network access.')
     };
-    return (_a = messages[status]) !== null && _a !== void 0 ? _a : '';
+    return messages[status] ?? '';
 }
 export function getDefaultAiAgentDropdownMenu(editor) {
     const t = editor.t;

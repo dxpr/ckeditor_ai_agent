@@ -57,18 +57,23 @@ export function getModelTokenLimits(model) {
     return { maxInputContextTokens: DEFAULT_MAX_INPUT_TOKENS };
 }
 export class PromptHelper {
+    editor;
+    contextSize;
+    promptSettings;
+    debugMode;
+    editorContextRatio;
+    contentScope;
     constructor(editor, options = {}) {
-        var _a, _b, _c, _d, _e, _f;
         this.editor = editor;
         const config = editor.config.get('aiAgent');
-        const model = ((_a = config.model) !== null && _a !== void 0 ? _a : 'gpt-4o');
+        const model = (config.model ?? 'gpt-4o');
         // Get model's maxInputContextTokens based on pattern matching
         const { maxInputContextTokens } = getModelTokenLimits(model);
-        this.contextSize = (_b = config.contextSize) !== null && _b !== void 0 ? _b : Math.floor(maxInputContextTokens * 0.75);
-        this.promptSettings = (_c = config.promptSettings) !== null && _c !== void 0 ? _c : {};
-        this.debugMode = (_d = config.debugMode) !== null && _d !== void 0 ? _d : false;
-        this.editorContextRatio = (_e = options.editorContextRatio) !== null && _e !== void 0 ? _e : 0.3;
-        this.contentScope = (_f = config === null || config === void 0 ? void 0 : config.contentScope) !== null && _f !== void 0 ? _f : '';
+        this.contextSize = config.contextSize ?? Math.floor(maxInputContextTokens * 0.75);
+        this.promptSettings = config.promptSettings ?? {};
+        this.debugMode = config.debugMode ?? false;
+        this.editorContextRatio = options.editorContextRatio ?? 0.3;
+        this.contentScope = config?.contentScope ?? '';
         if (this.debugMode) {
             console.log('[Context Init]', {
                 model,
@@ -80,7 +85,6 @@ export class PromptHelper {
         }
     }
     getSystemPrompt(isInlineResponse = false) {
-        var _a, _b;
         const defaultComponents = getDefaultRules(this.editor);
         let systemPrompt = '';
         // Process each component
@@ -93,11 +97,11 @@ export class PromptHelper {
             const componentId = id;
             let content = defaultContent;
             // Apply overrides if they exist
-            if ((_a = this.promptSettings.overrides) === null || _a === void 0 ? void 0 : _a[componentId]) {
+            if (this.promptSettings.overrides?.[componentId]) {
                 content = this.promptSettings.overrides[componentId];
             }
             // Apply additions if they exist
-            if ((_b = this.promptSettings.additions) === null || _b === void 0 ? void 0 : _b[componentId]) {
+            if (this.promptSettings.additions?.[componentId]) {
                 content += '\n' + this.promptSettings.additions[componentId];
             }
             // Convert componentId to uppercase for XML tag
@@ -113,21 +117,20 @@ export class PromptHelper {
         return systemPrompt;
     }
     trimContext(prompt, promptContainerText = '') {
-        var _a, _b, _c, _d, _e;
         let contentBeforePrompt = '';
         let contentAfterPrompt = '';
-        const splitText = promptContainerText !== null && promptContainerText !== void 0 ? promptContainerText : prompt;
-        const view = (_d = (_c = (_b = (_a = this.editor) === null || _a === void 0 ? void 0 : _a.editing) === null || _b === void 0 ? void 0 : _b.view) === null || _c === void 0 ? void 0 : _c.domRoots) === null || _d === void 0 ? void 0 : _d.get('main');
-        let context = (_e = view === null || view === void 0 ? void 0 : view.innerHTML) !== null && _e !== void 0 ? _e : '';
+        const splitText = promptContainerText ?? prompt;
+        const view = this.editor?.editing?.view?.domRoots?.get('main');
+        let context = view?.innerHTML ?? '';
         if (this.debugMode) {
             console.group('HTML Content Debug');
             console.log('1. Initial HTML context:', context);
         }
         if (this.contentScope) {
             const activeEditorElement = this.editor.editing.view.getDomRoot();
-            const targetElement = activeEditorElement === null || activeEditorElement === void 0 ? void 0 : activeEditorElement.closest(this.contentScope);
-            const ckContents = targetElement === null || targetElement === void 0 ? void 0 : targetElement.querySelectorAll('.ck-content');
-            if (ckContents === null || ckContents === void 0 ? void 0 : ckContents.length) {
+            const targetElement = activeEditorElement?.closest(this.contentScope);
+            const ckContents = targetElement?.querySelectorAll('.ck-content');
+            if (ckContents?.length) {
                 context = '';
                 Array.from(ckContents).map(item => {
                     context += context ? `\n${item.innerHTML}` : item.innerHTML;
@@ -193,7 +196,7 @@ export class PromptHelper {
         corpus.push(request);
         corpus.push('</TASK>');
         // Context Section
-        if ((context === null || context === void 0 ? void 0 : context.length) && !selectedContent) {
+        if (context?.length && !selectedContent) {
             corpus.push('\n<CONTEXT>');
             corpus.push(context);
             corpus.push('</CONTEXT>');
@@ -204,7 +207,7 @@ export class PromptHelper {
             corpus.push('</SELECTED_CONTENT>');
         }
         // Markdown Content Section
-        if (markDownContents === null || markDownContents === void 0 ? void 0 : markDownContents.length) {
+        if (markDownContents?.length) {
             corpus.push('\n<REFERENCE_CONTENT>');
             for (const content of markDownContents) {
                 corpus.push(`<SOURCE url="${content.url}">\n${content.content}\n</SOURCE>`);
@@ -234,13 +237,12 @@ export class PromptHelper {
         return corpus.map(text => removeLeadingSpaces(text)).join('\n');
     }
     getComponentContent(componentId) {
-        var _a, _b;
         const defaultComponents = getDefaultRules(this.editor);
         let content = defaultComponents[componentId];
-        if ((_a = this.promptSettings.overrides) === null || _a === void 0 ? void 0 : _a[componentId]) {
+        if (this.promptSettings.overrides?.[componentId]) {
             content = this.promptSettings.overrides[componentId];
         }
-        if ((_b = this.promptSettings.additions) === null || _b === void 0 ? void 0 : _b[componentId]) {
+        if (this.promptSettings.additions?.[componentId]) {
             content += '\n' + this.promptSettings.additions[componentId];
         }
         return trimMultilineString(content);
@@ -272,8 +274,7 @@ export class PromptHelper {
         }
     }
     allocateTokensToFetchedContent(prompt, fetchedContent) {
-        var _a, _b, _c, _d, _e, _f;
-        const editorContent = (_f = (_e = (_d = (_c = (_b = (_a = this.editor) === null || _a === void 0 ? void 0 : _a.editing) === null || _b === void 0 ? void 0 : _b.view) === null || _c === void 0 ? void 0 : _c.domRoots) === null || _d === void 0 ? void 0 : _d.get('main')) === null || _e === void 0 ? void 0 : _e.innerText) !== null && _f !== void 0 ? _f : '';
+        const editorContent = this.editor?.editing?.view?.domRoots?.get('main')?.innerText ?? '';
         const editorToken = Math.min(Math.floor(this.contextSize * this.editorContextRatio), countTokens(editorContent));
         const availableLimit = this.contextSize - editorToken;
         if (availableLimit === 0 || !fetchedContent.length) {

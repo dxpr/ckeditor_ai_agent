@@ -9,17 +9,16 @@ import { env } from 'ckeditor5/src/utils.js';
 import AiAgentService from './aiagentservice.js';
 import { getDefaultAiAgentDropdownMenu } from './util/translations.js';
 export default class AiAgentUI extends Plugin {
+    PLACEHOLDER_TEXT_ID = 'slash-placeholder';
+    GPT_RESPONSE_LOADER_ID = 'gpt-response-loader';
+    GPT_RESPONSE_ERROR_ID = 'gpt-error';
+    showErrorDuration = SHOW_ERROR_DURATION;
+    commandsDropdown = getDefaultAiAgentDropdownMenu(this.editor);
     constructor(editor) {
-        var _a, _b;
         super(editor);
-        this.PLACEHOLDER_TEXT_ID = 'slash-placeholder';
-        this.GPT_RESPONSE_LOADER_ID = 'gpt-response-loader';
-        this.GPT_RESPONSE_ERROR_ID = 'gpt-error';
-        this.showErrorDuration = SHOW_ERROR_DURATION;
-        this.commandsDropdown = getDefaultAiAgentDropdownMenu(this.editor);
         const config = editor.config.get('aiAgent');
-        this.showErrorDuration = (_a = config === null || config === void 0 ? void 0 : config.showErrorDuration) !== null && _a !== void 0 ? _a : SHOW_ERROR_DURATION;
-        this.commandsDropdown = (_b = config === null || config === void 0 ? void 0 : config.commandsDropdown) !== null && _b !== void 0 ? _b : getDefaultAiAgentDropdownMenu(editor);
+        this.showErrorDuration = config?.showErrorDuration ?? SHOW_ERROR_DURATION;
+        this.commandsDropdown = config?.commandsDropdown ?? getDefaultAiAgentDropdownMenu(editor);
     }
     static get pluginName() {
         return 'AiAgentUI';
@@ -33,6 +32,10 @@ export default class AiAgentUI extends Plugin {
      */
     init() {
         try {
+            const aiAgentPlugin = this.editor.plugins.get('AiAgent');
+            if (!aiAgentPlugin.isEnabled) {
+                return;
+            }
             aiAgentContext.uiComponent = this;
             // Initialize UI components like buttons, placeholders, loaders, etc.
             this.initializeUIComponents();
@@ -276,14 +279,12 @@ export default class AiAgentUI extends Plugin {
                     placeholder: t('Ask AI to edit')
                 });
                 textareaView.on('input', () => {
-                    var _a;
-                    button.isEnabled = !!((_a = textareaView.element) === null || _a === void 0 ? void 0 : _a.value);
+                    button.isEnabled = !!textareaView.element?.value;
                 });
                 textareaView.on('keydown', (evt, data) => {
-                    var _a;
                     if (data.keyCode === 13 && !data.shiftKey && button.isEnabled) {
                         data.preventDefault();
-                        const command = ((_a = textareaView.element) === null || _a === void 0 ? void 0 : _a.value) || '';
+                        const command = textareaView.element?.value || '';
                         executeAiAgentCommand(command, labeledFieldView, listView);
                     }
                 });
@@ -292,8 +293,7 @@ export default class AiAgentUI extends Plugin {
             labeledFieldView.label = '';
             // Execute a command when the button is clicked
             button.on('execute', () => {
-                var _a;
-                const command = ((_a = labeledFieldView.fieldView.element) === null || _a === void 0 ? void 0 : _a.value) || '';
+                const command = labeledFieldView.fieldView.element?.value || '';
                 executeAiAgentCommand(command, labeledFieldView, listView);
             });
             searchContainer.children.add(labeledFieldView);
@@ -357,9 +357,8 @@ export default class AiAgentUI extends Plugin {
      */
     aiAgentListItemUpdate(listView, isEnabled) {
         listView.items.map(itemView => {
-            var _a;
             const element = itemView;
-            if ((_a = element.children) === null || _a === void 0 ? void 0 : _a.first) {
+            if (element.children?.first) {
                 const button = element.children.first;
                 if (button.class) {
                     const isTitle = button.class.includes('ck-menu-group-title');
@@ -428,11 +427,10 @@ export default class AiAgentUI extends Plugin {
      * Hides the placeholder if the line is not empty.
      */
     applyPlaceholderToCurrentLine() {
-        var _a;
         const editor = this.editor;
         const model = editor.model;
         const modelSelection = model.document.selection;
-        const block = (_a = modelSelection.getFirstPosition()) === null || _a === void 0 ? void 0 : _a.parent;
+        const block = modelSelection.getFirstPosition()?.parent;
         if (block && block.isEmpty) {
             this.hidePlaceHolder();
             setTimeout(async () => {
@@ -493,9 +491,8 @@ export default class AiAgentUI extends Plugin {
      * @param rect - The DOMRect object defining the position to show the placeholder.
      */
     showPlaceHolder(rect) {
-        var _a;
         const editor = this.editor;
-        const ele = (_a = editor.ui.view.element) === null || _a === void 0 ? void 0 : _a.querySelector(`#${this.PLACEHOLDER_TEXT_ID}`);
+        const ele = editor.ui.view.element?.querySelector(`#${this.PLACEHOLDER_TEXT_ID}`);
         const isReadOnlyMode = this.editor.isReadOnly;
         if (ele && rect && !isReadOnlyMode) {
             ele.classList.add('show-place-holder');
@@ -509,9 +506,8 @@ export default class AiAgentUI extends Plugin {
      * Hides the placeholder element from the document.
      */
     hidePlaceHolder() {
-        var _a;
         const editor = this.editor;
-        const ele = (_a = editor.ui.view.element) === null || _a === void 0 ? void 0 : _a.querySelector(`#${this.PLACEHOLDER_TEXT_ID}`);
+        const ele = editor.ui.view.element?.querySelector(`#${this.PLACEHOLDER_TEXT_ID}`);
         if (ele) {
             ele.classList.remove('show-place-holder');
         }
@@ -565,12 +561,11 @@ export default class AiAgentUI extends Plugin {
      * @param message - The error message to display in the tooltip.
      */
     showGptErrorToolTip(message) {
-        var _a, _b, _c;
         console.log('Showing error message...', message);
         const editor = this.editor;
-        const view = (_c = (_b = (_a = editor === null || editor === void 0 ? void 0 : editor.editing) === null || _a === void 0 ? void 0 : _a.view) === null || _b === void 0 ? void 0 : _b.domRoots) === null || _c === void 0 ? void 0 : _c.get('main');
+        const view = editor?.editing?.view?.domRoots?.get('main');
         const tooltipElement = document.getElementById(this.GPT_RESPONSE_ERROR_ID);
-        const editorRect = view === null || view === void 0 ? void 0 : view.getBoundingClientRect();
+        const editorRect = view?.getBoundingClientRect();
         if (tooltipElement && editorRect) {
             tooltipElement.classList.add('show-response-error');
             tooltipElement.textContent = message;

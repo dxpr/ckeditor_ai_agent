@@ -9,19 +9,36 @@ import { igniteEngine, Message, loadModels } from 'multi-llm-ts/dist/index.js';
 import { AIApi } from './util/ai-api.js';
 import CustomError, { getError } from './util/custom-error.js';
 export default class AiAgentService {
+    editor;
+    aiEngine;
+    aiModel;
+    apiKey;
+    endpointUrl;
+    temperature;
+    timeOutDuration;
+    maxTokens;
+    retryAttempts;
+    streamContent;
+    stopSequences;
+    aiAgentFeatureLockId = Symbol('ai-agent-feature');
+    promptHelper;
+    htmlParser;
+    providers;
+    isInlineInsertion = false;
+    abortGeneration = false;
+    moderationKey;
+    moderationEnable;
+    disableFlags = [];
+    stream;
+    writesPerSecond;
+    STORAGE_PREFIX = 'ck5-ai-agent';
+    FILTERED_STRINGS = /```html|```|html\n|@@@cursor@@@/g;
     /**
      * Initializes the AiAgentService with the provided editor and configuration settings.
      *
      * @param editor - The CKEditor instance to be used with the AI assist service.
      */
     constructor(editor) {
-        var _a, _b, _c, _d, _e, _f, _g;
-        this.aiAgentFeatureLockId = Symbol('ai-agent-feature');
-        this.isInlineInsertion = false;
-        this.abortGeneration = false;
-        this.disableFlags = [];
-        this.STORAGE_PREFIX = 'ck5-ai-agent';
-        this.FILTERED_STRINGS = /```html|```|html\n|@@@cursor@@@/g;
         this.editor = editor;
         this.promptHelper = new PromptHelper(editor);
         this.htmlParser = new HtmlParser(editor);
@@ -31,15 +48,16 @@ export default class AiAgentService {
         this.aiEngine = config.engine;
         this.endpointUrl = config.endpointUrl;
         this.temperature = config.temperature;
-        this.timeOutDuration = (_a = config.timeOutDuration) !== null && _a !== void 0 ? _a : 120000;
-        this.maxTokens = (_b = config.maxOutputTokens) !== null && _b !== void 0 ? _b : config.maxTokens;
+        this.timeOutDuration = config.timeOutDuration ?? 120000;
+        this.maxTokens = config.maxOutputTokens ?? config.maxTokens;
         this.retryAttempts = config.retryAttempts;
         this.stopSequences = config.stopSequences;
-        this.streamContent = (_c = config.streamContent) !== null && _c !== void 0 ? _c : true;
-        this.moderationKey = (_d = config.moderationKey) !== null && _d !== void 0 ? _d : '';
-        this.moderationEnable = (_e = config.moderationEnable) !== null && _e !== void 0 ? _e : false;
-        this.disableFlags = (_f = config.moderationDisableFlags) !== null && _f !== void 0 ? _f : [];
-        this.writesPerSecond = (_g = config.writesPerSecond) !== null && _g !== void 0 ? _g : 10;
+        this.streamContent = config.streamContent ?? true;
+        this.moderationKey = config.moderationKey ?? '';
+        this.moderationEnable = config.moderationEnable ?? false;
+        this.disableFlags = config.moderationDisableFlags ?? [];
+        this.writesPerSecond = config.writesPerSecond ?? 10;
+        this.providers = config.providers;
     }
     /**
      * Handles the slash command input from the user, processes it, and interacts with the AI model.
@@ -71,7 +89,7 @@ export default class AiAgentService {
                 const startPosition = editor.model.createPositionAt(inlineSlash, 0);
                 const endPosition = editor.model.createPositionAt(inlineSlash, 'end');
                 const range = model.createRange(startPosition, endPosition);
-                parentEquivalentHTML = (equivalentView === null || equivalentView === void 0 ? void 0 : equivalentView.parent) ?
+                parentEquivalentHTML = equivalentView?.parent ?
                     view.domConverter.mapViewToDom(equivalentView.parent) :
                     undefined;
                 content = '';
@@ -82,7 +100,7 @@ export default class AiAgentService {
                 }
             }
             else if (parentEquivalentHTML) {
-                content = parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.innerText;
+                content = parentEquivalentHTML?.innerText;
             }
         }
         if (command) {
@@ -94,17 +112,17 @@ export default class AiAgentService {
             selectedContent = html;
         }
         if (this.moderationEnable) {
-            const moderateContent = await this.moderateContent(content !== null && content !== void 0 ? content : '');
+            const moderateContent = await this.moderateContent(content ?? '');
             if (!moderateContent) {
                 return;
             }
         }
         try {
             const domSelection = window.getSelection();
-            const domRange = domSelection === null || domSelection === void 0 ? void 0 : domSelection.getRangeAt(0);
+            const domRange = domSelection?.getRangeAt(0);
             const rect = domRange.getBoundingClientRect();
             aiAgentContext.showLoader(rect);
-            const gptPrompt = await this.generateGptPromptBasedOnUserPrompt(content !== null && content !== void 0 ? content : '', parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.innerText, selectedContent);
+            const gptPrompt = await this.generateGptPromptBasedOnUserPrompt(content ?? '', parentEquivalentHTML?.innerText, selectedContent);
             if (parent && gptPrompt) {
                 await this.fetchAndProcessGptResponse(!!command, gptPrompt, parent);
             }
@@ -131,7 +149,6 @@ export default class AiAgentService {
      * - API errors ("Error in content moderation")
      */
     async moderateContent(input) {
-        var _a, _b;
         if (!this.moderationKey) {
             return true;
         }
@@ -156,7 +173,7 @@ export default class AiAgentService {
                 throw new CustomError(error, status);
             }
             const data = await response.json();
-            if (!((_a = data === null || data === void 0 ? void 0 : data.results) === null || _a === void 0 ? void 0 : _a[0])) {
+            if (!data?.results?.[0]) {
                 throw new Error(t('Invalid moderation response format'));
             }
             const flags = ALL_MODERATION_FLAGS.filter(flag => !this.disableFlags.includes(flag));
@@ -186,7 +203,7 @@ export default class AiAgentService {
                 errorMessage = getErrorMessages(error.status, editor);
             }
             else {
-                errorMessage = (_b = error === null || error === void 0 ? void 0 : error.message) === null || _b === void 0 ? void 0 : _b.trim();
+                errorMessage = error?.message?.trim();
                 if (errorMessage === 'ReadableStream not supported') {
                     errorMessage = t('Browser does not support readable streams');
                 }
@@ -208,7 +225,6 @@ export default class AiAgentService {
      * @returns A promise that resolves when the response has been processed.
      */
     async fetchAndProcessGptResponse(command, prompt, parent, retries = this.retryAttempts) {
-        var _a;
         console.log('Starting fetchAndProcessGptResponse');
         const editor = this.editor;
         const t = editor.t;
@@ -266,6 +282,10 @@ export default class AiAgentService {
                     engine: this.aiEngine,
                     editor: this.editor
                 };
+                // Add providers if engine is dxai and providers is set
+                if (this.aiEngine === 'dxai' && this.providers) {
+                    config.providers = this.providers;
+                }
                 const llmCustom = new AIApi(config);
                 const messages = {
                     system: this.promptHelper.getSystemPrompt(this.isInlineInsertion),
@@ -285,11 +305,11 @@ export default class AiAgentService {
             }
             console.error('Error in fetchAndProcessGptResponse:', error);
             let errorMessage = t('We couldn\'t connect to the AI. Please check your internet');
-            if (error === null || error === void 0 ? void 0 : error.status) {
+            if (error?.status) {
                 errorMessage = getErrorMessages(error.status, editor);
             }
             else {
-                errorMessage = (_a = error === null || error === void 0 ? void 0 : error.message) === null || _a === void 0 ? void 0 : _a.trim();
+                errorMessage = error?.message?.trim();
             }
             aiAgentContext.showError(errorMessage);
             this.processCompleted(blockID);
@@ -315,11 +335,10 @@ export default class AiAgentService {
      * @throws Will throw an error if unable to load models from the API.
      */
     async checkModel(engine, model, apiKey) {
-        var _a;
         const models = this.getCachedModels(engine);
         if (!models.length) {
             const apiModels = await loadModels(engine, { apiKey });
-            if (!((_a = apiModels === null || apiModels === void 0 ? void 0 : apiModels.chat) === null || _a === void 0 ? void 0 : _a.length)) {
+            if (!apiModels?.chat?.length) {
                 throw new Error(`Unable to load models - please verify your ${engine} API key`);
             }
             const modelIds = apiModels.chat.map(model => model.id);
@@ -576,7 +595,6 @@ export default class AiAgentService {
      * @private
      */
     async updateContent(newHtml, blockID) {
-        var _a, _b;
         const editor = this.editor;
         const tempParagraph = document.createElement('div');
         tempParagraph.innerHTML = newHtml;
@@ -586,13 +604,13 @@ export default class AiAgentService {
             const childrens = this.getViewChildrens(root, `${blockID}-inline`);
             if (childrens.length) {
                 if (tempParagraph.querySelector('ul') === null && tempParagraph.querySelector('li') === null) {
-                    textContent = (_a = tempParagraph.textContent) !== null && _a !== void 0 ? _a : '';
+                    textContent = tempParagraph.textContent ?? '';
                     tempParagraph.innerHTML = '';
                 }
             }
         }
         // Skip empty content
-        if (!(textContent === null || textContent === void 0 ? void 0 : textContent.trim()) && !((_b = tempParagraph.innerHTML) === null || _b === void 0 ? void 0 : _b.trim())) {
+        if (!textContent?.trim() && !tempParagraph.innerHTML?.trim()) {
             return;
         }
         if (textContent) {
@@ -650,7 +668,7 @@ export default class AiAgentService {
             console.log('--- Start of processContent ---');
             console.log('Processing content:', content, this.isInlineInsertion);
             // Skip empty content early
-            if (!(content === null || content === void 0 ? void 0 : content.trim())) {
+            if (!content?.trim()) {
                 return;
             }
             // Filter out markdown code blocks
@@ -662,7 +680,7 @@ export default class AiAgentService {
                 const position = this.editor.model.document.selection.getLastPosition();
                 const tempParagraph = document.createElement('div');
                 tempParagraph.innerHTML = filteredContent;
-                await this.htmlParser.insertAsText(tempParagraph || '', position !== null && position !== void 0 ? position : undefined, this.streamContent);
+                await this.htmlParser.insertAsText(tempParagraph || '', position ?? undefined, this.streamContent);
             }
             else {
                 if (this.streamContent) {
@@ -727,7 +745,6 @@ export default class AiAgentService {
         const positionLast = model.document.selection.getLastPosition();
         if (root && positionFirst && positionLast) {
             editor.model.change(writer => {
-                var _a, _b, _c;
                 if (command) {
                     const range = model.createRange(model.createPositionFromPath(root, positionFirst.path), model.createPositionFromPath(root, positionLast.path));
                     writer.remove(range);
@@ -738,7 +755,7 @@ export default class AiAgentService {
                             writer.remove(positionParentFirst);
                         }
                         else if (positionFirstAfterRemove.parent.childCount === 1) {
-                            const tag = (_a = positionFirstAfterRemove.parent) === null || _a === void 0 ? void 0 : _a.getChild(0);
+                            const tag = positionFirstAfterRemove.parent?.getChild(0);
                             if (tag.name === 'ai-tag' && positionFirstAfterRemove.parent.name !== '$root') {
                                 writer.remove(positionParentFirst);
                             }
@@ -751,7 +768,7 @@ export default class AiAgentService {
                             writer.remove(positionParentLast);
                         }
                         else if (positionLastAfterRemove.parent.childCount === 1) {
-                            const tag = (_b = positionLastAfterRemove.parent) === null || _b === void 0 ? void 0 : _b.getChild(0);
+                            const tag = positionLastAfterRemove.parent?.getChild(0);
                             if (tag.name === 'ai-tag' && positionLastAfterRemove.parent.name !== '$root') {
                                 writer.remove(positionParentLast);
                             }
@@ -765,10 +782,10 @@ export default class AiAgentService {
                     if (parent.getPath()) {
                         if (parent.name === 'inline-slash') {
                             const position = model.document.selection.getLastPosition();
-                            const positionParent = position === null || position === void 0 ? void 0 : position.parent;
+                            const positionParent = position?.parent;
                             let lineEmpty = true;
-                            if (position === null || position === void 0 ? void 0 : position.parent) {
-                                if ((_c = position === null || position === void 0 ? void 0 : position.parent) === null || _c === void 0 ? void 0 : _c.getChildren().next().value) {
+                            if (position?.parent) {
+                                if (position?.parent?.getChildren().next().value) {
                                     lineEmpty = false;
                                 }
                             }
@@ -860,16 +877,15 @@ export default class AiAgentService {
     async insertAiTag(blockID) {
         const editor = this.editor;
         editor.model.change(writer => {
-            var _a, _b, _c;
             const position = this.editor.model.document.selection.getLastPosition();
             let newPosition;
             if (position) {
-                if ((position === null || position === void 0 ? void 0 : position.parent.name) === 'inline-slash') {
-                    if ((_a = position === null || position === void 0 ? void 0 : position.parent) === null || _a === void 0 ? void 0 : _a.parent) {
+                if (position?.parent.name === 'inline-slash') {
+                    if (position?.parent?.parent) {
                         newPosition = writer.createPositionAt(position.parent.parent, 'after');
                     }
-                    if (position === null || position === void 0 ? void 0 : position.parent) {
-                        const parentJson = (_c = (_b = position === null || position === void 0 ? void 0 : position.parent) === null || _b === void 0 ? void 0 : _b.parent) === null || _c === void 0 ? void 0 : _c.toJSON();
+                    if (position?.parent) {
+                        const parentJson = position?.parent?.parent?.toJSON();
                         if (parentJson.children.length > 1) {
                             const positionInline = writer.createPositionAt(position.parent, 'after');
                             const aiTagInline = writer.createElement('ai-tag', {

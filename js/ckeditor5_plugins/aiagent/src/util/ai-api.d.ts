@@ -4,6 +4,7 @@ export declare class AIApi {
     private baseURL;
     private engine;
     private editor;
+    private providers?;
     constructor(config: AIApiConfig);
     /**
      * Asynchronously streams data from a ReadableStream.
