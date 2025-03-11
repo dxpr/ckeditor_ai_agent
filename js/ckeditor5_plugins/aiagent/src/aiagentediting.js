@@ -1,5 +1,6 @@
 import { Plugin } from 'ckeditor5/src/core.js';
 import AiAgentCommand from './aiagentcommand.js';
+import AiAgentToneCommand from './aiagenttonecommand.js';
 import AiAgentService from './aiagentservice.js';
 export default class AiAgentEditing extends Plugin {
     static get pluginName() {
@@ -16,6 +17,7 @@ export default class AiAgentEditing extends Plugin {
         }
         const aiAgentService = new AiAgentService(editor);
         editor.commands.add('aiAgent', new AiAgentCommand(editor, aiAgentService));
+        editor.commands.add('aiAgentTone', new AiAgentToneCommand(editor));
         this.setupEnterKeyHandling();
     }
     /**

@@ -1,24 +1,31 @@
-import { MenuBarMenuView, MenuBarMenuListView, MenuBarMenuListItemView, MenuBarMenuListItemButtonView, createDropdown, SplitButtonView, LabeledFieldView, ListSeparatorView, ButtonView, TextareaView } from 'ckeditor5/src/ui.js';
+import { MenuBarMenuView, MenuBarMenuListView, MenuBarMenuListItemView, MenuBarMenuListItemButtonView, createDropdown, SplitButtonView, LabeledFieldView, ListSeparatorView, ButtonView, TextareaView, IconView, View } from 'ckeditor5/src/ui.js';
 import { Plugin } from 'ckeditor5/src/core.js';
 import aiAgentIcon from '../theme/icons/ai-agent.svg';
+import aiAgentToneIcon from '../theme/icons/ai-agent-tone.svg';
 import arrowIcon from '../theme/icons/arrow.svg';
+import checkIcon from '../theme/icons/check.svg';
 import { aiAgentContext } from './aiagentcontext.js';
 import { SUPPORTED_LANGUAGES, SHOW_ERROR_DURATION } from './const.js';
 import { Widget, toWidget } from 'ckeditor5/src/widget.js';
 import { env } from 'ckeditor5/src/utils.js';
 import AiAgentService from './aiagentservice.js';
-import { getDefaultAiAgentDropdownMenu } from './util/translations.js';
+import { getDefaultAiAgentDropdownMenu, getDefaultAiAgentToneDropdownMenu } from './util/translations.js';
 export default class AiAgentUI extends Plugin {
     PLACEHOLDER_TEXT_ID = 'slash-placeholder';
     GPT_RESPONSE_LOADER_ID = 'gpt-response-loader';
     GPT_RESPONSE_ERROR_ID = 'gpt-error';
     showErrorDuration = SHOW_ERROR_DURATION;
     commandsDropdown = getDefaultAiAgentDropdownMenu(this.editor);
+    tonesDropdown = getDefaultAiAgentToneDropdownMenu(this.editor);
     constructor(editor) {
         super(editor);
         const config = editor.config.get('aiAgent');
         this.showErrorDuration = config?.showErrorDuration ?? SHOW_ERROR_DURATION;
         this.commandsDropdown = config?.commandsDropdown ?? getDefaultAiAgentDropdownMenu(editor);
+        const defaultTones = getDefaultAiAgentToneDropdownMenu(editor);
+        this.tonesDropdown = config?.tonesDropdown ?
+            [defaultTones[0], ...config?.tonesDropdown] :
+            defaultTones;
     }
     static get pluginName() {
         return 'AiAgentUI';
@@ -94,6 +101,7 @@ export default class AiAgentUI extends Plugin {
         this.addLoader();
         this.addGptErrorToolTip();
         this.addAiAgentButton();
+        this.addAiAgentToneButton();
         editor.accessibility.addKeystrokeInfoGroup({
             id: 'ai-agent',
             categoryId: 'navigation',
@@ -211,7 +219,7 @@ export default class AiAgentUI extends Plugin {
         const viewDocument = this.editor.editing.view.document;
         const manageDropdown = (labeledFieldView, listView) => {
             const editorData = editor.getData();
-            const isTextSelected = editorData ? true : false;
+            const isTextSelected = (labeledFieldView.fieldView.element?.value || editorData) ? true : false;
             labeledFieldView.isEnabled = isTextSelected;
             this.aiAgentListItemUpdate(listView, isTextSelected);
         };
@@ -226,7 +234,11 @@ export default class AiAgentUI extends Plugin {
                 if (!html) {
                     this.editor.execute('selectAll');
                 }
-                aiAgentService.handleSlashCommand(command);
+                let updatedCommand = command;
+                if (labeledFieldView.fieldView.element?.value) {
+                    updatedCommand = `${command} \n ${labeledFieldView.fieldView.element?.value}`;
+                }
+                aiAgentService.handleSlashCommand(updatedCommand);
                 labeledFieldView.isEnabled = false;
                 manageDropdown(labeledFieldView, listView);
                 if (labeledFieldView.fieldView) {
@@ -285,6 +297,7 @@ export default class AiAgentUI extends Plugin {
                     if (data.keyCode === 13 && !data.shiftKey && button.isEnabled) {
                         data.preventDefault();
                         const command = textareaView.element?.value || '';
+                        this.insertEmptySpace();
                         executeAiAgentCommand(command, labeledFieldView, listView);
                     }
                 });
@@ -294,6 +307,7 @@ export default class AiAgentUI extends Plugin {
             // Execute a command when the button is clicked
             button.on('execute', () => {
                 const command = labeledFieldView.fieldView.element?.value || '';
+                this.insertEmptySpace();
                 executeAiAgentCommand(command, labeledFieldView, listView);
             });
             searchContainer.children.add(labeledFieldView);
@@ -321,6 +335,7 @@ export default class AiAgentUI extends Plugin {
                     });
                     buttonView.delegate('execute').to(menuView);
                     buttonView.on('execute', () => {
+                        this.insertEmptySpace();
                         executeAiAgentCommand(item.command, labeledFieldView, listView);
                     });
                     listItemView.children.add(buttonView);
@@ -329,6 +344,9 @@ export default class AiAgentUI extends Plugin {
             }
             dropdownView.panelView.children.add(listView);
             viewDocument.on('keyup', () => {
+                manageDropdown(labeledFieldView, listView);
+            });
+            labeledFieldView.fieldView.on('input', () => {
                 manageDropdown(labeledFieldView, listView);
             });
             setTimeout(function () {
@@ -340,6 +358,79 @@ export default class AiAgentUI extends Plugin {
             if ((data.ctrlKey || data.metaKey) && data.keyCode === 191) {
                 executeCommand();
             }
+        });
+    }
+    /**
+     * Adds the AI Agent Tone button to the editor's UI, which includes a dropdown menu
+     * for selecting various AI tones. The button allows users to apply different tones
+     * to the AI-generated content and provides visual feedback for the selected tone.
+     *
+     * This method sets up the button's execute event, handles user input for selecting
+     * tones, and organizes the tone menu into a list for better usability.
+     */
+    addAiAgentToneButton() {
+        const editor = this.editor;
+        const t = editor.t;
+        editor.ui.componentFactory.add('aiAgentToneButton', locale => {
+            const dropdownView = createDropdown(locale);
+            dropdownView.class = 'ck-ai-commands-list';
+            const buttonView = dropdownView.buttonView;
+            buttonView.set({
+                label: t('Tone of voice'),
+                icon: aiAgentToneIcon,
+                tooltip: true
+            });
+            const menuView = new MenuBarMenuView(locale);
+            const listView = new MenuBarMenuListView(locale);
+            const checkIcons = [];
+            // Add group title for Tone
+            const titleView = new MenuBarMenuListItemView(locale, menuView);
+            const titleButton = new MenuBarMenuListItemButtonView(locale);
+            titleButton.set({
+                label: t('Tone'),
+                class: 'ck-menu-group-title'
+            });
+            titleView.children.add(titleButton);
+            listView.items.add(titleView);
+            for (const item of this.tonesDropdown) {
+                const listItemView = new MenuBarMenuListItemView(locale, menuView);
+                const buttonView = new MenuBarMenuListItemButtonView(locale);
+                const checkIconView = new IconView();
+                checkIconView.set({
+                    content: checkIcon
+                });
+                checkIconView.isVisible = item.command === '' ? true : false;
+                checkIcons.push(checkIconView);
+                const spanView = new View(locale);
+                spanView.setTemplate({
+                    tag: 'span',
+                    attributes: {
+                        class: 'ck ck-list-item-button__check-holder ck-tone-of-voice'
+                    },
+                    children: [checkIconView]
+                });
+                spanView.render();
+                buttonView.children.add(spanView);
+                buttonView.set({
+                    label: item.title,
+                    class: 'ck-menu-item'
+                });
+                buttonView.delegate('execute').to(menuView);
+                listItemView.children.add(buttonView);
+                listView.items.add(listItemView);
+                buttonView.on('execute', () => {
+                    checkIcons.forEach(iconView => {
+                        iconView.isVisible = false;
+                    });
+                    checkIconView.isVisible = true;
+                    editor.execute('aiAgentTone', {
+                        value: item.command
+                    });
+                    editor.editing.view.focus();
+                });
+            }
+            dropdownView.panelView.children.add(listView);
+            return dropdownView;
         });
     }
     /**
@@ -582,5 +673,24 @@ export default class AiAgentUI extends Plugin {
         if (tooltipElement) {
             tooltipElement.classList.remove('show-response-error');
         }
+    }
+    /**
+     * Inserts an empty non-breaking space at the current selection position in the editor.
+     * This method modifies the editor's model to add a non-breaking space character (`\u00A0`),
+     * ensuring that the space is preserved in the content and does not collapse.
+     *
+     * @returns {void} This function does not return a value.
+     *
+     * @example
+     * // Usage: Call this method to insert an empty space in the editor.
+     * this.insertEmptySpace();
+     */
+    insertEmptySpace() {
+        this.editor.model.change(writer => {
+            const insertPosition = this.editor.model.document.selection.getFirstPosition();
+            if (insertPosition) {
+                writer.insertText('\u00A0', insertPosition);
+            }
+        });
     }
 }

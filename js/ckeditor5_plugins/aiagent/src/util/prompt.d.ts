@@ -16,7 +16,7 @@ export declare class PromptHelper {
     });
     getSystemPrompt(isInlineResponse?: boolean): string;
     trimContext(prompt: string, promptContainerText?: string): string;
-    formatFinalPrompt(request: string, context?: string, selectedContent?: string, markDownContents?: Array<MarkdownContent>, isEditorEmpty?: boolean): string;
+    formatFinalPrompt(request: string, context?: string, selectedContent?: string, markDownContents?: Array<MarkdownContent>, isEditorEmpty?: boolean, tone?: string): string;
     private getComponentContent;
     generateMarkDownForUrls(urls: Array<string>): Promise<Array<MarkdownContent>>;
     allocateTokensToFetchedContent(prompt: string, fetchedContent: Array<MarkdownContent>): Array<MarkdownContent>;

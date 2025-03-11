@@ -70,6 +70,9 @@ export default class AiAgentService {
         const mapper = editor.editing.mapper;
         const view = editor.editing.view;
         const root = model.document.getRoot();
+        const tone = editor.commands.get('aiAgentTone')?.value;
+        // Only use tone if it's not empty
+        const effectiveTone = tone && tone.trim() !== '' ? tone : undefined;
         let content;
         let selectedContent;
         let parentEquivalentHTML;
@@ -122,9 +125,9 @@ export default class AiAgentService {
             const domRange = domSelection?.getRangeAt(0);
             const rect = domRange.getBoundingClientRect();
             aiAgentContext.showLoader(rect);
-            const gptPrompt = await this.generateGptPromptBasedOnUserPrompt(content ?? '', parentEquivalentHTML?.innerText, selectedContent);
-            if (parent && gptPrompt) {
-                await this.fetchAndProcessGptResponse(!!command, gptPrompt, parent);
+            const prompt = await this.generateGptPromptBasedOnUserPrompt(content, parentEquivalentHTML?.innerHTML, selectedContent, effectiveTone);
+            if (parent && prompt) {
+                await this.fetchAndProcessGptResponse(!!command, prompt, parent);
             }
         }
         catch (error) {
@@ -811,7 +814,7 @@ export default class AiAgentService {
      * @param promptContainerText - Optional text from the container that may provide additional context.
      * @returns A promise that resolves to the generated GPT prompt string or null if an error occurs.
     */
-    async generateGptPromptBasedOnUserPrompt(prompt, promptContainerText, selectedContent) {
+    async generateGptPromptBasedOnUserPrompt(prompt, promptContainerText, selectedContent, tone) {
         try {
             const context = this.promptHelper.trimContext(prompt, promptContainerText);
             const request = selectedContent ? prompt : prompt.slice(1);
@@ -826,7 +829,7 @@ export default class AiAgentService {
                 markDownContents = this.promptHelper.allocateTokensToFetchedContent(prompt, markDownContents);
             }
             const isEditorEmpty = context === '@@@cursor@@@';
-            return this.promptHelper.formatFinalPrompt(request, context, selectedContent, markDownContents, isEditorEmpty);
+            return this.promptHelper.formatFinalPrompt(request, context, selectedContent, markDownContents, isEditorEmpty, tone);
         }
         catch (error) {
             console.error(error);
