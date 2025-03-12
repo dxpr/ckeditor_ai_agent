@@ -177,18 +177,25 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         if (!empty($tids)) {
           $terms = $term_storage->loadMultiple($tids);
           $tones_dropdown = [];
-          
-          // Don't add a default tone option as it's already hardcoded in the plugin
+          $default_tone = NULL;
+          $first_term = NULL;
           
           // Add each taxonomy term as a tone option
           foreach ($terms as $term) {
             $description = $term->getDescription();
             // Only add terms that have a description (command)
             if (!empty($description)) {
-              $tones_dropdown[] = [
+              $tone_item = [
                 'title' => $term->label(),
                 'command' => $description,
               ];
+              
+              $tones_dropdown[] = $tone_item;
+              
+              // Keep track of the first valid term (lowest weight) to use as default
+              if ($first_term === NULL) {
+                $first_term = $tone_item;
+              }
             }
           }
           
@@ -196,6 +203,11 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
           if (!empty($tones_dropdown)) {
             // Use the exact key expected by the plugin
             $result['aiAgent']['tonesDropdown'] = $tones_dropdown;
+            
+            // Set the first term (lowest weight) as the default tone
+            if ($first_term !== NULL) {
+              $result['aiAgent']['defaultTone'] = $first_term;
+            }
           }
         }
       }
@@ -207,14 +219,33 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     }
 
     // Handle prompt settings
-    if (isset($editor_config['promptSettings']) && !empty($editor_config['promptSettings'])) {
-      $result['aiAgent']['promptSettings'] = $editor_config['promptSettings'];
-    }
-    else {
-      $result['aiAgent']['promptSettings'] = [
-        'overrides' => $config->get('promptSettings.overrides'),
-        'additions' => $config->get('promptSettings.additions'),
-      ];
+    $result['aiAgent']['promptSettings'] = [
+      'overrides' => [],
+      'additions' => [],
+    ];
+
+    foreach (['overrides', 'additions'] as $type) {
+      $editor_settings = $editor_config['promptSettings'][$type] ?? [];
+      $global_settings = $config->get("promptSettings.$type") ?? [];
+
+      foreach ($this->getPromptComponents() as $component) {
+        // Special handling for tone when using taxonomy integration
+        if ($component === 'tone' && !empty($tone_vocabulary) && !empty($first_term)) {
+          // For overrides, use the first term's command as the tone
+          if ($type === 'overrides') {
+            $result['aiAgent']['promptSettings'][$type][$component] = $first_term['command'];
+          }
+          // Skip additions for tone when using taxonomy
+          continue;
+        }
+        
+        if (!empty($editor_settings[$component])) {
+          $result['aiAgent']['promptSettings'][$type][$component] = $editor_settings[$component];
+        }
+        elseif (!empty($global_settings[$component])) {
+          $result['aiAgent']['promptSettings'][$type][$component] = $global_settings[$component];
+        }
+      }
     }
 
     return $result;

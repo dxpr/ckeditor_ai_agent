@@ -123,11 +123,21 @@ class AiAgentConfigurationManager {
         'moderationEnable' => $global_config->get('moderationEnable'),
         'moderationKey' => $global_config->get('moderationKey'),
         'promptSettings' => [
-          'overrides' => $global_config->get('promptSettings.overrides'),
-          'additions' => $global_config->get('promptSettings.additions'),
+          'overrides' => [],
+          'additions' => [],
         ],
       ],
     ];
+
+    // Properly populate prompt settings from configuration
+    foreach (['overrides', 'additions'] as $type) {
+      $settings = $global_config->get("promptSettings.$type");
+      if (!empty($settings) && is_array($settings)) {
+        foreach ($settings as $component => $value) {
+          $config['aiAgent']['promptSettings'][$type][$component] = $value;
+        }
+      }
+    }
 
     // Add taxonomy-based tones of voice if configured
     $tone_vocabulary = $global_config->get('toneOfVoiceVocabulary');
@@ -145,31 +155,42 @@ class AiAgentConfigurationManager {
         if (!empty($tids)) {
           $terms = $term_storage->loadMultiple($tids);
           $tones_dropdown = [];
-          
-          // Add a default tone option
-          $tones_dropdown[] = [
-            'title' => t('Default tone'),
-            'command' => '',
-          ];
+          $first_term = NULL;
           
           // Add each taxonomy term as a tone option
           foreach ($terms as $term) {
             $description = $term->getDescription();
             // Only add terms that have a description (command)
             if (!empty($description)) {
-              $tones_dropdown[] = [
+              $tone_item = [
                 'title' => $term->label(),
                 'command' => $description,
               ];
+              
+              $tones_dropdown[] = $tone_item;
+              
+              // Keep track of the first valid term (lowest weight) to use as default
+              if ($first_term === NULL) {
+                $first_term = $tone_item;
+              }
             }
           }
           
-          // Only add the tones to the configuration if we have at least 2 valid tones (including default)
-          if (count($tones_dropdown) >= 2) {
-            // Try both possible key names to ensure compatibility
+          // Only add the tones to the configuration if we have valid tones
+          if (!empty($tones_dropdown)) {
+            // Set the tones dropdown
             $config['aiAgent']['tonesDropdown'] = $tones_dropdown;
-            // Also try the alternative key name in case the plugin is looking for this
-            $config['aiAgent']['tones'] = $tones_dropdown;
+            
+            // Set the first term (lowest weight) as the default tone
+            if ($first_term !== NULL) {
+              $config['aiAgent']['defaultTone'] = $first_term;
+              
+              // Also set the tone in the prompt settings
+              if (!isset($config['aiAgent']['promptSettings']['overrides'])) {
+                $config['aiAgent']['promptSettings']['overrides'] = [];
+              }
+              $config['aiAgent']['promptSettings']['overrides']['tone'] = $first_term['command'];
+            }
           }
         }
       }
