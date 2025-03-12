@@ -35,9 +35,6 @@ function ckeditor_ai_agent_ckeditor5_plugin_info_alter(array &$plugin_definition
 
     // Get our configuration
     $our_config = $config_manager->getCKEditorConfig($editor);
-    
-    // Single debug message to track configuration
-    \Drupal::logger('ckeditor_ai_agent')->debug('Configuring CKEditor AI Agent plugin');
 
     // Merge with our configuration.
     $config = array_merge($config, $our_config);
