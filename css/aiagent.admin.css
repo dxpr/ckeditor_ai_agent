@@ -1,3 +1,6 @@
 .ckeditor5-toolbar-button-aiAgentButton {
   background-image: url(../js/ckeditor5_plugins/aiagent/theme/icons/ai-agent.svg);
 }
+.ckeditor5-toolbar-button-aiAgentToneButton {
+  background-image: url(../js/ckeditor5_plugins/aiagent/theme/icons/ai-agent-tone.svg);
+}
