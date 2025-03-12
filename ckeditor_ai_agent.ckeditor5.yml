@@ -10,5 +10,7 @@ ckeditor_ai_agent_ai_agent:
     toolbar_items:
       aiAgentButton:
         label: 'AI Agent'
+      aiAgentToneButton:
+        label: 'AI Agent Tone'
     elements:
       - <p>

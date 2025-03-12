@@ -63,6 +63,25 @@ ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
         moderationKey:
           type: string
           label: 'Moderation Key'
+        toneOfVoiceVocabulary:
+          type: string
+          label: 'Tone of Voice Vocabulary'
+        defaultToneOfVoice:
+          type: string
+          label: 'Default Tone of Voice'
+        tonesDropdown:
+          type: sequence
+          label: 'Tones Dropdown'
+          sequence:
+            type: mapping
+            label: 'Tone Item'
+            mapping:
+              title:
+                type: string
+                label: 'Tone Title'
+              command:
+                type: string
+                label: 'Tone Command'
         promptSettings:
           type: mapping
           label: 'Prompt Settings'

@@ -393,6 +393,9 @@ trait AiAgentFormTrait {
       '#ajax' => FALSE,
     ];
 
+    // Add the tone of voice taxonomy integration
+    $this->addToneOfVoiceSettings($elements, $getConfigValue);
+
     $prompt_components = [
       'responseRules' => $this->t('Response Rules'),
       'htmlFormatting' => $this->t('HTML Formatting'),
@@ -412,6 +415,11 @@ trait AiAgentFormTrait {
             : [];
 
       foreach ($prompt_components as $key => $label) {
+        // Skip the tone section if we're using the taxonomy integration
+        if ($key === 'tone' && !empty($getConfigValue('toneOfVoiceVocabulary'))) {
+          continue;
+        }
+
         $elements['promptSettings']["override_$key"] = [
           '#type' => 'textarea',
           '#title' => $this->t('@label Override', ['@label' => $label]),
@@ -435,6 +443,196 @@ trait AiAgentFormTrait {
     catch (\Exception $e) {
       \Drupal::messenger()->addError(t('Error loading prompt settings: @error', ['@error' => $e->getMessage()]));
     }
+  }
+
+  /**
+   * Adds tone of voice taxonomy settings to the form.
+   *
+   * @param array<string, mixed> $elements
+   *   List of common form elements.
+   * @param \Closure $getConfigValue
+   *   Helper function to get config value based on context.
+   */
+  protected function addToneOfVoiceSettings(array &$elements, \Closure $getConfigValue): void {
+    // Create a fieldset for the tone of voice settings
+    $elements['promptSettings']['tone_of_voice'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Tone of Voice'),
+      '#open' => TRUE,
+      '#description' => $this->t('Configure the tones of voice available to content creators when interacting with the AI Agent.'),
+    ];
+
+    // Get all vocabularies for the dropdown
+    $vocabularies = \Drupal::entityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
+    $vocab_options = [];
+    foreach ($vocabularies as $vocabulary) {
+      $vocab_options[$vocabulary->id()] = $vocabulary->label();
+    }
+
+    // Add a toggle to enable/disable the taxonomy integration
+    $elements['promptSettings']['tone_of_voice']['enable_taxonomy_tones'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Use taxonomy terms for tones of voice'),
+      '#description' => $this->t('When enabled, content creators can select from predefined tones of voice from a taxonomy vocabulary. At least 2 terms with descriptions are required for the dropdown to appear in the editor.'),
+      '#default_value' => !empty($getConfigValue('toneOfVoiceVocabulary')),
+    ];
+
+    // Add the vocabulary selector
+    $elements['promptSettings']['tone_of_voice']['tone_of_voice_vocabulary'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Tone of Voice Vocabulary'),
+      '#description' => $this->t('Select the taxonomy vocabulary that contains your tones of voice. The term name will be shown to users in the dropdown, and the term description will be used as the tone command for the AI.'),
+      '#options' => $vocab_options,
+      '#default_value' => $getConfigValue('toneOfVoiceVocabulary'),
+      '#states' => [
+        'visible' => [
+          ':input[name="promptSettings[tone_of_voice][enable_taxonomy_tones]"]' => ['checked' => TRUE],
+        ],
+        'required' => [
+          ':input[name="promptSettings[tone_of_voice][enable_taxonomy_tones]"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+
+    // Add a container to preview available tones
+    $elements['promptSettings']['tone_of_voice']['preview_container'] = [
+      '#type' => 'container',
+      '#states' => [
+        'visible' => [
+          ':input[name="promptSettings[tone_of_voice][enable_taxonomy_tones]"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+
+    // Add a preview of available tones if a vocabulary is selected
+    $selected_vocabulary = $getConfigValue('toneOfVoiceVocabulary');
+    if (!empty($selected_vocabulary)) {
+      // Load the terms from the selected vocabulary, sorted by weight
+      $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+      $query = $term_storage->getQuery()
+        ->condition('vid', $selected_vocabulary)
+        ->sort('weight')
+        ->accessCheck(FALSE);
+      $tids = $query->execute();
+      
+      if (!empty($tids)) {
+        $terms = $term_storage->loadMultiple($tids);
+        
+        $elements['promptSettings']['tone_of_voice']['preview_container']['tone_terms_preview'] = [
+          '#type' => 'fieldset',
+          '#title' => $this->t('Available Tones'),
+          '#description' => $this->t('The following tones will be available to content creators. Terms are ordered by weight, with the lightest weight appearing first in the dropdown.'),
+        ];
+
+        $header = [
+          $this->t('Tone Name'),
+          $this->t('Description/Command'),
+          $this->t('Weight'),
+          $this->t('Status'),
+        ];
+
+        $rows = [];
+        $valid_terms_count = 0;
+
+        foreach ($terms as $term) {
+          $description = $term->getDescription();
+          $status = !empty($description) 
+            ? $this->t('Valid') 
+            : $this->t('Missing description - will not appear in dropdown');
+          
+          if (!empty($description)) {
+            $valid_terms_count++;
+          }
+          
+          $rows[] = [
+            $term->label(),
+            $description ?: $this->t('- No description -'),
+            $term->get('weight')->value,
+            $status,
+          ];
+        }
+
+        $elements['promptSettings']['tone_of_voice']['preview_container']['tone_terms_table'] = [
+          '#type' => 'table',
+          '#header' => $header,
+          '#rows' => $rows,
+          '#empty' => $this->t('No terms found in this vocabulary. Please <a href="@link">add some terms</a> to the vocabulary.', [
+            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
+          ]),
+          '#attributes' => [
+            'class' => ['tone-terms-table'],
+          ],
+        ];
+
+        // Add warning if we don't have enough valid terms
+        if ($valid_terms_count < 2) {
+          $elements['promptSettings']['tone_of_voice']['preview_container']['warning'] = [
+            '#type' => 'html_tag',
+            '#tag' => 'div',
+            '#value' => $this->t('Warning: At least 2 terms with descriptions are required for the tone dropdown to appear in the editor. Currently you have @count valid terms.', [
+              '@count' => $valid_terms_count,
+            ]),
+            '#attributes' => [
+              'class' => ['messages', 'messages--warning'],
+            ],
+          ];
+        }
+
+        // Add help text for term descriptions
+        $elements['promptSettings']['tone_of_voice']['preview_container']['help_text'] = [
+          '#type' => 'html_tag',
+          '#tag' => 'div',
+          '#value' => $this->t('
+            <h4>How to set up tones of voice:</h4>
+            <ol>
+              <li>Each taxonomy term represents one tone of voice option in the dropdown.</li>
+              <li>The term <strong>name</strong> will be displayed in the dropdown menu.</li>
+              <li>The term <strong>description</strong> will be used as the command sent to the AI. Make it descriptive and clear.</li>
+              <li>The term <strong>weight</strong> determines the order in the dropdown (lighter weights appear first).</li>
+              <li>The first term by weight will be used as the default tone.</li>
+              <li>Only terms with descriptions will be included in the dropdown.</li>
+            </ol>
+            <p><strong>Example description:</strong> "Write in a warm, clear, and simple way for patients to understand."</p>
+          '),
+          '#attributes' => [
+            'class' => ['tone-of-voice-tip'],
+          ],
+        ];
+        
+        // Add a link to manage the terms
+        $elements['promptSettings']['tone_of_voice']['preview_container']['manage_link'] = [
+          '#type' => 'html_tag',
+          '#tag' => 'div',
+          '#value' => $this->t('<a href="@link" class="button">Manage Tone of Voice Terms</a>', [
+            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/overview',
+          ]),
+          '#attributes' => [
+            'class' => ['tone-manage-link'],
+          ],
+        ];
+      }
+      else {
+        $elements['promptSettings']['tone_of_voice']['preview_container']['no_terms'] = [
+          '#type' => 'markup',
+          '#markup' => $this->t('No terms found in this vocabulary. Please <a href="@link">add some terms</a> to the vocabulary.', [
+            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
+          ]),
+        ];
+      }
+    }
+
+    // Add information about creating a vocabulary if none exists
+    if (empty($vocab_options)) {
+      $elements['promptSettings']['tone_of_voice']['no_vocabularies'] = [
+        '#type' => 'markup',
+        '#markup' => $this->t('No taxonomy vocabularies found. Please <a href="@link">create a vocabulary</a> for tone of voice terms first.', [
+          '@link' => '/admin/structure/taxonomy/add',
+        ]),
+      ];
+    }
+
+    // Add some styling for the tone of voice section
+    $elements['#attached']['library'][] = 'ckeditor_ai_agent/tone_of_voice';
   }
 
 }

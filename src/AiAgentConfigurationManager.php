@@ -129,6 +129,57 @@ class AiAgentConfigurationManager {
       ],
     ];
 
+    // Add taxonomy-based tones of voice if configured
+    $tone_vocabulary = $global_config->get('toneOfVoiceVocabulary');
+    
+    if (!empty($tone_vocabulary)) {
+      try {
+        // Load the terms from the vocabulary, sorted by weight
+        $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+        $query = $term_storage->getQuery()
+          ->condition('vid', $tone_vocabulary)
+          ->sort('weight')
+          ->accessCheck(FALSE);
+        $tids = $query->execute();
+        
+        if (!empty($tids)) {
+          $terms = $term_storage->loadMultiple($tids);
+          $tones_dropdown = [];
+          
+          // Add a default tone option
+          $tones_dropdown[] = [
+            'title' => t('Default tone'),
+            'command' => '',
+          ];
+          
+          // Add each taxonomy term as a tone option
+          foreach ($terms as $term) {
+            $description = $term->getDescription();
+            // Only add terms that have a description (command)
+            if (!empty($description)) {
+              $tones_dropdown[] = [
+                'title' => $term->label(),
+                'command' => $description,
+              ];
+            }
+          }
+          
+          // Only add the tones to the configuration if we have at least 2 valid tones (including default)
+          if (count($tones_dropdown) >= 2) {
+            // Try both possible key names to ensure compatibility
+            $config['aiAgent']['tonesDropdown'] = $tones_dropdown;
+            // Also try the alternative key name in case the plugin is looking for this
+            $config['aiAgent']['tones'] = $tones_dropdown;
+          }
+        }
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('ckeditor_ai_agent')->error('Error loading tone of voice taxonomy terms: @error', [
+          '@error' => $e->getMessage(),
+        ]);
+      }
+    }
+    
     return $config;
   }
 

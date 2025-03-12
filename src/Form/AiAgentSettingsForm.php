@@ -158,6 +158,21 @@ class AiAgentSettingsForm extends ConfigFormBase {
       $config->set('promptSettings', $this->processPromptSettings($values['promptSettings']));
     }
 
+    // Handle tone of voice taxonomy settings
+    if (isset($values['promptSettings']['tone_of_voice'])) {
+      $tone_settings = $values['promptSettings']['tone_of_voice'];
+      
+      // Save the vocabulary reference if taxonomy tones are enabled
+      if (!empty($tone_settings['enable_taxonomy_tones']) && !empty($tone_settings['tone_of_voice_vocabulary'])) {
+        $config->set('toneOfVoiceVocabulary', $tone_settings['tone_of_voice_vocabulary']);
+      } else {
+        $config->set('toneOfVoiceVocabulary', '');
+      }
+
+      // We no longer need to save a default tone as we use the first term by weight
+      $config->clear('defaultToneOfVoice');
+    }
+
     $config->save();
     parent::submitForm($form, $form_state);
   }

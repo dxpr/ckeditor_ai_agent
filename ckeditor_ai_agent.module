@@ -36,20 +36,11 @@ function ckeditor_ai_agent_ckeditor5_plugin_info_alter(array &$plugin_definition
     // Get our configuration
     $our_config = $config_manager->getCKEditorConfig($editor);
     
-    // Log the configuration for debugging
-    \Drupal::logger('ckeditor_ai_agent')->debug('CKEditor config before merge: @config', [
-      '@config' => print_r($config, TRUE),
-    ]);
-    \Drupal::logger('ckeditor_ai_agent')->debug('Our config: @config', [
-      '@config' => print_r($our_config, TRUE),
-    ]);
+    // Single debug message to track configuration
+    \Drupal::logger('ckeditor_ai_agent')->debug('Configuring CKEditor AI Agent plugin');
 
     // Merge with our configuration.
     $config = array_merge($config, $our_config);
-
-    \Drupal::logger('ckeditor_ai_agent')->debug('Final merged config: @config', [
-      '@config' => print_r($config, TRUE),
-    ]);
 
     // Update the plugin configuration.
     $plugin_config['ckeditor5']['config'] = $config;
@@ -127,4 +118,11 @@ function ckeditor_ai_agent_requirements($phase) {
   }
 
   return $requirements;
+}
+
+/**
+ * Implements hook_page_attachments_alter().
+ */
+function ckeditor_ai_agent_page_attachments_alter(array &$attachments) {
+  // This implementation is no longer needed as we're handling tones directly in the AiAgent plugin
 }

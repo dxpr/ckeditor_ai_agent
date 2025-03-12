@@ -51,6 +51,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         'showErrorDuration' => NULL,
         'moderationEnable' => NULL,
         'moderationKey' => NULL,
+        'toneOfVoiceVocabulary' => NULL,
+        'tonesDropdown' => [],
         'promptSettings' => [
           'overrides' => [],
           'additions' => [],
@@ -101,11 +103,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       $prompt_settings = $this->processPromptSettings($values['promptSettings']);
       $this->configuration['aiAgent']['promptSettings'] = $prompt_settings;
     }
-
-    // Log the final configuration for debugging
-    \Drupal::logger('ckeditor_ai_agent')->debug('Submitted configuration: @config', [
-      '@config' => print_r($this->configuration, TRUE),
-    ]);
   }
 
   /**
@@ -127,29 +124,13 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     foreach ($settings_map as $js_key => $drupal_key) {
       // Handle apiKey separately to use key service
       if ($js_key === 'apiKey') {
-        // Log the editor configuration for debugging
-        \Drupal::logger('ckeditor_ai_agent')->debug('Editor config for @editor_id: @config', [
-          '@editor_id' => $editor->id(),
-          '@config' => print_r($editor_config, TRUE),
-        ]);
-
         // First check for editor-specific key provider
         if (isset($editor_config['key_provider']) && $editor_config['key_provider'] !== '') {
-          \Drupal::logger('ckeditor_ai_agent')->debug('Using editor-specific key provider: @key_provider', [
-            '@key_provider' => $editor_config['key_provider'],
-          ]);
           $result['aiAgent'][$js_key] = $key_service->getKeyValue($editor_config['key_provider']);
-          \Drupal::logger('ckeditor_ai_agent')->debug('Editor-specific key value retrieved: @key_value', [
-            '@key_value' => substr($result['aiAgent'][$js_key] ?? '', 0, 10) . '...',
-          ]);
         }
         // Then fall back to global key
         else {
-          \Drupal::logger('ckeditor_ai_agent')->debug('No editor-specific key found or empty value, falling back to global key');
           $result['aiAgent'][$js_key] = $key_service->getApiKey();
-          \Drupal::logger('ckeditor_ai_agent')->debug('Global key value retrieved: @key_value', [
-            '@key_value' => substr($result['aiAgent'][$js_key] ?? '', 0, 10) . '...',
-          ]);
         }
         continue;
       }
@@ -162,7 +143,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         $result['aiAgent'][$js_key] = $config->get($drupal_key);
       }
     }
-
+    
     // Handle engine/model
     $model = $result['aiAgent']['model'] ?? 'openai:gpt-4o';
     if (str_contains($model, ':')) {
@@ -179,27 +160,61 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       $result['aiAgent']['engine'] = 'openai';
       $result['aiAgent']['model'] = $model ?: 'gpt-4o';
     }
-
-    // Prompt settings.
-    if (isset($editor_config['promptSettings']) || $config->get('promptSettings')) {
-      $result['aiAgent']['promptSettings'] = [
-        'overrides' => [],
-        'additions' => [],
-      ];
-
-      foreach (['overrides', 'additions'] as $type) {
-        $editor_settings = $editor_config['promptSettings'][$type] ?? [];
-        $global_settings = $config->get("promptSettings.$type") ?? [];
-
-        foreach ($this->getPromptComponents() as $component) {
-          if (!empty($editor_settings[$component])) {
-            $result['aiAgent']['promptSettings'][$type][$component] = $editor_settings[$component];
+    
+    // Add taxonomy-based tones of voice if configured
+    $tone_vocabulary = $config->get('toneOfVoiceVocabulary');
+    
+    if (!empty($tone_vocabulary)) {
+      try {
+        // Load the terms from the vocabulary, sorted by weight
+        $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+        $query = $term_storage->getQuery()
+          ->condition('vid', $tone_vocabulary)
+          ->sort('weight')
+          ->accessCheck(FALSE);
+        $tids = $query->execute();
+        
+        if (!empty($tids)) {
+          $terms = $term_storage->loadMultiple($tids);
+          $tones_dropdown = [];
+          
+          // Don't add a default tone option as it's already hardcoded in the plugin
+          
+          // Add each taxonomy term as a tone option
+          foreach ($terms as $term) {
+            $description = $term->getDescription();
+            // Only add terms that have a description (command)
+            if (!empty($description)) {
+              $tones_dropdown[] = [
+                'title' => $term->label(),
+                'command' => $description,
+              ];
+            }
           }
-          elseif (!empty($global_settings[$component])) {
-            $result['aiAgent']['promptSettings'][$type][$component] = $global_settings[$component];
+          
+          // Only add the tones to the configuration if we have valid tones
+          if (!empty($tones_dropdown)) {
+            // Use the exact key expected by the plugin
+            $result['aiAgent']['tonesDropdown'] = $tones_dropdown;
           }
         }
       }
+      catch (\Exception $e) {
+        \Drupal::logger('ckeditor_ai_agent')->error('Error loading tone of voice taxonomy terms in AiAgent plugin: @error', [
+          '@error' => $e->getMessage(),
+        ]);
+      }
+    }
+
+    // Handle prompt settings
+    if (isset($editor_config['promptSettings']) && !empty($editor_config['promptSettings'])) {
+      $result['aiAgent']['promptSettings'] = $editor_config['promptSettings'];
+    }
+    else {
+      $result['aiAgent']['promptSettings'] = [
+        'overrides' => $config->get('promptSettings.overrides'),
+        'additions' => $config->get('promptSettings.additions'),
+      ];
     }
 
     return $result;
@@ -239,6 +254,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       'showErrorDuration' => 'showErrorDuration',
       'moderationEnable' => 'moderationEnable',
       'moderationKey' => 'moderationKey',
+      'toneOfVoiceVocabulary' => 'toneOfVoiceVocabulary',
     ];
   }
 

@@ -13,3 +13,12 @@ aiagent.admin:
   css:
     theme:
       css/aiagent.admin.css: { }
+
+tone_of_voice:
+  version: 1.x
+  css:
+    theme:
+      css/tone-of-voice.css: {}
+  dependencies:
+    - core/drupal
+    - core/jquery

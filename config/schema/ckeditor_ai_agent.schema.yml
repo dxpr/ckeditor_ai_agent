@@ -16,6 +16,14 @@ ckeditor_ai_agent.settings:
       type: string
       label: 'Content Scope'
 
+    # Tone of Voice Taxonomy Integration
+    toneOfVoiceVocabulary:
+      type: string
+      label: 'Tone of Voice Vocabulary'
+    defaultToneOfVoice:
+      type: string
+      label: 'Default Tone of Voice'
+
     # Advanced Settings
     temperature:
       type: float
