@@ -172,12 +172,25 @@ trait AiAgentFormTrait {
     // Add prompt settings.
     $this->addPromptSettings($elements, $getConfigValue);
 
+    // Add the tone of voice taxonomy integration as a separate fieldset
+    $elements['tone_of_voice'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Tone of Voice'),
+      '#open' => FALSE,
+      '#description' => $this->t('Configure the tones of voice available to content creators when interacting with the AI Agent.'),
+      '#weight' => 5, // Place right after basic settings
+    ];
+
+    // Move tone of voice settings to the new fieldset
+    $this->addToneOfVoiceSettings($elements, $getConfigValue);
+
     // Advanced Settings.
     $elements['advanced_settings'] = [
       '#type' => 'details',
       '#title' => $this->t('AI Response Configuration'),
       '#open' => FALSE,
       '#ajax' => FALSE,
+      '#weight' => 10, // Place after tone of voice settings
     ];
 
     $elements['advanced_settings']['temperature'] = [
@@ -249,18 +262,95 @@ trait AiAgentFormTrait {
       ];
     }
 
+    // Create the advanced prompt settings fieldset
+    $elements['promptSettings'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Advanced Prompt Settings'),
+      '#open' => FALSE,
+      '#ajax' => FALSE,
+      '#weight' => 15, // After AI Response Configuration
+    ];
+
+    $prompt_components = [
+      'responseRules' => $this->t('Response Rules'),
+      'htmlFormatting' => $this->t('HTML Formatting'),
+      'contentStructure' => $this->t('Content Structure'),
+      'tone' => $this->t('Tone'),
+      'inlineContent' => $this->t('Inline Content'),
+      'imageHandling' => $this->t('Image Handling'),
+      'referenceGuidelines' => $this->t('Reference Guidelines'),
+      'contextRequirements' => $this->t('Context Requirements'),
+    ];
+
+    try {
+      $module_path = \Drupal::service('extension.path.resolver')->getPath('module', 'ckeditor_ai_agent');
+      $default_rules_path = $module_path . '/js/ckeditor5_plugins/aiagent/src/config/default-rules.json';
+      $default_rules = file_exists($default_rules_path)
+            ? json_decode(file_get_contents($default_rules_path), TRUE) ?: []
+            : [];
+
+      foreach ($prompt_components as $key => $label) {
+        // Handle tone fields differently when using taxonomy integration
+        $is_tone_with_vocab = ($key === 'tone' && !empty($getConfigValue('toneOfVoiceVocabulary')));
+
+        $elements['promptSettings']["override_$key"] = [
+          '#type' => 'textarea',
+          '#title' => $this->t('@label Override', ['@label' => $label]),
+          '#default_value' => $getConfigValue("promptSettings.overrides.$key"),
+          '#placeholder' => $default_rules[$key] ?? '',
+          '#description' => $is_tone_with_vocab 
+            ? $this->t('This field is disabled because you are using the Tone of Voice vocabulary. The tone will be set automatically based on the selected vocabulary terms. To modify tones, please edit the terms in the vocabulary above.')
+            : $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower((string) $label)]),
+          '#rows' => 6,
+          '#ajax' => FALSE,
+          '#disabled' => $is_tone_with_vocab,
+          '#attributes' => $is_tone_with_vocab ? ['class' => ['tone-vocab-disabled']] : [],
+        ];
+
+        $elements['promptSettings']["additions_$key"] = [
+          '#type' => 'textarea',
+          '#title' => $this->t('@label Additions', ['@label' => $label]),
+          '#default_value' => $getConfigValue("promptSettings.additions.$key"),
+          '#description' => $is_tone_with_vocab
+            ? $this->t('This field is disabled because you are using the Tone of Voice vocabulary. The tone will be set automatically based on the selected vocabulary terms. To modify tones, please edit the terms in the vocabulary above.')
+            : $this->t('Add custom @label rules that will be appended to the defaults.', ['@label' => strtolower((string) $label)]),
+          '#rows' => 4,
+          '#ajax' => FALSE,
+          '#disabled' => $is_tone_with_vocab,
+          '#attributes' => $is_tone_with_vocab ? ['class' => ['tone-vocab-disabled']] : [],
+        ];
+
+        // Add a warning message above the tone fields when using vocabulary
+        if ($is_tone_with_vocab) {
+          $elements['promptSettings']["tone_vocab_warning"] = [
+            '#type' => 'html_tag',
+            '#tag' => 'div',
+            '#value' => $this->t('<strong>Note:</strong> The tone settings below are disabled because you are using the Tone of Voice vocabulary above. The tone will be set automatically based on the selected vocabulary terms. To modify tones, please manage the terms in the vocabulary.'),
+            '#weight' => -1,
+            '#attributes' => [
+              'class' => ['messages', 'messages--warning', 'tone-vocab-warning'],
+            ],
+          ];
+        }
+      }
+    }
+    catch (\Exception $e) {
+      \Drupal::messenger()->addError(t('Error loading prompt settings: @error', ['@error' => $e->getMessage()]));
+    }
+
     // Performance Settings.
     $elements['performance_settings'] = [
       '#type' => 'details',
-      '#title' => $this->t('Request & Performance Settings'),
+      '#title' => $this->t('Performance Settings'),
       '#open' => FALSE,
       '#ajax' => FALSE,
+      '#weight' => 20, // After Advanced Prompt Settings
     ];
 
     $performance_fields = [
       'timeOutDuration' => [
         'title' => $this->t('Request Timeout'),
-        'description' => $this->t('Maximum wait time for AI response. Default: 120000ms (45s)'),
+        'description' => $this->t('Maximum wait time for AI response. Default: 120000ms (120s)'),
         'min' => 1000,
         'field_suffix' => 'ms',
       ],
@@ -289,6 +379,7 @@ trait AiAgentFormTrait {
       '#title' => $this->t('Debug & Error Settings'),
       '#open' => FALSE,
       '#ajax' => FALSE,
+      '#weight' => 25, // After Performance Settings
     ];
 
     $boolean_options = ['0' => $this->t('Disabled'), '1' => $this->t('Enabled')];
@@ -323,9 +414,10 @@ trait AiAgentFormTrait {
     // Moderation Settings.
     $elements['moderation_settings'] = [
       '#type' => 'details',
-      '#title' => $this->t('Content Safety & Moderation'),
+      '#title' => $this->t('Moderation'),
       '#open' => FALSE,
       '#ajax' => FALSE,
+      '#weight' => 30, // After Debug & Error Settings
     ];
 
     $elements['moderation_settings']['moderationEnable'] = $is_plugin
@@ -386,13 +478,6 @@ trait AiAgentFormTrait {
    *   Helper function to get config value based on context.
    */
   protected function addPromptSettings(array &$elements, \Closure $getConfigValue): void {
-    $elements['promptSettings'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Tone & Prompt Settings'),
-      '#open' => FALSE,
-      '#ajax' => FALSE,
-    ];
-
     // Add the tone of voice taxonomy integration
     $this->addToneOfVoiceSettings($elements, $getConfigValue);
 
@@ -473,14 +558,6 @@ trait AiAgentFormTrait {
    *   Helper function to get config value based on context.
    */
   protected function addToneOfVoiceSettings(array &$elements, \Closure $getConfigValue): void {
-    // Create a fieldset for the tone of voice settings
-    $elements['promptSettings']['tone_of_voice'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Tone of Voice'),
-      '#open' => TRUE,
-      '#description' => $this->t('Configure the tones of voice available to content creators when interacting with the AI Agent.'),
-    ];
-
     // Get all vocabularies for the dropdown
     $vocabularies = \Drupal::entityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
     $vocab_options = [];
@@ -489,7 +566,7 @@ trait AiAgentFormTrait {
     }
 
     // Add a toggle to enable/disable the taxonomy integration
-    $elements['promptSettings']['tone_of_voice']['enable_taxonomy_tones'] = [
+    $elements['tone_of_voice']['enable_taxonomy_tones'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Use taxonomy terms for tones of voice'),
       '#description' => $this->t('When enabled, content creators can select from predefined tones of voice from a taxonomy vocabulary. At least 2 terms with descriptions are required for the dropdown to appear in the editor.'),
@@ -497,7 +574,7 @@ trait AiAgentFormTrait {
     ];
 
     // Add the vocabulary selector
-    $elements['promptSettings']['tone_of_voice']['tone_of_voice_vocabulary'] = [
+    $elements['tone_of_voice']['tone_of_voice_vocabulary'] = [
       '#type' => 'select',
       '#title' => $this->t('Tone of Voice Vocabulary'),
       '#description' => $this->t('Select the taxonomy vocabulary that contains your tones of voice. The term name will be shown to users in the dropdown, and the term description will be used as the tone command for the AI.'),
@@ -505,20 +582,20 @@ trait AiAgentFormTrait {
       '#default_value' => $getConfigValue('toneOfVoiceVocabulary'),
       '#states' => [
         'visible' => [
-          ':input[name="promptSettings[tone_of_voice][enable_taxonomy_tones]"]' => ['checked' => TRUE],
+          ':input[name="tone_of_voice[enable_taxonomy_tones]"]' => ['checked' => TRUE],
         ],
         'required' => [
-          ':input[name="promptSettings[tone_of_voice][enable_taxonomy_tones]"]' => ['checked' => TRUE],
+          ':input[name="tone_of_voice[enable_taxonomy_tones]"]' => ['checked' => TRUE],
         ],
       ],
     ];
 
     // Add a container to preview available tones
-    $elements['promptSettings']['tone_of_voice']['preview_container'] = [
+    $elements['tone_of_voice']['preview_container'] = [
       '#type' => 'container',
       '#states' => [
         'visible' => [
-          ':input[name="promptSettings[tone_of_voice][enable_taxonomy_tones]"]' => ['checked' => TRUE],
+          ':input[name="tone_of_voice[enable_taxonomy_tones]"]' => ['checked' => TRUE],
         ],
       ],
     ];
@@ -537,7 +614,7 @@ trait AiAgentFormTrait {
       if (!empty($tids)) {
         $terms = $term_storage->loadMultiple($tids);
         
-        $elements['promptSettings']['tone_of_voice']['preview_container']['tone_terms_preview'] = [
+        $elements['tone_of_voice']['preview_container']['tone_terms_preview'] = [
           '#type' => 'fieldset',
           '#title' => $this->t('Available Tones'),
           '#description' => $this->t('The following tones will be available to content creators. Terms are ordered by weight, with the lightest weight appearing first in the dropdown.'),
@@ -571,7 +648,7 @@ trait AiAgentFormTrait {
           ];
         }
 
-        $elements['promptSettings']['tone_of_voice']['preview_container']['tone_terms_table'] = [
+        $elements['tone_of_voice']['preview_container']['tone_terms_table'] = [
           '#type' => 'table',
           '#header' => $header,
           '#rows' => $rows,
@@ -585,7 +662,7 @@ trait AiAgentFormTrait {
 
         // Add warning if we don't have enough valid terms
         if ($valid_terms_count < 2) {
-          $elements['promptSettings']['tone_of_voice']['preview_container']['warning'] = [
+          $elements['tone_of_voice']['preview_container']['warning'] = [
             '#type' => 'html_tag',
             '#tag' => 'div',
             '#value' => $this->t('Warning: At least 2 terms with descriptions are required for the tone dropdown to appear in the editor. Currently you have @count valid terms.', [
@@ -598,7 +675,7 @@ trait AiAgentFormTrait {
         }
 
         // Add help text for term descriptions
-        $elements['promptSettings']['tone_of_voice']['preview_container']['help_text'] = [
+        $elements['tone_of_voice']['preview_container']['help_text'] = [
           '#type' => 'html_tag',
           '#tag' => 'div',
           '#value' => $this->t('
@@ -619,7 +696,7 @@ trait AiAgentFormTrait {
         ];
         
         // Add a link to manage the terms
-        $elements['promptSettings']['tone_of_voice']['preview_container']['manage_link'] = [
+        $elements['tone_of_voice']['preview_container']['manage_link'] = [
           '#type' => 'html_tag',
           '#tag' => 'div',
           '#value' => $this->t('<a href="@link" class="button">Manage Tone of Voice Terms</a>', [
@@ -631,7 +708,7 @@ trait AiAgentFormTrait {
         ];
       }
       else {
-        $elements['promptSettings']['tone_of_voice']['preview_container']['no_terms'] = [
+        $elements['tone_of_voice']['preview_container']['no_terms'] = [
           '#type' => 'markup',
           '#markup' => $this->t('No terms found in this vocabulary. Please <a href="@link">add some terms</a> to the vocabulary.', [
             '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
@@ -642,7 +719,7 @@ trait AiAgentFormTrait {
 
     // Add information about creating a vocabulary if none exists
     if (empty($vocab_options)) {
-      $elements['promptSettings']['tone_of_voice']['no_vocabularies'] = [
+      $elements['tone_of_voice']['no_vocabularies'] = [
         '#type' => 'markup',
         '#markup' => $this->t('No taxonomy vocabularies found. Please <a href="@link">create a vocabulary</a> for tone of voice terms first.', [
           '@link' => '/admin/structure/taxonomy/add',
