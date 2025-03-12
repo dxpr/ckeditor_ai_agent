@@ -6,6 +6,146 @@
  */
 
 use Drupal\Core\Config\FileStorage;
+use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\taxonomy\Entity\Term;
+
+/**
+ * Implements hook_install().
+ */
+function ckeditor_ai_agent_install() {
+  _ckeditor_ai_agent_create_command_vocabulary();
+  _ckeditor_ai_agent_create_tone_vocabulary();
+}
+
+/**
+ * Create default AI Agent Commands vocabulary and terms.
+ */
+function ckeditor_ai_agent_update_9002(): void {
+  _ckeditor_ai_agent_create_command_vocabulary();
+}
+
+/**
+ * Create default AI Tone of Voice vocabulary and terms.
+ */
+function ckeditor_ai_agent_update_9003(): void {
+  _ckeditor_ai_agent_create_tone_vocabulary();
+}
+
+/**
+ * Helper function to create the command vocabulary and default terms.
+ */
+function _ckeditor_ai_agent_create_command_vocabulary() {
+  // Create vocabulary for commands if it doesn't exist
+  $command_vocabulary_name = 'ai_agent_commands';
+  $vocabulary_exists = \Drupal::entityTypeManager()
+    ->getStorage('taxonomy_vocabulary')
+    ->load($command_vocabulary_name);
+    
+  if (!$vocabulary_exists) {
+    // Create vocabulary for commands
+    $vocabulary = Vocabulary::create([
+      'vid' => $command_vocabulary_name,
+      'name' => 'AI Edit Commands',
+      'description' => 'Commands for the CKEditor AI Agent editing tools',
+    ]);
+    $vocabulary->save();
+    
+    // Define the default command structure
+    $default_commands = [
+      'Edit or review' => [
+        'Fix Mistakes' => 'Fix spelling mistakes, use proper grammar and apply good writing practices.
+Do not lose the original meaning.
+You must keep the text formatting.',
+        'Improve Tone of Voice' => 'Rewrite the content to match the <TONE> while preserving the key message and meaning.
+Ensure the writing style is consistent.
+You must keep the text formatting.',
+        'Make Shorter' => 'Remove any repetitive, redundant, or non-essential writing in this
+content without changing the meaning or losing any key information.',
+        'Make Longer' => 'Improve this content by using descriptive language and inserting
+more information and more detailed explanations.
+You must keep the text formatting.',
+        'Simplify Language' => 'Simplify the writing style of this content and reduce the complexity,
+so that the content is easy to understand.
+You must keep the text formatting',
+      ],
+      'Generate from selection' => [
+        'Summarize' => 'Summarize this content into one paragraph of text. Include only the key ideas and conclusions.
+Keep it short. Do not keep original text formatting',
+        'Continue' => 'Start with the provided content and write at the end of it continuing this topic.
+Keep the added part short.
+You must keep the text formatting',
+      ],
+    ];
+    
+    // Create terms for each category and command
+    foreach ($default_commands as $category => $commands) {
+      // Create the category term
+      $category_term = Term::create([
+        'vid' => $command_vocabulary_name,
+        'name' => $category,
+      ]);
+      $category_term->save();
+      
+      // Create each command term as a child of this category
+      foreach ($commands as $command_name => $command_instruction) {
+        $command_term = Term::create([
+          'vid' => $command_vocabulary_name,
+          'name' => $command_name,
+          'description' => $command_instruction,
+          'parent' => [$category_term->id()],
+        ]);
+        $command_term->save();
+      }
+    }
+    
+    // Update the module configuration to use this vocabulary
+    $config = \Drupal::configFactory()->getEditable('ckeditor_ai_agent.settings');
+    $config->set('commandsVocabulary', $command_vocabulary_name);
+    $config->save();
+  }
+}
+
+/**
+ * Helper function to create the tone of voice vocabulary and default terms.
+ */
+function _ckeditor_ai_agent_create_tone_vocabulary() {
+  // Create vocabulary for tones if it doesn't exist
+  $tone_vocabulary_name = 'ai_tone_of_voice';
+  $vocabulary_exists = \Drupal::entityTypeManager()
+    ->getStorage('taxonomy_vocabulary')
+    ->load($tone_vocabulary_name);
+    
+  if (!$vocabulary_exists) {
+    // Create vocabulary for tones
+    $vocabulary = Vocabulary::create([
+      'vid' => $tone_vocabulary_name,
+      'name' => 'AI Tone of Voice',
+      'description' => 'Tones of voice for the CKEditor AI Agent',
+    ]);
+    $vocabulary->save();
+    
+    // Define the default tones
+    $default_tones = [
+      'Professional' => 'Clear, professinoal',
+      'Conversational' => 'Write in a friendly, approachable manner as if you are having a conversation with the reader. Use contractions, simple language, and occasionally ask questions. The tone should be warm and personable while still being informative. Use "you" and "we" to create connection.',
+    ];
+    
+    // Create terms for each tone
+    foreach ($default_tones as $tone_name => $tone_description) {
+      $tone_term = Term::create([
+        'vid' => $tone_vocabulary_name,
+        'name' => $tone_name,
+        'description' => $tone_description,
+      ]);
+      $tone_term->save();
+    }
+    
+    // Update the module configuration to use this vocabulary
+    $config = \Drupal::configFactory()->getEditable('ckeditor_ai_agent.settings');
+    $config->set('toneOfVoiceVocabulary', $tone_vocabulary_name);
+    $config->save();
+  }
+}
 
 /**
  * Migrate API keys to Key module if available.

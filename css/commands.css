@@ -1,0 +1,177 @@
+/**
+ * @file
+ * Styles for the AI Edit Commands UI.
+ */
+
+/* Base styles for the AI Edit Commands section */
+.commands-section-tip {
+  margin-top: 1em;
+  padding: 0.75em 1em;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.commands-section-tip ol {
+  padding-left: 1.25em;
+  margin: 0.5em 0;
+}
+
+.commands-section-tip li {
+  margin-bottom: 0.4em;
+  line-height: 1.4;
+}
+
+.commands-section-tip p {
+  margin: 0.5em 0 0;
+  font-style: italic;
+}
+
+/* Style the table for better visualization */
+.commands-table {
+  width: 100%;
+  margin-top: 0.75em;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.commands-table th {
+  background-color: #f5f5f5;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 2px solid #ddd;
+  font-weight: 600;
+}
+
+.commands-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+
+/* Style for category headers */
+.command-category-header {
+  background-color: #e9ecef;
+  font-weight: 600;
+  color: #495057;
+  padding: 10px !important;
+}
+
+.command-category-row {
+  background-color: #f8f9fa;
+}
+
+/* Style for command rows */
+.command-row td {
+  padding-left: 20px;
+}
+
+.command-name {
+  width: 30%;
+  font-weight: 500;
+}
+
+.command-description {
+  width: 70%;
+  color: #666;
+  font-style: italic;
+}
+
+.empty-category {
+  color: #999;
+  font-style: italic;
+  padding-left: 20px !important;
+}
+
+/* Style for the manage link */
+.commands-manage-link {
+  margin-top: 1em;
+}
+
+.commands-manage-link a.button {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #0074bd;
+  border: none;
+  border-radius: 3px;
+  text-decoration: none;
+  color: white;
+  font-weight: 500;
+  font-size: 0.9em;
+}
+
+.commands-manage-link a.button:hover {
+  background-color: #0062a0;
+}
+
+/* Responsive styling for small screens */
+@media screen and (max-width: 768px) {
+  .commands-table thead {
+    display: none;
+  }
+
+  .commands-table tr {
+    display: block;
+    margin-bottom: 0.75em;
+    border: 1px solid #eee;
+    border-radius: 4px;
+  }
+
+  .commands-table td {
+    display: block;
+    text-align: right;
+    border-bottom: 1px solid #eee;
+    position: relative;
+    padding-left: 50%;
+    font-size: 0.85em;
+  }
+
+  .command-category-header {
+    text-align: center !important;
+    padding-left: 10px !important;
+  }
+
+  .command-row td {
+    padding-left: 50%;
+  }
+
+  .commands-table td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0;
+    width: 45%;
+    padding-left: 10px;
+    white-space: nowrap;
+    text-align: left;
+    font-weight: 600;
+  }
+  
+  .command-name:before {
+    content: "Command";
+  }
+  
+  .command-description:before {
+    content: "Instruction";
+  }
+}
+
+/* Make the form more compact */
+.commands .form-item {
+  margin-bottom: 0.75em;
+}
+
+/* Improve checkbox styling */
+.commands .form-checkbox {
+  margin-right: 0.5em;
+}
+
+/* Make fieldsets more compact */
+.commands fieldset {
+  padding: 0.75em;
+  margin-top: 0.75em;
+}
+
+.commands fieldset legend {
+  font-weight: 600;
+  font-size: 1em;
+} 

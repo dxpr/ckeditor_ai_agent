@@ -52,6 +52,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         'moderationEnable' => NULL,
         'moderationKey' => NULL,
         'toneOfVoiceVocabulary' => NULL,
+        'commandsVocabulary' => NULL,
+        'defaultToneOfVoice' => NULL,
         'tonesDropdown' => [],
         'promptSettings' => [
           'overrides' => [],
@@ -170,6 +172,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
         $query = $term_storage->getQuery()
           ->condition('vid', $tone_vocabulary)
+          ->condition('status', 1) // Only use published terms
           ->sort('weight')
           ->accessCheck(FALSE);
         $tids = $query->execute();
@@ -213,6 +216,80 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       }
       catch (\Exception $e) {
         \Drupal::logger('ckeditor_ai_agent')->error('Error loading tone of voice taxonomy terms in AiAgent plugin: @error', [
+          '@error' => $e->getMessage(),
+        ]);
+      }
+    }
+    
+    // Add taxonomy-based commands if configured
+    $commands_vocabulary = $config->get('commandsVocabulary');
+    
+    if (!empty($commands_vocabulary)) {
+      try {
+        // Load the terms from the vocabulary, sorted by weight
+        $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+        
+        // First load all category terms (parent terms)
+        $category_query = $term_storage->getQuery()
+          ->condition('vid', $commands_vocabulary)
+          ->condition('parent', 0)
+          ->condition('status', 1) // Only use published category terms
+          ->sort('weight')
+          ->accessCheck(FALSE);
+        $category_tids = $category_query->execute();
+        
+        if (!empty($category_tids)) {
+          $categories = $term_storage->loadMultiple($category_tids);
+          $commands_dropdown = [];
+          
+          // For each category, load its child terms (commands)
+          foreach ($categories as $category_term) {
+            $command_group = [
+              'title' => $category_term->label(),
+              'items' => [],
+            ];
+            
+            // Load child terms for this category
+            $command_query = $term_storage->getQuery()
+              ->condition('vid', $commands_vocabulary)
+              ->condition('parent', $category_term->id())
+              ->condition('status', 1) // Only use published command terms
+              ->sort('weight')
+              ->accessCheck(FALSE);
+            $command_tids = $command_query->execute();
+            
+            if (!empty($command_tids)) {
+              $commands = $term_storage->loadMultiple($command_tids);
+              
+              // Add each command to this category
+              foreach ($commands as $command_term) {
+                $description = $command_term->getDescription();
+                // Only add terms that have a description (command)
+                if (!empty($description)) {
+                  $command_item = [
+                    'title' => $command_term->label(),
+                    'command' => $description,
+                  ];
+                  
+                  $command_group['items'][] = $command_item;
+                }
+              }
+            }
+            
+            // Only add the category if it has commands
+            if (!empty($command_group['items'])) {
+              $commands_dropdown[] = $command_group;
+            }
+          }
+          
+          // Only add the commands dropdown to the configuration if we have valid categories
+          if (!empty($commands_dropdown)) {
+            $result['aiAgent']['commandsDropdown'] = $commands_dropdown;
+          }
+        }
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('ckeditor_ai_agent')->error('Error loading commands taxonomy terms: @error', [
           '@error' => $e->getMessage(),
         ]);
       }
@@ -286,6 +363,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       'moderationEnable' => 'moderationEnable',
       'moderationKey' => 'moderationKey',
       'toneOfVoiceVocabulary' => 'toneOfVoiceVocabulary',
+      'commandsVocabulary' => 'commandsVocabulary',
+      'defaultToneOfVoice' => 'defaultToneOfVoice',
     ];
   }
 

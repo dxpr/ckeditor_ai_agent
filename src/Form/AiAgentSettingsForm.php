@@ -170,6 +170,18 @@ class AiAgentSettingsForm extends ConfigFormBase {
         $config->set('toneOfVoiceVocabulary', '');
       }
     }
+    
+    // Handle commands taxonomy settings
+    if (isset($values['commands'])) {
+      $command_settings = $values['commands'];
+      
+      // Save the vocabulary reference if taxonomy commands are enabled
+      if (!empty($command_settings['enable_taxonomy_commands']) && !empty($command_settings['commands_vocabulary'])) {
+        $config->set('commandsVocabulary', $command_settings['commands_vocabulary']);
+      } else {
+        $config->set('commandsVocabulary', '');
+      }
+    }
 
     $config->save();
     parent::submitForm($form, $form_state);

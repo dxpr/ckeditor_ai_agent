@@ -22,3 +22,12 @@ tone_of_voice:
   dependencies:
     - core/drupal
     - core/jquery
+
+commands:
+  version: 1.x
+  css:
+    theme:
+      css/commands.css: {}
+  dependencies:
+    - core/drupal
+    - core/jquery

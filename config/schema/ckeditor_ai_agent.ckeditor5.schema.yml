@@ -66,6 +66,9 @@ ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
         toneOfVoiceVocabulary:
           type: string
           label: 'Tone of Voice Vocabulary'
+        commandsVocabulary:
+          type: string
+          label: 'Commands Vocabulary'
         defaultToneOfVoice:
           type: string
           label: 'Default Tone of Voice'
@@ -82,6 +85,29 @@ ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
               command:
                 type: string
                 label: 'Tone Command'
+        commandsDropdown:
+          type: sequence
+          label: 'Commands Dropdown'
+          sequence:
+            type: mapping
+            label: 'Command Category'
+            mapping:
+              title:
+                type: string
+                label: 'Category Title'
+              items:
+                type: sequence
+                label: 'Commands'
+                sequence:
+                  type: mapping
+                  label: 'Command Item'
+                  mapping:
+                    title:
+                      type: string
+                      label: 'Command Title'
+                    command:
+                      type: string
+                      label: 'Command Instruction'
         promptSettings:
           type: mapping
           label: 'Prompt Settings'

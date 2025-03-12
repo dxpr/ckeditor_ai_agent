@@ -466,6 +466,193 @@ trait AiAgentFormTrait {
       'violence/graphic' => $this->t('Graphic violence'),
     ];
 
+    // Add the commands section to the form
+    $elements['commands'] = [
+      '#type' => 'details',
+      '#title' => $this->t('AI Edit Commands'),
+      '#open' => FALSE,
+      '#description' => $this->t('Configure the commands available to content creators when interacting with the AI Agent.'),
+      '#weight' => 6, // Place right after tone of voice settings
+    ];
+
+    // Get all vocabularies for the dropdown
+    $vocabularies = \Drupal::entityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
+    $vocab_options = [];
+    foreach ($vocabularies as $vocabulary) {
+      $vocab_options[$vocabulary->id()] = $vocabulary->label();
+    }
+
+    // Add a toggle to enable/disable the taxonomy integration
+    $elements['commands']['enable_taxonomy_commands'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Organize commands in categories'),
+      '#description' => $this->t('Use categories (taxonomy vocabularies) to manage your commands. Parent terms become categories, child terms become commands. <a href="@vocab_link">Manage categories</a>.', [
+        '@vocab_link' => '/admin/structure/taxonomy',
+      ]),
+      '#default_value' => !empty($getConfigValue('commandsVocabulary')),
+    ];
+
+    // Add the vocabulary selector
+    $elements['commands']['commands_vocabulary'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Command Collection'),
+      '#description' => $this->t('Select or create a vocabulary to manage your commands'),
+      '#options' => $vocab_options,
+      '#default_value' => $getConfigValue('commandsVocabulary'),
+      '#states' => [
+        'visible' => [
+          ':input[name="commands[enable_taxonomy_commands]"]' => ['checked' => TRUE],
+        ],
+        'required' => [
+          ':input[name="commands[enable_taxonomy_commands]"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+
+    // Add a container to preview available commands
+    $elements['commands']['preview_container'] = [
+      '#type' => 'container',
+      '#states' => [
+        'visible' => [
+          ':input[name="commands[enable_taxonomy_commands]"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+
+    // Add a preview of available commands if a vocabulary is selected
+    $selected_vocabulary = $getConfigValue('commandsVocabulary');
+    if (!empty($selected_vocabulary)) {
+      // Load the terms from the selected vocabulary, sorted by weight
+      $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+      
+      // First load all category terms (parent terms)
+      $category_query = $term_storage->getQuery()
+        ->condition('vid', $selected_vocabulary)
+        ->condition('parent', 0)
+        ->condition('status', 1) // Only use published category terms
+        ->sort('weight')
+        ->accessCheck(FALSE);
+      $category_tids = $category_query->execute();
+      
+      if (!empty($category_tids)) {
+        $categories = $term_storage->loadMultiple($category_tids);
+        
+        // Create a structured table showing the command hierarchy
+        $rows = [];
+        
+        foreach ($categories as $category_term) {
+          // Add the category as a header-like row
+          $rows[] = [
+            'data' => [
+              [
+                'data' => $this->t('@category (Category)', ['@category' => $category_term->label()]),
+                'colspan' => 2,
+                'class' => ['command-category-header'],
+              ],
+            ],
+            'class' => ['command-category-row'],
+          ];
+          
+          // Load child terms for this category
+          $command_query = $term_storage->getQuery()
+            ->condition('vid', $selected_vocabulary)
+            ->condition('parent', $category_term->id())
+            ->condition('status', 1) // Only use published command terms
+            ->sort('weight')
+            ->accessCheck(FALSE);
+          $command_tids = $command_query->execute();
+          
+          if (!empty($command_tids)) {
+            $commands = $term_storage->loadMultiple($command_tids);
+            
+            // Add each command to the table
+            foreach ($commands as $command_term) {
+              $description = $command_term->getDescription();
+              // Strip HTML and truncate for display
+              $description = strip_tags($description);
+              $short_description = strlen($description) > 100 
+                ? substr($description, 0, 100) . '...' 
+                : ($description ?: $this->t('- No instruction defined -'));
+              
+              $rows[] = [
+                'data' => [
+                  [
+                    'data' => $command_term->label(),
+                    'class' => ['command-name'],
+                  ],
+                  [
+                    'data' => $short_description,
+                    'class' => ['command-description'],
+                  ],
+                ],
+                'class' => ['command-row'],
+              ];
+            }
+          } else {
+            $rows[] = [
+              'data' => [
+                [
+                  'data' => $this->t('No commands found in this category'),
+                  'colspan' => 2,
+                  'class' => ['empty-category'],
+                ],
+              ],
+            ];
+          }
+        }
+        
+        $header = [
+          $this->t('Command'),
+          $this->t('Instruction'),
+        ];
+        
+        $elements['commands']['preview_container']['commands_table'] = [
+          '#type' => 'table',
+          '#header' => $header,
+          '#rows' => $rows,
+          '#empty' => $this->t('No commands found. <a href="@link">Add commands</a>', [
+            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
+          ]),
+          '#attributes' => [
+            'class' => ['commands-table'],
+          ],
+        ];
+        
+        // Add a link to manage the terms
+        $elements['commands']['preview_container']['manage_link'] = [
+          '#type' => 'html_tag',
+          '#tag' => 'div',
+          '#value' => $this->t('<a href="@link" class="button">Manage Commands</a>', [
+            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/overview',
+          ]),
+          '#attributes' => [
+            'class' => ['commands-manage-link'],
+          ],
+        ];
+      }
+      else {
+        $elements['commands']['preview_container']['no_terms'] = [
+          '#type' => 'markup',
+          '#markup' => $this->t('No commands found. <a href="@link">Add commands</a>', [
+            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
+          ]),
+        ];
+      }
+    }
+
+    // Add information about creating a vocabulary if none exists
+    if (empty($vocab_options)) {
+      $elements['commands']['no_vocabularies'] = [
+        '#type' => 'markup',
+        '#markup' => $this->t('No vocabularies found. <a href="@link">Create one</a> to manage your commands.', [
+          '@link' => '/admin/structure/taxonomy/add',
+        ]),
+      ];
+    }
+
+    // Add some styling for the commands section
+    $elements['#attached']['library'][] = 'ckeditor_ai_agent/commands';
+
     return $elements;
   }
 
@@ -480,6 +667,9 @@ trait AiAgentFormTrait {
   protected function addPromptSettings(array &$elements, \Closure $getConfigValue): void {
     // Add the tone of voice taxonomy integration
     $this->addToneOfVoiceSettings($elements, $getConfigValue);
+    
+    // Add the commands taxonomy integration
+    $this->addCommandSettings($elements, $getConfigValue);
 
     $prompt_components = [
       'responseRules' => $this->t('Response Rules'),
@@ -609,6 +799,7 @@ trait AiAgentFormTrait {
       $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
       $query = $term_storage->getQuery()
         ->condition('vid', $selected_vocabulary)
+        ->condition('status', 1) // Only use published terms
         ->sort('weight')
         ->accessCheck(FALSE);
       $tids = $query->execute();
@@ -680,6 +871,194 @@ trait AiAgentFormTrait {
 
     // Add some styling for the tone of voice section
     $elements['#attached']['library'][] = 'ckeditor_ai_agent/tone_of_voice';
+  }
+
+  /**
+   * Adds command taxonomy settings to the form.
+   *
+   * @param array<string, mixed> $elements
+   *   List of common form elements.
+   * @param \Closure $getConfigValue
+   *   Helper function to get config value based on context.
+   */
+  protected function addCommandSettings(array &$elements, \Closure $getConfigValue): void {
+    // Get all vocabularies for the dropdown
+    $vocabularies = \Drupal::entityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
+    $vocab_options = [];
+    foreach ($vocabularies as $vocabulary) {
+      $vocab_options[$vocabulary->id()] = $vocabulary->label();
+    }
+
+    // Add a toggle to enable/disable the taxonomy integration
+    $elements['commands']['enable_taxonomy_commands'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Organize commands in categories'),
+      '#description' => $this->t('Use categories (taxonomy vocabularies) to manage your commands. Parent terms become categories, child terms become commands. <a href="@vocab_link">Manage categories</a>.', [
+        '@vocab_link' => '/admin/structure/taxonomy',
+      ]),
+      '#default_value' => !empty($getConfigValue('commandsVocabulary')),
+    ];
+
+    // Add the vocabulary selector
+    $elements['commands']['commands_vocabulary'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Command Collection'),
+      '#description' => $this->t('Select or create a vocabulary to manage your commands'),
+      '#options' => $vocab_options,
+      '#default_value' => $getConfigValue('commandsVocabulary'),
+      '#states' => [
+        'visible' => [
+          ':input[name="commands[enable_taxonomy_commands]"]' => ['checked' => TRUE],
+        ],
+        'required' => [
+          ':input[name="commands[enable_taxonomy_commands]"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+
+    // Add a container to preview available commands
+    $elements['commands']['preview_container'] = [
+      '#type' => 'container',
+      '#states' => [
+        'visible' => [
+          ':input[name="commands[enable_taxonomy_commands]"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+
+    // Add a preview of available commands if a vocabulary is selected
+    $selected_vocabulary = $getConfigValue('commandsVocabulary');
+    if (!empty($selected_vocabulary)) {
+      // Load the terms from the selected vocabulary, sorted by weight
+      $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+      
+      // First load all category terms (parent terms)
+      $category_query = $term_storage->getQuery()
+        ->condition('vid', $selected_vocabulary)
+        ->condition('parent', 0)
+        ->condition('status', 1) // Only use published category terms
+        ->sort('weight')
+        ->accessCheck(FALSE);
+      $category_tids = $category_query->execute();
+      
+      if (!empty($category_tids)) {
+        $categories = $term_storage->loadMultiple($category_tids);
+        
+        // Create a structured table showing the command hierarchy
+        $rows = [];
+        
+        foreach ($categories as $category_term) {
+          // Add the category as a header-like row
+          $rows[] = [
+            'data' => [
+              [
+                'data' => $this->t('@category (Category)', ['@category' => $category_term->label()]),
+                'colspan' => 2,
+                'class' => ['command-category-header'],
+              ],
+            ],
+            'class' => ['command-category-row'],
+          ];
+          
+          // Load child terms for this category
+          $command_query = $term_storage->getQuery()
+            ->condition('vid', $selected_vocabulary)
+            ->condition('parent', $category_term->id())
+            ->condition('status', 1) // Only use published command terms
+            ->sort('weight')
+            ->accessCheck(FALSE);
+          $command_tids = $command_query->execute();
+          
+          if (!empty($command_tids)) {
+            $commands = $term_storage->loadMultiple($command_tids);
+            
+            // Add each command to the table
+            foreach ($commands as $command_term) {
+              $description = $command_term->getDescription();
+              // Strip HTML and truncate for display
+              $description = strip_tags($description);
+              $short_description = strlen($description) > 100 
+                ? substr($description, 0, 100) . '...' 
+                : ($description ?: $this->t('- No instruction defined -'));
+              
+              $rows[] = [
+                'data' => [
+                  [
+                    'data' => $command_term->label(),
+                    'class' => ['command-name'],
+                  ],
+                  [
+                    'data' => $short_description,
+                    'class' => ['command-description'],
+                  ],
+                ],
+                'class' => ['command-row'],
+              ];
+            }
+          } else {
+            $rows[] = [
+              'data' => [
+                [
+                  'data' => $this->t('No commands found in this category'),
+                  'colspan' => 2,
+                  'class' => ['empty-category'],
+                ],
+              ],
+            ];
+          }
+        }
+        
+        $header = [
+          $this->t('Command'),
+          $this->t('Instruction'),
+        ];
+        
+        $elements['commands']['preview_container']['commands_table'] = [
+          '#type' => 'table',
+          '#header' => $header,
+          '#rows' => $rows,
+          '#empty' => $this->t('No commands found. <a href="@link">Add commands</a>', [
+            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
+          ]),
+          '#attributes' => [
+            'class' => ['commands-table'],
+          ],
+        ];
+        
+        // Add a link to manage the terms
+        $elements['commands']['preview_container']['manage_link'] = [
+          '#type' => 'html_tag',
+          '#tag' => 'div',
+          '#value' => $this->t('<a href="@link" class="button">Manage Commands</a>', [
+            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/overview',
+          ]),
+          '#attributes' => [
+            'class' => ['commands-manage-link'],
+          ],
+        ];
+      }
+      else {
+        $elements['commands']['preview_container']['no_terms'] = [
+          '#type' => 'markup',
+          '#markup' => $this->t('No commands found. <a href="@link">Add commands</a>', [
+            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
+          ]),
+        ];
+      }
+    }
+
+    // Add information about creating a vocabulary if none exists
+    if (empty($vocab_options)) {
+      $elements['commands']['no_vocabularies'] = [
+        '#type' => 'markup',
+        '#markup' => $this->t('No vocabularies found. <a href="@link">Create one</a> to manage your commands.', [
+          '@link' => '/admin/structure/taxonomy/add',
+        ]),
+      ];
+    }
+
+    // Add some styling for the commands section
+    $elements['#attached']['library'][] = 'ckeditor_ai_agent/commands';
   }
 
 }
