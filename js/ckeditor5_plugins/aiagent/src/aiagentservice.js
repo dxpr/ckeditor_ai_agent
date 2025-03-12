@@ -225,7 +225,6 @@ export default class AiAgentService {
      * @returns A promise that resolves when the response has been processed.
      */
     async fetchAndProcessGptResponse(command, prompt, parent, retries = this.retryAttempts) {
-        console.log('Starting fetchAndProcessGptResponse');
         const editor = this.editor;
         const t = editor.t;
         const controller = new AbortController();
