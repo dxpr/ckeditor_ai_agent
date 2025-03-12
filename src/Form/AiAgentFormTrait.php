@@ -415,29 +415,48 @@ trait AiAgentFormTrait {
             : [];
 
       foreach ($prompt_components as $key => $label) {
-        // Skip the tone section if we're using the taxonomy integration
-        if ($key === 'tone' && !empty($getConfigValue('toneOfVoiceVocabulary'))) {
-          continue;
-        }
+        // Handle tone fields differently when using taxonomy integration
+        $is_tone_with_vocab = ($key === 'tone' && !empty($getConfigValue('toneOfVoiceVocabulary')));
 
         $elements['promptSettings']["override_$key"] = [
           '#type' => 'textarea',
           '#title' => $this->t('@label Override', ['@label' => $label]),
           '#default_value' => $getConfigValue("promptSettings.overrides.$key"),
           '#placeholder' => $default_rules[$key] ?? '',
-          '#description' => $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower((string) $label)]),
+          '#description' => $is_tone_with_vocab 
+            ? $this->t('This field is disabled because you are using the Tone of Voice vocabulary. The tone will be set automatically based on the selected vocabulary terms. To modify tones, please edit the terms in the vocabulary above.')
+            : $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower((string) $label)]),
           '#rows' => 6,
           '#ajax' => FALSE,
+          '#disabled' => $is_tone_with_vocab,
+          '#attributes' => $is_tone_with_vocab ? ['class' => ['tone-vocab-disabled']] : [],
         ];
 
         $elements['promptSettings']["additions_$key"] = [
           '#type' => 'textarea',
           '#title' => $this->t('@label Additions', ['@label' => $label]),
           '#default_value' => $getConfigValue("promptSettings.additions.$key"),
-          '#description' => $this->t('Add custom @label rules that will be appended to the defaults.', ['@label' => strtolower((string) $label)]),
+          '#description' => $is_tone_with_vocab
+            ? $this->t('This field is disabled because you are using the Tone of Voice vocabulary. The tone will be set automatically based on the selected vocabulary terms. To modify tones, please edit the terms in the vocabulary above.')
+            : $this->t('Add custom @label rules that will be appended to the defaults.', ['@label' => strtolower((string) $label)]),
           '#rows' => 4,
           '#ajax' => FALSE,
+          '#disabled' => $is_tone_with_vocab,
+          '#attributes' => $is_tone_with_vocab ? ['class' => ['tone-vocab-disabled']] : [],
         ];
+
+        // Add a warning message above the tone fields when using vocabulary
+        if ($is_tone_with_vocab) {
+          $elements['promptSettings']["tone_vocab_warning"] = [
+            '#type' => 'html_tag',
+            '#tag' => 'div',
+            '#value' => $this->t('<strong>Note:</strong> The tone settings below are disabled because you are using the Tone of Voice vocabulary above. The tone will be set automatically based on the selected vocabulary terms. To modify tones, please manage the terms in the vocabulary.'),
+            '#weight' => -1,
+            '#attributes' => [
+              'class' => ['messages', 'messages--warning', 'tone-vocab-warning'],
+            ],
+          ];
+        }
       }
     }
     catch (\Exception $e) {

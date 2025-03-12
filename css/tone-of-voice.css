@@ -119,4 +119,33 @@
   .tone-terms-table td:nth-of-type(4):before {
     content: "Status";
   }
+}
+
+/* Styles for disabled tone fields */
+.tone-vocab-disabled {
+  background-color: #f5f5f5;
+  border-color: #ddd;
+  color: #666;
+}
+
+.tone-vocab-warning {
+  margin: 1em 0;
+  padding: 1em;
+  border-left: 5px solid #e29700;
+  background-color: #fff4db;
+}
+
+.tone-vocab-warning strong {
+  color: #e29700;
+}
+
+/* Add some spacing between the warning and the fields */
+.tone-vocab-warning + .form-item {
+  margin-top: 1em;
+}
+
+/* Style the disabled field descriptions */
+.form-item--disabled .description {
+  color: #666;
+  font-style: italic;
 } 
