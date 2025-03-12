@@ -87,27 +87,31 @@ export class PromptHelper {
     getSystemPrompt(isInlineResponse = false) {
         const defaultComponents = getDefaultRules(this.editor);
         let systemPrompt = '';
-        // Check if a custom tone is set
+        // Get custom tone if set
         const toneCommand = this.editor.commands.get('aiAgentTone');
-        const hasCustomTone = toneCommand && toneCommand.value;
+        const customTone = toneCommand?.value;
         // Process each component
         for (const [id, defaultContent] of Object.entries(defaultComponents)) {
             // Skip components that are not allowed in the editor and not inline response
-            // Also skip the tone component if a custom tone is set
             if ((id === 'imageHandling' && !getAllowedHtmlTags(this.editor).includes('img')) ||
-                (id === 'inlineContent' && !isInlineResponse) ||
-                (id === 'tone' && hasCustomTone)) {
+                (id === 'inlineContent' && !isInlineResponse)) {
                 continue;
             }
             const componentId = id;
             let content = defaultContent;
-            // Apply overrides if they exist
-            if (this.promptSettings.overrides?.[componentId]) {
-                content = this.promptSettings.overrides[componentId];
+            // Handle tone component specially
+            if (componentId === 'tone' && customTone) {
+                content = customTone;
             }
-            // Apply additions if they exist
-            if (this.promptSettings.additions?.[componentId]) {
-                content += '\n' + this.promptSettings.additions[componentId];
+            else {
+                // Apply overrides if they exist
+                if (this.promptSettings.overrides?.[componentId]) {
+                    content = this.promptSettings.overrides[componentId];
+                }
+                // Apply additions if they exist
+                if (this.promptSettings.additions?.[componentId]) {
+                    content += '\n' + this.promptSettings.additions[componentId];
+                }
             }
             // Convert componentId to uppercase for XML tag
             const xmlTag = componentId.replace(/([A-Z])/g, '_$1').toUpperCase();
@@ -186,14 +190,13 @@ export class PromptHelper {
         }
         return trimmedContext.trim();
     }
-    formatFinalPrompt(request, context, selectedContent, markDownContents, isEditorEmpty = false, tone) {
+    formatFinalPrompt(request, context, selectedContent, markDownContents, isEditorEmpty = false) {
         if (this.debugMode) {
             console.group('formatFinalPrompt Debug');
             console.log('Request:', request);
             console.log('Context received:', context);
             console.log('MarkDownContents:', markDownContents);
             console.log('IsEditorEmpty:', isEditorEmpty);
-            console.log('Tone:', tone);
         }
         const contentLanguageCode = this.editor.locale.contentLanguage;
         const corpus = [];
@@ -211,12 +214,6 @@ export class PromptHelper {
             corpus.push('<SELECTED_CONTENT>');
             corpus.push(selectedContent);
             corpus.push('</SELECTED_CONTENT>');
-        }
-        // Only include tone if it's provided and not empty
-        if (tone && tone.trim() !== '') {
-            corpus.push('<TONE>');
-            corpus.push(tone);
-            corpus.push('</TONE>');
         }
         // Markdown Content Section
         if (markDownContents?.length) {

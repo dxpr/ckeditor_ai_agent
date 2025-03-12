@@ -321,7 +321,8 @@ export default class AiAgentUI extends Plugin {
                 const titleButton = new MenuBarMenuListItemButtonView(locale);
                 titleButton.set({
                     label: group.title,
-                    class: 'ck-menu-group-title'
+                    class: 'ck-menu-group-title ck-list-item-button',
+                    isEnabled: false
                 });
                 titleView.children.add(titleButton);
                 listView.items.add(titleView);
@@ -373,7 +374,7 @@ export default class AiAgentUI extends Plugin {
         const t = editor.t;
         editor.ui.componentFactory.add('aiAgentToneButton', locale => {
             const dropdownView = createDropdown(locale);
-            dropdownView.class = 'ck-ai-commands-list';
+            dropdownView.class = 'ck-ai-tone-list';
             const buttonView = dropdownView.buttonView;
             buttonView.set({
                 label: t('Tone of voice'),
@@ -388,7 +389,8 @@ export default class AiAgentUI extends Plugin {
             const titleButton = new MenuBarMenuListItemButtonView(locale);
             titleButton.set({
                 label: t('Tone'),
-                class: 'ck-menu-group-title'
+                class: 'ck-menu-group-title ck-list-item-button',
+                isEnabled: false
             });
             titleView.children.add(titleButton);
             listView.items.add(titleView);
@@ -399,7 +401,7 @@ export default class AiAgentUI extends Plugin {
                 checkIconView.set({
                     content: checkIcon
                 });
-                checkIconView.isVisible = item.command === '' ? true : false;
+                checkIconView.isVisible = item.tone === '' ? true : false;
                 checkIcons.push(checkIconView);
                 const spanView = new View(locale);
                 spanView.setTemplate({
@@ -412,7 +414,7 @@ export default class AiAgentUI extends Plugin {
                 spanView.render();
                 buttonView.children.add(spanView);
                 buttonView.set({
-                    label: item.title,
+                    label: item.label,
                     class: 'ck-menu-item'
                 });
                 buttonView.delegate('execute').to(menuView);
@@ -424,7 +426,7 @@ export default class AiAgentUI extends Plugin {
                     });
                     checkIconView.isVisible = true;
                     editor.execute('aiAgentTone', {
-                        value: item.command
+                        value: item.tone
                     });
                     editor.editing.view.focus();
                 });
