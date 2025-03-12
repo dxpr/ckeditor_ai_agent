@@ -160,11 +160,11 @@ class AiAgentConfigurationManager {
           // Add each taxonomy term as a tone option
           foreach ($terms as $term) {
             $description = $term->getDescription();
-            // Only add terms that have a description (command)
+            // Only add terms that have a description (tone)
             if (!empty($description)) {
               $tone_item = [
-                'title' => $term->label(),
-                'command' => $description,
+                'label' => $term->label(),
+                'tone' => $description,
               ];
               
               $tones_dropdown[] = $tone_item;
@@ -189,7 +189,7 @@ class AiAgentConfigurationManager {
               if (!isset($config['aiAgent']['promptSettings']['overrides'])) {
                 $config['aiAgent']['promptSettings']['overrides'] = [];
               }
-              $config['aiAgent']['promptSettings']['overrides']['tone'] = $first_term['command'];
+              $config['aiAgent']['promptSettings']['overrides']['tone'] = $first_term['tone'];
             }
           }
         }
