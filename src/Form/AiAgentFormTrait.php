@@ -568,16 +568,18 @@ trait AiAgentFormTrait {
     // Add a toggle to enable/disable the taxonomy integration
     $elements['tone_of_voice']['enable_taxonomy_tones'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Use taxonomy terms for tones of voice'),
-      '#description' => $this->t('When enabled, content creators can select from predefined tones of voice from a taxonomy vocabulary. At least 2 terms with descriptions are required for the dropdown to appear in the editor.'),
+      '#title' => $this->t('Organize tones in categories'),
+      '#description' => $this->t('Use categories (taxonomy vocabularies) to manage your tones of voice. The first tone will be used as default. To enable tone selection while editing, add the Tone of Voice button to your text format toolbar. <a href="@vocab_link">Manage categories</a>.', [
+        '@vocab_link' => '/admin/structure/taxonomy',
+      ]),
       '#default_value' => !empty($getConfigValue('toneOfVoiceVocabulary')),
     ];
 
     // Add the vocabulary selector
     $elements['tone_of_voice']['tone_of_voice_vocabulary'] = [
       '#type' => 'select',
-      '#title' => $this->t('Tone of Voice Vocabulary'),
-      '#description' => $this->t('Select the taxonomy vocabulary that contains your tones of voice. The term name will be shown to users in the dropdown, and the term description will be used as the tone command for the AI.'),
+      '#title' => $this->t('Tone Collection'),
+      '#description' => $this->t('Select or create a vocabulary to manage your tones'),
       '#options' => $vocab_options,
       '#default_value' => $getConfigValue('toneOfVoiceVocabulary'),
       '#states' => [
@@ -613,38 +615,22 @@ trait AiAgentFormTrait {
       
       if (!empty($tids)) {
         $terms = $term_storage->loadMultiple($tids);
-        
-        $elements['tone_of_voice']['preview_container']['tone_terms_preview'] = [
-          '#type' => 'fieldset',
-          '#title' => $this->t('Available Tones'),
-          '#description' => $this->t('The following tones will be available to content creators. Terms are ordered by weight, with the lightest weight appearing first in the dropdown.'),
-        ];
 
         $header = [
-          $this->t('Tone Name'),
-          $this->t('Description/Command'),
-          $this->t('Weight'),
-          $this->t('Status'),
+          $this->t('Label'),
+          $this->t('Tone'),
         ];
 
         $rows = [];
-        $valid_terms_count = 0;
 
         foreach ($terms as $term) {
           $description = $term->getDescription();
-          $status = !empty($description) 
-            ? $this->t('Valid') 
-            : $this->t('Missing description - will not appear in dropdown');
-          
-          if (!empty($description)) {
-            $valid_terms_count++;
-          }
+          // Strip HTML and simplify description display
+          $description = strip_tags($description);
           
           $rows[] = [
             $term->label(),
-            $description ?: $this->t('- No description -'),
-            $term->get('weight')->value,
-            $status,
+            $description ?: $this->t('- No tone defined -'),
           ];
         }
 
@@ -652,46 +638,11 @@ trait AiAgentFormTrait {
           '#type' => 'table',
           '#header' => $header,
           '#rows' => $rows,
-          '#empty' => $this->t('No terms found in this vocabulary. Please <a href="@link">add some terms</a> to the vocabulary.', [
+          '#empty' => $this->t('No tones found. <a href="@link">Add tones</a>', [
             '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
           ]),
           '#attributes' => [
             'class' => ['tone-terms-table'],
-          ],
-        ];
-
-        // Add warning if we don't have enough valid terms
-        if ($valid_terms_count < 2) {
-          $elements['tone_of_voice']['preview_container']['warning'] = [
-            '#type' => 'html_tag',
-            '#tag' => 'div',
-            '#value' => $this->t('Warning: At least 2 terms with descriptions are required for the tone dropdown to appear in the editor. Currently you have @count valid terms.', [
-              '@count' => $valid_terms_count,
-            ]),
-            '#attributes' => [
-              'class' => ['messages', 'messages--warning'],
-            ],
-          ];
-        }
-
-        // Add help text for term descriptions
-        $elements['tone_of_voice']['preview_container']['help_text'] = [
-          '#type' => 'html_tag',
-          '#tag' => 'div',
-          '#value' => $this->t('
-            <h4>How to set up tones of voice:</h4>
-            <ol>
-              <li>Each taxonomy term represents one tone of voice option in the dropdown.</li>
-              <li>The term <strong>name</strong> will be displayed in the dropdown menu.</li>
-              <li>The term <strong>description</strong> will be used as the command sent to the AI. Make it descriptive and clear.</li>
-              <li>The term <strong>weight</strong> determines the order in the dropdown (lighter weights appear first).</li>
-              <li>The first term by weight will be used as the default tone.</li>
-              <li>Only terms with descriptions will be included in the dropdown.</li>
-            </ol>
-            <p><strong>Example description:</strong> "Write in a warm, clear, and simple way for patients to understand."</p>
-          '),
-          '#attributes' => [
-            'class' => ['tone-of-voice-tip'],
           ],
         ];
         
@@ -699,7 +650,7 @@ trait AiAgentFormTrait {
         $elements['tone_of_voice']['preview_container']['manage_link'] = [
           '#type' => 'html_tag',
           '#tag' => 'div',
-          '#value' => $this->t('<a href="@link" class="button">Manage Tone of Voice Terms</a>', [
+          '#value' => $this->t('<a href="@link" class="button">Manage Tones</a>', [
             '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/overview',
           ]),
           '#attributes' => [
@@ -710,7 +661,7 @@ trait AiAgentFormTrait {
       else {
         $elements['tone_of_voice']['preview_container']['no_terms'] = [
           '#type' => 'markup',
-          '#markup' => $this->t('No terms found in this vocabulary. Please <a href="@link">add some terms</a> to the vocabulary.', [
+          '#markup' => $this->t('No tones found. <a href="@link">Add tones</a>', [
             '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
           ]),
         ];
@@ -721,7 +672,7 @@ trait AiAgentFormTrait {
     if (empty($vocab_options)) {
       $elements['tone_of_voice']['no_vocabularies'] = [
         '#type' => 'markup',
-        '#markup' => $this->t('No taxonomy vocabularies found. Please <a href="@link">create a vocabulary</a> for tone of voice terms first.', [
+        '#markup' => $this->t('No vocabularies found. <a href="@link">Create one</a> to manage your tones.', [
           '@link' => '/admin/structure/taxonomy/add',
         ]),
       ];

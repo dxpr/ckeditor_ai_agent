@@ -3,74 +3,71 @@
  * Styles for the tone of voice UI.
  */
 
+/* Base styles for the tone of voice section */
 .tone-of-voice-tip {
   margin-top: 1em;
-  padding: 1em;
-  background-color: #f5f5f5;
-  border-left: 5px solid #0074bd;
-}
-
-.tone-of-voice-tip h4 {
-  margin-top: 0;
-  color: #0074bd;
+  padding: 0.75em 1em;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.9em;
 }
 
 .tone-of-voice-tip ol {
-  padding-left: 1.5em;
+  padding-left: 1.25em;
+  margin: 0.5em 0;
 }
 
 .tone-of-voice-tip li {
-  margin-bottom: 0.5em;
+  margin-bottom: 0.4em;
+  line-height: 1.4;
 }
 
 .tone-of-voice-tip p {
-  margin-top: 1em;
+  margin: 0.5em 0 0;
   font-style: italic;
 }
 
 /* Style the table for better visualization */
 .tone-terms-table {
   width: 100%;
-  margin-top: 1em;
+  margin-top: 0.75em;
   border-collapse: collapse;
+  font-size: 0.9em;
 }
 
 .tone-terms-table th {
   background-color: #f5f5f5;
-  padding: 10px;
+  padding: 8px 10px;
   text-align: left;
   border-bottom: 2px solid #ddd;
+  font-weight: 600;
 }
 
 .tone-terms-table td {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
   vertical-align: top;
-}
-
-/* Highlight rows with missing descriptions */
-.tone-terms-table tr td:last-child:contains("Missing") {
-  color: #e62600;
 }
 
 /* Style for the manage link */
 .tone-manage-link {
-  margin-top: 1.5em;
+  margin-top: 1em;
 }
 
 .tone-manage-link a.button {
   display: inline-block;
-  padding: 8px 16px;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
+  padding: 6px 12px;
+  background-color: #0074bd;
+  border: none;
   border-radius: 3px;
   text-decoration: none;
-  color: #333;
-  font-weight: bold;
+  color: white;
+  font-weight: 500;
+  font-size: 0.9em;
 }
 
 .tone-manage-link a.button:hover {
-  background-color: #e5e5e5;
+  background-color: #0062a0;
 }
 
 /* Responsive styling for small screens */
@@ -81,16 +78,18 @@
 
   .tone-terms-table tr {
     display: block;
-    margin-bottom: 1em;
-    border: 1px solid #ddd;
+    margin-bottom: 0.75em;
+    border: 1px solid #eee;
+    border-radius: 4px;
   }
 
   .tone-terms-table td {
     display: block;
     text-align: right;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #eee;
     position: relative;
     padding-left: 50%;
+    font-size: 0.85em;
   }
 
   .tone-terms-table td:before {
@@ -101,51 +100,35 @@
     padding-left: 10px;
     white-space: nowrap;
     text-align: left;
-    font-weight: bold;
+    font-weight: 600;
   }
   
   .tone-terms-table td:nth-of-type(1):before {
-    content: "Tone Name";
+    content: "Label";
   }
   
   .tone-terms-table td:nth-of-type(2):before {
-    content: "Description/Command";
-  }
-  
-  .tone-terms-table td:nth-of-type(3):before {
-    content: "Weight";
-  }
-  
-  .tone-terms-table td:nth-of-type(4):before {
-    content: "Status";
+    content: "Tone";
   }
 }
 
-/* Styles for disabled tone fields */
-.tone-vocab-disabled {
-  background-color: #f5f5f5;
-  border-color: #ddd;
-  color: #666;
+/* Make the form more compact */
+.tone-of-voice .form-item {
+  margin-bottom: 0.75em;
 }
 
-.tone-vocab-warning {
-  margin: 1em 0;
-  padding: 1em;
-  border-left: 5px solid #e29700;
-  background-color: #fff4db;
+/* Improve checkbox styling */
+.tone-of-voice .form-checkbox {
+  margin-right: 0.5em;
 }
 
-.tone-vocab-warning strong {
-  color: #e29700;
+/* Make fieldsets more compact */
+.tone-of-voice fieldset {
+  padding: 0.75em;
+  margin-top: 0.75em;
 }
 
-/* Add some spacing between the warning and the fields */
-.tone-vocab-warning + .form-item {
-  margin-top: 1em;
-}
-
-/* Style the disabled field descriptions */
-.form-item--disabled .description {
-  color: #666;
-  font-style: italic;
+.tone-of-voice fieldset legend {
+  font-weight: 600;
+  font-size: 1em;
 } 
