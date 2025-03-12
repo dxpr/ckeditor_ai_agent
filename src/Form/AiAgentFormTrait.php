@@ -160,15 +160,6 @@ trait AiAgentFormTrait {
       '#ajax' => FALSE,
     ];
 
-    $elements['basic_settings']['contentScope'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Content Scope'),
-      '#description' => $this->t('CSS selector that extends context gathering to include content from other CKEditor 5 instances found within the first matching ancestor element.'),
-      '#default_value' => $getConfigValue('contentScope'),
-      '#placeholder' => '.node-form',
-      '#ajax' => FALSE,
-    ];
-
     // Add prompt settings.
     $this->addPromptSettings($elements, $getConfigValue);
 
@@ -229,6 +220,15 @@ trait AiAgentFormTrait {
     $elements['advanced_settings']['context'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Context Settings'),
+      '#ajax' => FALSE,
+    ];
+
+    $elements['advanced_settings']['context']['contentScope'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Content Scope'),
+      '#description' => $this->t('CSS selector that extends context gathering to include content from other CKEditor 5 instances found within the first matching ancestor element.'),
+      '#default_value' => $getConfigValue('contentScope'),
+      '#placeholder' => '.node-form',
       '#ajax' => FALSE,
     ];
 
