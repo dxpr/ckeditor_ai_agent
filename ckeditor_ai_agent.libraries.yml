@@ -21,7 +21,6 @@ tone_of_voice:
       css/tone-of-voice.css: {}
   dependencies:
     - core/drupal
-    - core/jquery
 
 commands:
   version: 1.x
@@ -30,4 +29,3 @@ commands:
       css/commands.css: {}
   dependencies:
     - core/drupal
-    - core/jquery

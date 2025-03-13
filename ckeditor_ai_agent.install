@@ -64,7 +64,7 @@ function _ckeditor_ai_agent_create_command_vocabulary() {
         'Fix Mistakes' => 'Fix spelling mistakes, use proper grammar and apply good writing practices.
 Do not lose the original meaning.
 You must keep the text formatting.',
-        'Improve Tone of Voice' => 'Rewrite the content to match the <TONE> while preserving the key message and meaning.
+        'Improve Tone of Voice' => 'Rewrite the content to match the TONE while preserving the key message and meaning.
 Ensure the writing style is consistent.
 You must keep the text formatting.',
         'Make Shorter' => 'Remove any repetitive, redundant, or non-essential writing in this
@@ -134,7 +134,7 @@ function _ckeditor_ai_agent_create_tone_vocabulary() {
     
     // Define the default tones
     $default_tones = [
-      'Professional' => 'Clear, professinoal',
+      'Professional' => 'Clear, professional',
       'Conversational' => 'Write in a friendly, approachable manner as if you are having a conversation with the reader. Use contractions, simple language, and occasionally ask questions. The tone should be warm and personable while still being informative. Use "you" and "we" to create connection.',
     ];
     

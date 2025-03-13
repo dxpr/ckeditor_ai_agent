@@ -816,12 +816,15 @@ trait AiAgentFormTrait {
 
         foreach ($terms as $term) {
           $description = $term->getDescription();
-          // Strip HTML and simplify description display
+          // Strip HTML and truncate for display
           $description = strip_tags($description);
+          $short_description = strlen($description) > 100 
+            ? substr($description, 0, 100) . '...' 
+            : ($description ?: $this->t('- No tone defined -'));
           
           $rows[] = [
             $term->label(),
-            $description ?: $this->t('- No tone defined -'),
+            $short_description,
           ];
         }
 
