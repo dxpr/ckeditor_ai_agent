@@ -61,7 +61,7 @@ function _ckeditor_ai_agent_create_command_vocabulary() {
     // Define the default command structure
     $default_commands = [
       'Edit or review' => [
-        'Fix Mistakes' => 'Fix spelling mistakes, use proper grammar and apply good writing practices.
+        'Polish' => 'Fix spelling mistakes, use proper grammar and apply good writing practices.
 Do not lose the original meaning.
 You must keep the text formatting.',
         'Improve Tone of Voice' => 'Rewrite the content to match the TONE while preserving the key message and meaning.
