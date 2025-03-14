@@ -755,6 +755,11 @@ trait AiAgentFormTrait {
       $vocab_options[$vocabulary->id()] = $vocabulary->label();
     }
 
+    // If no vocabularies exist at all, add a placeholder option
+    if (empty($vocab_options)) {
+      $vocab_options[''] = $this->t('- No vocabularies available -');
+    }
+
     // Add a toggle to enable/disable the taxonomy integration
     $elements['tone_of_voice']['enable_taxonomy_tones'] = [
       '#type' => 'checkbox',
@@ -765,13 +770,21 @@ trait AiAgentFormTrait {
       '#default_value' => !empty($getConfigValue('toneOfVoiceVocabulary')),
     ];
 
+    // Get saved tone vocabulary and check if it exists
+    $saved_tone_vocab = $getConfigValue('toneOfVoiceVocabulary');
+    $tone_default_value = '';
+    
+    if ($saved_tone_vocab && isset($vocab_options[$saved_tone_vocab])) {
+      $tone_default_value = $saved_tone_vocab;
+    }
+
     // Add the vocabulary selector
     $elements['tone_of_voice']['tone_of_voice_vocabulary'] = [
       '#type' => 'select',
       '#title' => $this->t('Tone Collection'),
-      '#description' => $this->t('Select or create a vocabulary to manage your tones'),
+      '#description' => $this->t('Select a vocabulary to manage your tones'),
       '#options' => $vocab_options,
-      '#default_value' => $getConfigValue('toneOfVoiceVocabulary'),
+      '#default_value' => $tone_default_value,
       '#states' => [
         'visible' => [
           ':input[name="tone_of_voice[enable_taxonomy_tones]"]' => ['checked' => TRUE],
@@ -780,6 +793,8 @@ trait AiAgentFormTrait {
           ':input[name="tone_of_voice[enable_taxonomy_tones]"]' => ['checked' => TRUE],
         ],
       ],
+      '#empty_option' => $this->t('- Select a vocabulary -'),
+      '#empty_value' => '',
     ];
 
     // Add a container to preview available tones
@@ -900,6 +915,11 @@ trait AiAgentFormTrait {
       $vocab_options[$vocabulary->id()] = $vocabulary->label();
     }
 
+    // If no vocabularies exist at all, add a placeholder option
+    if (empty($vocab_options)) {
+      $vocab_options[''] = $this->t('- No vocabularies available -');
+    }
+
     // Add a toggle to enable/disable the taxonomy integration
     $elements['commands']['enable_taxonomy_commands'] = [
       '#type' => 'checkbox',
@@ -910,13 +930,21 @@ trait AiAgentFormTrait {
       '#default_value' => !empty($getConfigValue('commandsVocabulary')),
     ];
 
+    // Get saved command vocabulary and check if it exists
+    $saved_command_vocab = $getConfigValue('commandsVocabulary');
+    $command_default_value = '';
+    
+    if ($saved_command_vocab && isset($vocab_options[$saved_command_vocab])) {
+      $command_default_value = $saved_command_vocab;
+    }
+
     // Add the vocabulary selector
     $elements['commands']['commands_vocabulary'] = [
       '#type' => 'select',
       '#title' => $this->t('Command Collection'),
-      '#description' => $this->t('Select or create a vocabulary to manage your commands'),
+      '#description' => $this->t('Select a vocabulary to manage your commands'),
       '#options' => $vocab_options,
-      '#default_value' => $getConfigValue('commandsVocabulary'),
+      '#default_value' => $command_default_value,
       '#states' => [
         'visible' => [
           ':input[name="commands[enable_taxonomy_commands]"]' => ['checked' => TRUE],
@@ -925,6 +953,8 @@ trait AiAgentFormTrait {
           ':input[name="commands[enable_taxonomy_commands]"]' => ['checked' => TRUE],
         ],
       ],
+      '#empty_option' => $this->t('- Select a vocabulary -'),
+      '#empty_value' => '',
     ];
 
     // Add a container to preview available commands
