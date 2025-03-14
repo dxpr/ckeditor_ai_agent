@@ -19,16 +19,3 @@ ai_agent_settings:
   css:
     theme:
       css/ai_agent_settings.css: {}
-  dependencies:
-    - core/drupal
-    - core/jquery
-
-tone_of_voice:
-  version: 1.x
-  dependencies:
-    - ckeditor_ai_agent/ai_agent_settings
-
-commands:
-  version: 1.x
-  dependencies:
-    - ckeditor_ai_agent/ai_agent_settings
