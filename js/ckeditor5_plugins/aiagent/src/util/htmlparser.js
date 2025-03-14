@@ -1,11 +1,9 @@
 export class HtmlParser {
-    editor;
-    model;
-    debugMode;
     constructor(editor) {
+        var _a;
         this.editor = editor;
         this.model = editor.model;
-        this.debugMode = editor.config.get('aiAgent.debugMode') ?? false;
+        this.debugMode = (_a = editor.config.get('aiAgent.debugMode')) !== null && _a !== void 0 ? _a : false;
     }
     /**
      * Inserts simple HTML content into the editor.
@@ -14,6 +12,7 @@ export class HtmlParser {
      * @returns A promise that resolves when the HTML has been inserted.
      */
     async insertSimpleHtml(html) {
+        var _a;
         if (this.debugMode) {
             console.log('Attempting to insert simple HTML:', html);
         }
@@ -23,10 +22,10 @@ export class HtmlParser {
         const root = this.model.document.getRoot();
         let insertionPosition = selection.getLastPosition();
         const lastInsertedChild = modelFragment.getChild(modelFragment.childCount - 1);
-        const currentChildIndex = selection.getLastPosition()?.path[0];
-        const lastUpdatedElementInRoot = root?.getChild(currentChildIndex ?? 0);
+        const currentChildIndex = (_a = selection.getLastPosition()) === null || _a === void 0 ? void 0 : _a.path[0];
+        const lastUpdatedElementInRoot = root === null || root === void 0 ? void 0 : root.getChild(currentChildIndex !== null && currentChildIndex !== void 0 ? currentChildIndex : 0);
         this.model.change(writer => {
-            if (lastUpdatedElementInRoot?.is('element')) {
+            if (lastUpdatedElementInRoot === null || lastUpdatedElementInRoot === void 0 ? void 0 : lastUpdatedElementInRoot.is('element')) {
                 insertionPosition = lastUpdatedElementInRoot.isEmpty ?
                     writer.createPositionAt(lastUpdatedElementInRoot, 'end') :
                     writer.createPositionAfter(lastUpdatedElementInRoot);
@@ -37,8 +36,8 @@ export class HtmlParser {
                 this.model.insertContent(modelFragment, insertionPosition);
                 // Check if it required to add break to current context of list etc.
                 // More to will be added during testing any edge case
-                let isBreakElementReq = lastInsertedChild?.getAttribute('listItemId');
-                if (lastInsertedChild?.is('element')) {
+                let isBreakElementReq = lastInsertedChild === null || lastInsertedChild === void 0 ? void 0 : lastInsertedChild.getAttribute('listItemId');
+                if (lastInsertedChild === null || lastInsertedChild === void 0 ? void 0 : lastInsertedChild.is('element')) {
                     isBreakElementReq = isBreakElementReq || lastInsertedChild.name === 'table';
                 }
                 if (isBreakElementReq && lastInsertedChild) {
@@ -87,7 +86,7 @@ export class HtmlParser {
         if (shouldAddBreakAtEnd) {
             this.model.change(writer => {
                 const lastPosition = this.model.document.selection.getLastPosition();
-                const currentChildIndex = lastPosition?.path[0];
+                const currentChildIndex = lastPosition === null || lastPosition === void 0 ? void 0 : lastPosition.path[0];
                 if (root && currentChildIndex != undefined) {
                     const paragraph = writer.createElement('paragraph');
                     writer.insert(paragraph, root, currentChildIndex + 1);
@@ -105,13 +104,14 @@ export class HtmlParser {
      * @returns A promise that resolves when the element has been inserted.
      */
     async batchInsertOfElement(element, position) {
+        var _a;
         const selection = this.model.document.selection;
         const root = this.model.document.getRoot();
         let insertionPosition = position;
         if (!position) {
-            const currentChildIndex = selection.getFirstPosition()?.path[0];
-            const lastUpdatedElementInRoot = root?.getChild(currentChildIndex ?? 0);
-            if (lastUpdatedElementInRoot?.is('element')) {
+            const currentChildIndex = (_a = selection.getFirstPosition()) === null || _a === void 0 ? void 0 : _a.path[0];
+            const lastUpdatedElementInRoot = root === null || root === void 0 ? void 0 : root.getChild(currentChildIndex !== null && currentChildIndex !== void 0 ? currentChildIndex : 0);
+            if (lastUpdatedElementInRoot === null || lastUpdatedElementInRoot === void 0 ? void 0 : lastUpdatedElementInRoot.is('element')) {
                 insertionPosition = lastUpdatedElementInRoot.isEmpty ?
                     this.model.createPositionAt(lastUpdatedElementInRoot, 'end') :
                     this.model.createPositionAfter(lastUpdatedElementInRoot);
@@ -139,9 +139,9 @@ export class HtmlParser {
         let targetElement;
         // Determine insertion position
         if (!position) {
-            const currentChildIndex = lastRecognizedPosition?.path[0];
-            const lastUpdatedElement = root?.getChild(currentChildIndex ?? 0);
-            if (lastUpdatedElement?.is('element')) {
+            const currentChildIndex = lastRecognizedPosition === null || lastRecognizedPosition === void 0 ? void 0 : lastRecognizedPosition.path[0];
+            const lastUpdatedElement = root === null || root === void 0 ? void 0 : root.getChild(currentChildIndex !== null && currentChildIndex !== void 0 ? currentChildIndex : 0);
+            if (lastUpdatedElement === null || lastUpdatedElement === void 0 ? void 0 : lastUpdatedElement.is('element')) {
                 insertionPosition = lastUpdatedElement.isEmpty ?
                     this.model.createPositionAt(lastUpdatedElement, 'end') :
                     this.model.createPositionAfter(lastUpdatedElement);
@@ -160,8 +160,8 @@ export class HtmlParser {
         }
         else {
             // current element from the offset
-            const currentElement = lastRecognizedPosition?.parent;
-            if (currentElement?.is('element')) {
+            const currentElement = lastRecognizedPosition === null || lastRecognizedPosition === void 0 ? void 0 : lastRecognizedPosition.parent;
+            if (currentElement === null || currentElement === void 0 ? void 0 : currentElement.is('element')) {
                 targetElement = currentElement;
             }
         }
@@ -177,8 +177,8 @@ export class HtmlParser {
                     this.model.change(writer => {
                         const currentPosition = this.editor.model.document.selection.getLastPosition();
                         const newPosition = currentPosition.getShiftedBy(1);
-                        const shouldAppendAtEnd = newPosition.offset === currentPosition?.parent.maxOffset;
-                        writer.insertText(char, textAttributes, targetElement, shouldAppendAtEnd ? 'end' : currentPosition?.offset);
+                        const shouldAppendAtEnd = newPosition.offset === (currentPosition === null || currentPosition === void 0 ? void 0 : currentPosition.parent.maxOffset);
+                        writer.insertText(char, textAttributes, targetElement, shouldAppendAtEnd ? 'end' : currentPosition === null || currentPosition === void 0 ? void 0 : currentPosition.offset);
                         writer.setSelection(this.editor.model.document.selection.getLastPosition());
                     });
                     setTimeout(resolve, 5); // Maintain the streaming effect

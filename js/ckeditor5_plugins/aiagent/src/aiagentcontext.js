@@ -3,8 +3,6 @@
  * allowing access to shared resources and state across different components.
  */
 export class AiAgentContext {
-    static instance;
-    _uiComponent;
     constructor() { }
     static getInstance() {
         if (!AiAgentContext.instance) {
