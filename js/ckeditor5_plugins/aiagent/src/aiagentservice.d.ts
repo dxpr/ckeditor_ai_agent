@@ -1,6 +1,7 @@
 import type { Editor } from 'ckeditor5/src/core.js';
 export default class AiAgentService {
     private editor;
+    private aiEngine;
     private aiModel;
     private apiKey;
     private endpointUrl;
@@ -13,13 +14,16 @@ export default class AiAgentService {
     private aiAgentFeatureLockId;
     private promptHelper;
     private htmlParser;
-    private buffer;
-    private openTags;
+    private providers?;
     private isInlineInsertion;
     private abortGeneration;
     private moderationKey;
     private moderationEnable;
     private disableFlags;
+    private stream;
+    private writesPerSecond;
+    private readonly STORAGE_PREFIX;
+    private readonly FILTERED_STRINGS;
     /**
      * Initializes the AiAgentService with the provided editor and configuration settings.
      *
@@ -55,12 +59,30 @@ export default class AiAgentService {
      */
     private fetchAndProcessGptResponse;
     /**
-     * Checks if a given string is a valid JSON format.
+     * Checks if the specified AI model exists for the given engine.
+     * If the models are not cached, it fetches them from the API and caches them.
      *
-     * @param str - The string to be validated as JSON.
-     * @returns True if the string is valid JSON, otherwise false.
+     * @param engine - The AI engine to check the model against.
+     * @param model - The model identifier to verify.
+     * @param apiKey - Optional API key for authentication with the AI engine.
+     * @returns A promise that resolves to an object containing:
+     * - `success`: A boolean indicating whether the model exists.
+     * - `error`: An optional string containing error details if the model is invalid.
+     *
+     * @throws Will throw an error if unable to load models from the API.
      */
-    private isValidJSON;
+    private checkModel;
+    /**
+     * Retrieves cached models from local storage based on the provided key.
+     * If the cached models are expired, they are removed from local storage.
+     *
+     * @param engine - The key used to access the cached models in local storage.
+     * @returns An array of model identifiers retrieved from local storage, or an empty array if no valid models are found.
+     */
+    private getCachedModels;
+    private cacheModels;
+    private handleStreamingResponse;
+    private handleNonStreamingResponse;
     /**
      * Creates and configures a cancel generation button with keyboard shortcut support.
      *
@@ -85,12 +107,12 @@ export default class AiAgentService {
      * @returns An array of matching child elements.
      */
     private getViewChildrens;
+    private animatedStatusMessages;
     /**
      * Updates the content of an AI-generated block in the editor.
      *
      * @param newHtml - The new HTML content to insert
      * @param blockID - The unique identifier of the AI block to update
-     * @param insertParent - Whether to insert at parent level or child level
      * @returns Promise that resolves when the update is complete
      * @private
      */
@@ -129,12 +151,38 @@ export default class AiAgentService {
     */
     private generateGptPromptBasedOnUserPrompt;
     /**
-     * Retrieves and formats the error message from the response object.
+     * Handles the undo and redo commands for the editor.
      *
-     * @param response - The response object from the fetch request.
-     * @returns A promise that resolves to a JSON string containing the status and error message.
-     * The error message is extracted based on the content type of the response, which can be
-     * in JSON, HTML, or plain text format.
+     * This function adds event listeners to the undo and redo commands.
+     * If the editor's data contains any AI tags, executing the undo or redo command
+     * will trigger the respective command, allowing for proper management of AI-generated content.
+     *
+     * @returns void
      */
-    private getError;
+    private undoRedoHandler;
+    /**
+     * Inserts AI tags into the editor at the current selection position.
+     *
+     * This function creates two AI tags: one inline tag and one block tag.
+     * The inline tag is inserted immediately after the current selection,
+     * while the block tag is inserted after the parent element of the selection.
+     *
+     * @param blockID - The unique identifier for the AI block, used to set the ID of the tags.
+     *
+     * @returns A Promise that resolves when the tags have been successfully inserted.
+     */
+    private insertAiTag;
+    /**
+     * Generates a stream of messages from the specified language model (LLM) based on the provided input thread.
+     * This method handles the streaming of responses, yielding each message as it is received.
+     *
+     * @param llm - The language model instance used for generating responses.
+     * @param model - The identifier of the model to be used for generation.
+     * @param thread - An array of messages that form the context for the generation.
+     * @param opts - Options for the LLM completion, such as max tokens and temperature.
+     * @returns An async generator that yields messages from the LLM as they are received.
+     *
+     * @throws Will throw an error if the streaming process fails or if the model is invalid.
+     */
+    private generate;
 }

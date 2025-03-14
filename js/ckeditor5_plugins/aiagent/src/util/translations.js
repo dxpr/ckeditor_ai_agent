@@ -1,5 +1,4 @@
 export function getErrorMessages(status, editor) {
-    var _a;
     const t = editor.t;
     const messages = {
         100: t('Continue: The server has received the request headers and the client should proceed to send the request body.'),
@@ -79,7 +78,7 @@ export function getErrorMessages(status, editor) {
         510: t('Not Extended. Further extensions to the request are required for the server to fulfill it.'),
         511: t('Network Authentication Required. The client needs to authenticate to gain network access.')
     };
-    return (_a = messages[status]) !== null && _a !== void 0 ? _a : '';
+    return messages[status] ?? '';
 }
 export function getDefaultAiAgentDropdownMenu(editor) {
     const t = editor.t;
@@ -88,24 +87,29 @@ export function getDefaultAiAgentDropdownMenu(editor) {
             title: t('Edit or review'),
             items: [
                 {
-                    title: t('Improve Writing'),
+                    title: t('Polish Text'),
                     command: `Fix spelling mistakes, use proper grammar and apply good writing practices.
-                        Do not lose the original meaning.\nYou must keep the text formatting.`
+						Do not lose the original meaning.\nYou must keep the text formatting.`
+                },
+                {
+                    title: t('Improve Tone of Voice'),
+                    command: `Rewrite the content to match the TONE while preserving the key message and meaning.
+						Ensure the writing style is consistent.\nYou must keep the text formatting.`
                 },
                 {
                     title: t('Make Shorter'),
                     command: `Remove any repetitive, redundant, or non-essential writing in this
-					    content without changing the meaning or losing any key information.`
+						content without changing the meaning or losing any key information.`
                 },
                 {
                     title: t('Make Longer'),
                     command: `Improve this content by using descriptive language and inserting
-					    more information and more detailed explanations.\nYou must keep the text formatting.`
+						more information and more detailed explanations.\nYou must keep the text formatting.`
                 },
                 {
                     title: t('Simplify Language'),
                     command: `Simplify the writing style of this content and reduce the complexity,
-					    so that the content is easy to understand.\nYou must keep the text formatting`
+						so that the content is easy to understand.\nYou must keep the text formatting`
                 }
             ]
         },
@@ -115,14 +119,47 @@ export function getDefaultAiAgentDropdownMenu(editor) {
                 {
                     title: t('Summarize'),
                     command: `Summarize this content into one paragraph of text. Include only the key ideas and conclusions.
-					    Keep it short. Do not keep original text formatting`
+						Keep it short. Do not keep original text formatting`
                 },
                 {
                     title: t('Continue'),
                     command: `Start with the provided content and write at the end of it continuing this topic.
-					    Keep the added part short.\nYou must keep the text formatting`
+						Keep the added part short.\nYou must keep the text formatting`
                 }
             ]
+        }
+    ];
+}
+export function getDefaultAiAgentToneDropdownMenu(editor) {
+    const t = editor.t;
+    return [
+        {
+            label: t('Default tone'),
+            tone: ''
+        },
+        {
+            label: t('Professional'),
+            tone: 'Use clear, concise language with a business-appropriate tone suitable for formal contexts.'
+        },
+        {
+            label: t('Educational'),
+            tone: 'Explain concepts clearly with an informative approach that helps readers understand complex topics.'
+        },
+        {
+            label: t('Persuasive'),
+            tone: 'Use compelling language to convince readers and support arguments with strong reasoning.'
+        },
+        {
+            label: t('Approachable'),
+            tone: 'Write in a friendly and accessible manner while maintaining professionalism.'
+        },
+        {
+            label: t('Formal'),
+            tone: 'Employ precise, structured language appropriate for official documentation and communications.'
+        },
+        {
+            label: t('Inspirational'),
+            tone: 'Use motivational language that encourages action and creates a sense of possibility.'
         }
     ];
 }

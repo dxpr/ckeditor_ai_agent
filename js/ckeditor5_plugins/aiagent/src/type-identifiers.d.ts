@@ -1,5 +1,7 @@
-import type { ALL_MODERATION_FLAGS } from './const.js';
-export type AiModel = 'gpt-3.5-turbo' | 'gpt-4o' | 'gpt-4o-mini' | 'kavya-m1';
+import type { ALL_MODERATION_FLAGS, AI_ENGINE, AI_CUSTOM_ENGINE, AI_CUSTOM_MODEL } from './const.js';
+import type { Editor } from 'ckeditor5/src/core.js';
+export type AiEngine = typeof AI_ENGINE[number] | typeof AI_CUSTOM_ENGINE[number];
+export type AiModel = typeof AI_CUSTOM_MODEL[number];
 export type PromptComponentKey = 'responseRules' | 'htmlFormatting' | 'contentStructure' | 'tone' | 'inlineContent' | 'imageHandling' | 'referenceGuidelines' | 'contextRequirements';
 export interface PromptSettings {
     overrides?: Partial<Record<PromptComponentKey, string>>;
@@ -10,8 +12,10 @@ export interface ModelTokenLimits {
     maxOutputTokens: number;
     maxInputContextTokens: number;
 }
+type WritesPerSecond = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export interface AiAgentConfig {
-    model?: AiModel;
+    engine?: AiEngine;
+    model?: string;
     apiKey: string;
     temperature?: number;
     maxOutputTokens?: number;
@@ -22,9 +26,27 @@ export interface AiAgentConfig {
     contextSize?: number;
     timeOutDuration?: number;
     endpointUrl?: string;
+    providers?: string;
     promptSettings?: PromptSettings;
     streamContent?: boolean;
     debugMode?: boolean;
+    showErrorDuration?: number;
+    moderationKey?: string;
+    moderationEnable?: boolean;
+    moderationDisableFlags?: Array<ModerationFlagsTypes>;
+    commandsDropdown?: Array<{
+        title: string;
+        items: Array<{
+            title: string;
+            command: string;
+        }>;
+    }>;
+    tonesDropdown?: Array<{
+        label: string;
+        tone: string;
+    }>;
+    contentScope?: string;
+    writesPerSecond?: WritesPerSecond;
 }
 export interface MarkdownContent {
     content: string;
@@ -39,3 +61,11 @@ export interface ModerationResponse {
         category_scores: Record<ModerationFlagsTypes, number>;
     }>;
 }
+export interface AIApiConfig {
+    apiKey: string | undefined;
+    baseURL: string;
+    engine: AiEngine;
+    editor: Editor;
+    providers?: string;
+}
+export {};

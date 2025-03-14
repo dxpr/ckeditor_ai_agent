@@ -6,6 +6,7 @@ export default class AiAgentUI extends Plugin {
     GPT_RESPONSE_ERROR_ID: string;
     private showErrorDuration;
     private commandsDropdown;
+    private tonesDropdown;
     constructor(editor: Editor);
     static get pluginName(): "AiAgentUI";
     static get requires(): readonly [typeof Widget];
@@ -19,6 +20,7 @@ export default class AiAgentUI extends Plugin {
      */
     private initializeUIComponents;
     private addCustomTagConversions;
+    private addCustomTagAiAnimatedStatus;
     /**
      * Adds the AI Agent button to the editor's UI, which includes a dropdown menu
      * for various AI commands. The button allows users to insert slash commands
@@ -29,6 +31,15 @@ export default class AiAgentUI extends Plugin {
      * usability.
      */
     private addAiAgentButton;
+    /**
+     * Adds the AI Agent Tone button to the editor's UI, which includes a dropdown menu
+     * for selecting various AI tones. The button allows users to apply different tones
+     * to the AI-generated content and provides visual feedback for the selected tone.
+     *
+     * This method sets up the button's execute event, handles user input for selecting
+     * tones, and organizes the tone menu into a list for better usability.
+     */
+    private addAiAgentToneButton;
     /**
      * Updates the enabled state of items in the AI Agent command list based on the provided type and data.
      *
@@ -106,4 +117,16 @@ export default class AiAgentUI extends Plugin {
      * Hides the error tooltip element from the document.
      */
     private hideGptErrorToolTip;
+    /**
+     * Inserts an empty non-breaking space at the current selection position in the editor.
+     * This method modifies the editor's model to add a non-breaking space character (`\u00A0`),
+     * ensuring that the space is preserved in the content and does not collapse.
+     *
+     * @returns {void} This function does not return a value.
+     *
+     * @example
+     * // Usage: Call this method to insert an empty space in the editor.
+     * this.insertEmptySpace();
+     */
+    private insertEmptySpace;
 }

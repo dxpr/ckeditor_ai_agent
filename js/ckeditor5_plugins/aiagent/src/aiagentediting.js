@@ -1,5 +1,6 @@
 import { Plugin } from 'ckeditor5/src/core.js';
 import AiAgentCommand from './aiagentcommand.js';
+import AiAgentToneCommand from './aiagenttonecommand.js';
 import AiAgentService from './aiagentservice.js';
 export default class AiAgentEditing extends Plugin {
     static get pluginName() {
@@ -10,8 +11,13 @@ export default class AiAgentEditing extends Plugin {
      */
     init() {
         const editor = this.editor;
+        const aiAgentPlugin = editor.plugins.get('AiAgent');
+        if (!aiAgentPlugin.isEnabled) {
+            return;
+        }
         const aiAgentService = new AiAgentService(editor);
         editor.commands.add('aiAgent', new AiAgentCommand(editor, aiAgentService));
+        editor.commands.add('aiAgentTone', new AiAgentToneCommand(editor));
         this.setupEnterKeyHandling();
     }
     /**
@@ -24,7 +30,6 @@ export default class AiAgentEditing extends Plugin {
         const mapper = editor.editing.mapper;
         const view = editor.editing.view;
         editor.keystrokes.set('enter', async (_, cancel) => {
-            var _a;
             const position = model.document.selection.getFirstPosition();
             if (position) {
                 const paragraph = position.parent;
@@ -33,7 +38,7 @@ export default class AiAgentEditing extends Plugin {
                 let content;
                 if (equivalentView) {
                     content =
-                        (_a = view.domConverter.mapViewToDom(equivalentView)) === null || _a === void 0 ? void 0 : _a.innerText;
+                        view.domConverter.mapViewToDom(equivalentView)?.innerText;
                 }
                 if ((typeof content === 'string' && content.startsWith('/')) || inlineSlash) {
                     cancel();

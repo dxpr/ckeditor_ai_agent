@@ -3,38 +3,61 @@ import { PromptHelper } from './util/prompt.js';
 import { HtmlParser } from './util/htmlparser.js';
 import { ButtonView } from 'ckeditor5/src/ui.js';
 import { env } from 'ckeditor5/src/utils.js';
-import { ALL_MODERATION_FLAGS, MODERATION_URL } from './const.js';
+import { ALL_MODERATION_FLAGS, MODERATION_URL, AI_ENGINE } from './const.js';
 import { getErrorMessages } from './util/translations.js';
+import { igniteEngine, Message, loadModels } from 'multi-llm-ts/dist/index.js';
+import { AIApi } from './util/ai-api.js';
+import CustomError, { getError } from './util/custom-error.js';
 export default class AiAgentService {
+    editor;
+    aiEngine;
+    aiModel;
+    apiKey;
+    endpointUrl;
+    temperature;
+    timeOutDuration;
+    maxTokens;
+    retryAttempts;
+    streamContent;
+    stopSequences;
+    aiAgentFeatureLockId = Symbol('ai-agent-feature');
+    promptHelper;
+    htmlParser;
+    providers;
+    isInlineInsertion = false;
+    abortGeneration = false;
+    moderationKey;
+    moderationEnable;
+    disableFlags = [];
+    stream;
+    writesPerSecond;
+    STORAGE_PREFIX = 'ck5-ai-agent';
+    FILTERED_STRINGS = /```html|```|html\n|@@@cursor@@@/g;
     /**
      * Initializes the AiAgentService with the provided editor and configuration settings.
      *
      * @param editor - The CKEditor instance to be used with the AI assist service.
      */
     constructor(editor) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
-        this.aiAgentFeatureLockId = Symbol('ai-agent-feature');
-        this.buffer = '';
-        this.openTags = [];
-        this.isInlineInsertion = false;
-        this.abortGeneration = false;
-        this.disableFlags = [];
         this.editor = editor;
         this.promptHelper = new PromptHelper(editor);
         this.htmlParser = new HtmlParser(editor);
         const config = editor.config.get('aiAgent');
         this.aiModel = config.model;
         this.apiKey = config.apiKey;
+        this.aiEngine = config.engine;
         this.endpointUrl = config.endpointUrl;
         this.temperature = config.temperature;
-        this.timeOutDuration = (_a = config.timeOutDuration) !== null && _a !== void 0 ? _a : 45000;
-        this.maxTokens = (_b = config.maxOutputTokens) !== null && _b !== void 0 ? _b : config.maxTokens;
+        this.timeOutDuration = config.timeOutDuration ?? 120000;
+        this.maxTokens = config.maxOutputTokens ?? config.maxTokens;
         this.retryAttempts = config.retryAttempts;
         this.stopSequences = config.stopSequences;
-        this.streamContent = (_c = config.streamContent) !== null && _c !== void 0 ? _c : true;
-        this.moderationKey = (_e = (_d = config.moderation) === null || _d === void 0 ? void 0 : _d.key) !== null && _e !== void 0 ? _e : '';
-        this.moderationEnable = (_g = (_f = config.moderation) === null || _f === void 0 ? void 0 : _f.enable) !== null && _g !== void 0 ? _g : false;
-        this.disableFlags = (_j = (_h = config.moderation) === null || _h === void 0 ? void 0 : _h.disableFlags) !== null && _j !== void 0 ? _j : [];
+        this.streamContent = config.streamContent ?? true;
+        this.moderationKey = config.moderationKey ?? '';
+        this.moderationEnable = config.moderationEnable ?? false;
+        this.disableFlags = config.moderationDisableFlags ?? [];
+        this.writesPerSecond = config.writesPerSecond ?? 10;
+        this.providers = config.providers;
     }
     /**
      * Handles the slash command input from the user, processes it, and interacts with the AI model.
@@ -66,7 +89,7 @@ export default class AiAgentService {
                 const startPosition = editor.model.createPositionAt(inlineSlash, 0);
                 const endPosition = editor.model.createPositionAt(inlineSlash, 'end');
                 const range = model.createRange(startPosition, endPosition);
-                parentEquivalentHTML = (equivalentView === null || equivalentView === void 0 ? void 0 : equivalentView.parent) ?
+                parentEquivalentHTML = equivalentView?.parent ?
                     view.domConverter.mapViewToDom(equivalentView.parent) :
                     undefined;
                 content = '';
@@ -77,38 +100,31 @@ export default class AiAgentService {
                 }
             }
             else if (parentEquivalentHTML) {
-                editor.model.change(writer => {
-                    const endPosition = writer.createPositionAt(position.parent, 'end');
-                    writer.setSelection(endPosition);
-                });
-                content = parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.innerText;
+                content = parentEquivalentHTML?.innerText;
             }
         }
         if (command) {
-            content = command;
-            selectedContent = parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.outerHTML;
             const selection = model.document.selection;
-            const range = selection.getFirstRange();
-            if (range) {
-                model.change(writer => {
-                    writer.setSelection(range.end);
-                });
-            }
+            const selectedContentFragment = model.getSelectedContent(selection);
+            const viewFragment = editor.data.toView(selectedContentFragment);
+            const html = editor.data.processor.toData(viewFragment);
+            content = command;
+            selectedContent = html;
         }
         if (this.moderationEnable) {
-            const moderateContent = await this.moderateContent(content !== null && content !== void 0 ? content : '');
+            const moderateContent = await this.moderateContent(content ?? '');
             if (!moderateContent) {
                 return;
             }
         }
         try {
             const domSelection = window.getSelection();
-            const domRange = domSelection === null || domSelection === void 0 ? void 0 : domSelection.getRangeAt(0);
+            const domRange = domSelection?.getRangeAt(0);
             const rect = domRange.getBoundingClientRect();
             aiAgentContext.showLoader(rect);
-            const gptPrompt = await this.generateGptPromptBasedOnUserPrompt(content !== null && content !== void 0 ? content : '', parentEquivalentHTML === null || parentEquivalentHTML === void 0 ? void 0 : parentEquivalentHTML.innerText, selectedContent);
-            if (parent && gptPrompt) {
-                await this.fetchAndProcessGptResponse(gptPrompt, parent);
+            const prompt = await this.generateGptPromptBasedOnUserPrompt(content, parentEquivalentHTML?.innerHTML, selectedContent);
+            if (parent && prompt) {
+                await this.fetchAndProcessGptResponse(!!command, prompt, parent);
             }
         }
         catch (error) {
@@ -133,7 +149,6 @@ export default class AiAgentService {
      * - API errors ("Error in content moderation")
      */
     async moderateContent(input) {
-        var _a, _b;
         if (!this.moderationKey) {
             return true;
         }
@@ -154,11 +169,11 @@ export default class AiAgentService {
             });
             clearTimeout(timeoutId);
             if (!response.ok) {
-                const error = await this.getError(response);
-                throw new Error(error);
+                const { error, status } = await getError(response);
+                throw new CustomError(error, status);
             }
             const data = await response.json();
-            if (!((_a = data === null || data === void 0 ? void 0 : data.results) === null || _a === void 0 ? void 0 : _a[0])) {
+            if (!data?.results?.[0]) {
                 throw new Error(t('Invalid moderation response format'));
             }
             const flags = ALL_MODERATION_FLAGS.filter(flag => !this.disableFlags.includes(flag));
@@ -184,14 +199,11 @@ export default class AiAgentService {
         catch (error) {
             console.error('Moderation error:', error);
             let errorMessage = t('We couldn\'t connect to the AI. Please check your internet');
-            const jsonMessage = this.isValidJSON(error === null || error === void 0 ? void 0 : error.message);
-            if (jsonMessage) {
-                const errorObj = JSON.parse(error === null || error === void 0 ? void 0 : error.message);
-                const status = errorObj.status;
-                errorMessage = getErrorMessages(status, editor);
+            if (error.status) {
+                errorMessage = getErrorMessages(error.status, editor);
             }
             else {
-                errorMessage = (_b = error === null || error === void 0 ? void 0 : error.message) === null || _b === void 0 ? void 0 : _b.trim();
+                errorMessage = error?.message?.trim();
                 if (errorMessage === 'ReadableStream not supported') {
                     errorMessage = t('Browser does not support readable streams');
                 }
@@ -212,104 +224,79 @@ export default class AiAgentService {
      * @param retries - The number of retry attempts for the API call (default is the configured retry attempts).
      * @returns A promise that resolves when the response has been processed.
      */
-    async fetchAndProcessGptResponse(prompt, parent, retries = this.retryAttempts) {
-        var _a, _b, _c;
-        console.log('Starting fetchAndProcessGptResponse');
+    async fetchAndProcessGptResponse(command, prompt, parent, retries = this.retryAttempts) {
         const editor = this.editor;
         const t = editor.t;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.timeOutDuration);
-        let buffer = '';
-        let contentBuffer = '';
+        // Create a timeout that can be reset
+        let timeoutId;
+        const resetTimeout = () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+            timeoutId = setTimeout(() => controller.abort(), this.timeOutDuration);
+        };
+        // Set initial timeout
+        resetTimeout();
         const blockID = `ai-${new Date().getTime()}`;
         try {
-            const response = await fetch(this.endpointUrl, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${this.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: this.aiModel,
-                    messages: [
-                        { role: 'system', content: this.promptHelper.getSystemPrompt(this.isInlineInsertion) },
-                        { role: 'user', content: prompt }
-                    ],
+            let llm;
+            let response;
+            if (AI_ENGINE.includes(this.aiEngine)) {
+                const config = {
+                    apiKey: this.apiKey
+                };
+                const { success, error } = await this.checkModel(this.aiEngine, this.aiModel, this.apiKey);
+                if (!success) {
+                    aiAgentContext.showError(`${t('Invalid AI model specified. Available models')}: ${error} `);
+                    return;
+                }
+                llm = igniteEngine(this.aiEngine, config);
+                const messages = [
+                    new Message('system', this.promptHelper.getSystemPrompt(this.isInlineInsertion)),
+                    new Message('user', prompt)
+                ];
+                const completionOpts = {
+                    maxTokens: this.maxTokens,
+                    ...(this.temperature !== undefined && { temperature: this.temperature })
+                };
+                if (this.streamContent) {
+                    // Streaming path
+                    const stream = this.generate(llm, this.aiModel, messages, completionOpts);
+                    await this.handleStreamingResponse(stream, blockID, parent, command, controller, llm, resetTimeout);
+                }
+                else {
+                    // Non-streaming path
+                    const result = await llm.complete(this.aiModel, messages, completionOpts);
+                    if (!result.content) {
+                        throw new Error(t('Empty response from AI model'));
+                    }
+                    await this.handleNonStreamingResponse(result.content, blockID, parent, command);
+                }
+            }
+            else {
+                const config = {
+                    apiKey: this.apiKey,
+                    baseURL: this.endpointUrl,
+                    engine: this.aiEngine,
+                    editor: this.editor
+                };
+                // Add providers if engine is dxai and providers is set
+                if (this.aiEngine === 'dxai' && this.providers) {
+                    config.providers = this.providers;
+                }
+                const llmCustom = new AIApi(config);
+                const messages = {
+                    system: this.promptHelper.getSystemPrompt(this.isInlineInsertion),
+                    user: prompt
+                };
+                response = llmCustom.fetchAIStream(this.aiModel, messages, {
                     temperature: this.temperature,
                     max_tokens: this.maxTokens,
-                    stop: this.stopSequences,
-                    stream: true
-                }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            if (!response.ok) {
-                const error = await this.getError(response);
-                throw new Error(error);
+                    stop: this.stopSequences
+                }, controller, retries);
+                await this.handleStreamingResponse(response, blockID, parent, command, controller, llm, resetTimeout);
             }
-            aiAgentContext.hideLoader();
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder('utf-8');
-            this.clearParentContent(parent);
-            // this.editor.enableReadOnlyMode( this.aiAgentFeatureLockId );
-            let insertParent = true;
-            this.cancelGenerationButton(blockID, controller);
-            editor.model.change(writer => {
-                var _a;
-                const position = editor.model.document.selection.getLastPosition();
-                if (position) {
-                    const aiTag = writer.createElement('ai-tag', {
-                        id: blockID
-                    });
-                    const parent = position.parent;
-                    if (parent) {
-                        if (((_a = parent.parent) === null || _a === void 0 ? void 0 : _a.name) === 'tableCell') {
-                            insertParent = false;
-                        }
-                        else if (parent.getAttribute('listType') === 'bulleted') {
-                            insertParent = false;
-                        }
-                    }
-                    const nextLinePosition = writer.createPositionAt(position.parent, 'after');
-                    writer.insert(aiTag, insertParent ? nextLinePosition : position);
-                    const newPosition = writer.createPositionAt(aiTag, 'end');
-                    writer.setSelection(newPosition);
-                }
-            });
-            console.log('Starting to process response');
-            for (;;) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    console.log('Finished reading response');
-                    break;
-                }
-                const chunk = decoder.decode(value, { stream: true });
-                buffer += chunk;
-                let newlineIndex;
-                while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-                    const line = buffer.slice(0, newlineIndex).trim();
-                    buffer = buffer.slice(newlineIndex + 1);
-                    if (line.startsWith('data: ')) {
-                        const jsonStr = line.slice(5).trim();
-                        if (jsonStr === '[DONE]') {
-                            console.log('Received [DONE] signal');
-                            break;
-                        }
-                        try {
-                            const data = JSON.parse(jsonStr);
-                            const content = (_b = (_a = data.choices[0]) === null || _a === void 0 ? void 0 : _a.delta) === null || _b === void 0 ? void 0 : _b.content;
-                            if (content !== null && content !== undefined) {
-                                contentBuffer += content;
-                            }
-                            await this.updateContent(contentBuffer, blockID);
-                        }
-                        catch (parseError) {
-                            console.warn('Error parsing JSON:', parseError);
-                        }
-                    }
-                }
-            }
-            this.processCompleted(blockID);
         }
         catch (error) {
             if (this.abortGeneration) {
@@ -317,39 +304,143 @@ export default class AiAgentService {
             }
             console.error('Error in fetchAndProcessGptResponse:', error);
             let errorMessage = t('We couldn\'t connect to the AI. Please check your internet');
-            const jsonMessage = this.isValidJSON(error === null || error === void 0 ? void 0 : error.message);
-            if (jsonMessage) {
-                const errorObj = JSON.parse(error === null || error === void 0 ? void 0 : error.message);
-                const status = errorObj.status;
-                errorMessage = getErrorMessages(status, editor);
-                if (retries > 0) {
-                    console.warn(`Retrying... (${retries} attempts left)`);
-                    return await this.fetchAndProcessGptResponse(prompt, parent, retries - 1);
-                }
+            if (error?.status) {
+                errorMessage = getErrorMessages(error.status, editor);
             }
             else {
-                errorMessage = (_c = error === null || error === void 0 ? void 0 : error.message) === null || _c === void 0 ? void 0 : _c.trim();
+                errorMessage = error?.message?.trim();
             }
             aiAgentContext.showError(errorMessage);
+            this.processCompleted(blockID);
         }
         finally {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
             this.editor.disableReadOnlyMode(this.aiAgentFeatureLockId);
         }
     }
     /**
-     * Checks if a given string is a valid JSON format.
+     * Checks if the specified AI model exists for the given engine.
+     * If the models are not cached, it fetches them from the API and caches them.
      *
-     * @param str - The string to be validated as JSON.
-     * @returns True if the string is valid JSON, otherwise false.
+     * @param engine - The AI engine to check the model against.
+     * @param model - The model identifier to verify.
+     * @param apiKey - Optional API key for authentication with the AI engine.
+     * @returns A promise that resolves to an object containing:
+     * - `success`: A boolean indicating whether the model exists.
+     * - `error`: An optional string containing error details if the model is invalid.
+     *
+     * @throws Will throw an error if unable to load models from the API.
      */
-    isValidJSON(str) {
+    async checkModel(engine, model, apiKey) {
+        const models = this.getCachedModels(engine);
+        if (!models.length) {
+            const apiModels = await loadModels(engine, { apiKey });
+            if (!apiModels?.chat?.length) {
+                throw new Error(`Unable to load models - please verify your ${engine} API key`);
+            }
+            const modelIds = apiModels.chat.map(model => model.id);
+            this.cacheModels(engine, modelIds);
+            models.push(...modelIds);
+        }
+        const modelExists = models.find((item) => item === model);
+        if (!modelExists) {
+            console.error(`Invalid AI model specified: "${model}". Available models:`, models);
+            return {
+                success: false,
+                error: models.join(' | ')
+            };
+        }
+        return {
+            success: true
+        };
+    }
+    /**
+     * Retrieves cached models from local storage based on the provided key.
+     * If the cached models are expired, they are removed from local storage.
+     *
+     * @param engine - The key used to access the cached models in local storage.
+     * @returns An array of model identifiers retrieved from local storage, or an empty array if no valid models are found.
+     */
+    getCachedModels(engine) {
+        const key = `${this.STORAGE_PREFIX}:${engine}_models`;
+        let models = [];
+        const localStorageModels = localStorage.getItem(key);
+        const now = new Date();
+        if (localStorageModels) {
+            const item = JSON.parse(localStorageModels);
+            if (now.getTime() <= item.expiry) {
+                models = item.models;
+            }
+            else {
+                localStorage.removeItem(key);
+            }
+        }
+        return models;
+    }
+    cacheModels(engine, models) {
+        const key = `${this.STORAGE_PREFIX}:${engine}_models`;
+        const now = new Date();
+        const data = {
+            expiry: now.getTime() + 24 * 60 * 60 * 1000,
+            models
+        };
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+    async handleStreamingResponse(stream, blockID, parent, command, controller, llm, resetTimeout) {
+        let isFirstChunk = true;
+        let contentBuffer = '';
+        const updateInterval = 1000 / this.writesPerSecond; // Calculate interval in ms
+        const updateContent = async () => {
+            if (contentBuffer) {
+                await this.updateContent(contentBuffer, blockID);
+            }
+        };
+        const updateContentTimer = setInterval(updateContent, updateInterval);
         try {
-            JSON.parse(str);
-            return true;
+            for await (const c of stream) {
+                if (isFirstChunk) {
+                    aiAgentContext.hideLoader();
+                    this.cancelGenerationButton(blockID, controller, llm);
+                    this.undoRedoHandler();
+                    this.insertAiTag(blockID);
+                    this.clearParentContent(parent, command);
+                    isFirstChunk = false;
+                }
+                const chunk = c;
+                if (chunk.type === 'status') {
+                    await this.animatedStatusMessages(chunk.text, blockID);
+                }
+                // Filter out markdown code blocks and normalize content
+                const filteredText = chunk.text
+                    .replace(this.FILTERED_STRINGS, '');
+                if (chunk.type === 'content') {
+                    contentBuffer += filteredText;
+                }
+                // Reset timeout when data is received
+                resetTimeout();
+            }
         }
-        catch (error) {
-            return false;
+        finally {
+            clearInterval(updateContentTimer);
+            await updateContent();
+            this.processCompleted(blockID);
+            contentBuffer = '';
         }
+        this.processCompleted(blockID);
+    }
+    async handleNonStreamingResponse(content, blockID, parent, command) {
+        aiAgentContext.hideLoader();
+        this.insertAiTag(blockID);
+        this.clearParentContent(parent, command);
+        // Filter out markdown code blocks and normalize content
+        const filteredContent = content
+            .replace(this.FILTERED_STRINGS, '');
+        if (filteredContent) {
+            await this.htmlParser.insertSimpleHtml(filteredContent);
+        }
+        this.processCompleted(blockID);
     }
     /**
      * Creates and configures a cancel generation button with keyboard shortcut support.
@@ -358,7 +449,7 @@ export default class AiAgentService {
      * @param controller - AbortController to cancel the ongoing AI generation
      * @private
      */
-    cancelGenerationButton(blockID, controller) {
+    cancelGenerationButton(blockID, controller, llm) {
         const editor = this.editor;
         const t = editor.t;
         const view = new ButtonView();
@@ -376,20 +467,31 @@ export default class AiAgentService {
         });
         view.on('execute', () => {
             this.abortGeneration = true;
-            controller.abort();
+            if (llm) {
+                llm.stop(this.stream);
+            }
+            else {
+                controller.abort();
+            }
             this.processCompleted(blockID);
         });
         view.render();
         editor.keystrokes.set('Ctrl+Backspace', (keyEvtData, cancel) => {
             if (keyEvtData.ctrlKey || keyEvtData.metaKey) {
                 this.abortGeneration = true;
-                controller.abort();
+                if (llm) {
+                    llm.stop(this.stream);
+                }
+                else {
+                    controller.abort();
+                }
                 this.processCompleted(blockID);
             }
             cancel();
         });
-        if (editor.ui.view.element && view.element) {
-            const panelContent = editor.ui.view.element.querySelector('.ck-sticky-panel__content .ck-toolbar__items');
+        const toolbarElement = editor.ui.view.toolbar.element;
+        if (toolbarElement && view.element) {
+            const panelContent = toolbarElement.querySelector('.ck-toolbar__items');
             if (panelContent) {
                 panelContent.append(view.element);
             }
@@ -405,16 +507,34 @@ export default class AiAgentService {
      */
     processCompleted(blockID) {
         const editor = this.editor;
-        if (editor.ui.view.element) {
-            const cancelButton = editor.ui.view.element.querySelector('.ck-cancel-request-button');
+        const toolbarElement = editor.ui.view.toolbar.element;
+        if (toolbarElement) {
+            const cancelButton = toolbarElement.querySelector('.ck-cancel-request-button');
             if (cancelButton) {
                 cancelButton.remove();
             }
         }
+        const modelRoot = editor.model.document.getRoot();
+        if (modelRoot) {
+            const modelRange = editor.model.createRangeIn(modelRoot);
+            for (const item of modelRange.getItems()) {
+                if (item.is('element', 'ai-animated-status')) {
+                    editor.model.change(writer => {
+                        writer.remove(item);
+                    });
+                }
+            }
+        }
         const editorData = editor.getData();
-        let editorContent = editorData.replace(/<\/ai-tag>\s*<[^>]+>\s*&nbsp;\s*<\/[^>]+>/g, '');
+        let editorContent = editorData.replace(new RegExp(`<ai-tag id="${blockID}-inline">&nbsp;</ai-tag>`, 'g'), '');
+        editorContent = editorContent.replace(new RegExp(`<ai-tag id="${blockID}">&nbsp;</ai-tag>`, 'g'), '');
+        editorContent = editorContent.replace(/<\/ai-tag>\s*<[^>]+>\s*&nbsp;\s*<\/[^>]+>/g, '');
+        editorContent = editorContent.replace(`<ai-tag id="${blockID}-inline">`, '');
         editorContent = editorContent.replace(`<ai-tag id="${blockID}">`, '');
-        editor.setData(editorContent);
+        editor.execute('selectAll');
+        const viewFragment = editor.data.processor.toView(editorContent);
+        const modelFragment = editor.data.toModel(viewFragment);
+        editor.model.insertContent(modelFragment);
     }
     /**
      * Recursively retrieves all child elements of a given view element that match the specified block ID.
@@ -438,31 +558,100 @@ export default class AiAgentService {
         }
         return results;
     }
+    async animatedStatusMessages(status, blockID) {
+        const editor = this.editor;
+        const root = editor.model.document.getRoot();
+        let targetElement;
+        if (root) {
+            const inlineChildrens = this.getViewChildrens(root, `${blockID}-inline`);
+            const childrens = this.getViewChildrens(root, blockID);
+            if (inlineChildrens.length) {
+                targetElement = inlineChildrens.length ? inlineChildrens[0] : null;
+            }
+            else if (childrens.length) {
+                targetElement = childrens.length ? childrens[0] : null;
+            }
+            if (targetElement) {
+                editor.model.enqueueChange({ isUndoable: false }, writer => {
+                    const range = editor.model.createRangeIn(targetElement);
+                    writer.remove(range);
+                    const aiAnimatedStatus = writer.createElement('ai-animated-status', {
+                        class: 'ck-loading-shimmer'
+                    });
+                    writer.insert(aiAnimatedStatus, targetElement);
+                    writer.insertText(`${status}...`, aiAnimatedStatus, 'end');
+                });
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve));
+    }
     /**
      * Updates the content of an AI-generated block in the editor.
      *
      * @param newHtml - The new HTML content to insert
      * @param blockID - The unique identifier of the AI block to update
-     * @param insertParent - Whether to insert at parent level or child level
      * @returns Promise that resolves when the update is complete
      * @private
      */
     async updateContent(newHtml, blockID) {
         const editor = this.editor;
-        editor.model.change(writer => {
-            const root = editor.model.document.getRoot();
-            if (root) {
-                const childrens = this.getViewChildrens(root, blockID);
-                const targetElement = childrens.length ? childrens[0] : null;
-                if (targetElement) {
-                    const range = editor.model.createRangeIn(targetElement);
-                    writer.remove(range);
-                    const viewFragment = editor.data.processor.toView(newHtml);
-                    const modelFragment = editor.data.toModel(viewFragment);
-                    writer.insert(modelFragment, targetElement, 'end');
+        const tempParagraph = document.createElement('div');
+        tempParagraph.innerHTML = newHtml;
+        let textContent = '';
+        const root = editor.model.document.getRoot();
+        if (root) {
+            const childrens = this.getViewChildrens(root, `${blockID}-inline`);
+            if (childrens.length) {
+                if (tempParagraph.querySelector('ul') === null && tempParagraph.querySelector('li') === null) {
+                    textContent = tempParagraph.textContent ?? '';
+                    tempParagraph.innerHTML = '';
                 }
             }
-        });
+        }
+        // Skip empty content
+        if (!textContent?.trim() && !tempParagraph.innerHTML?.trim()) {
+            return;
+        }
+        if (textContent) {
+            // Filter out markdown code blocks and empty content
+            const filteredText = textContent.replace(this.FILTERED_STRINGS, '');
+            if (!filteredText) {
+                return;
+            }
+            editor.model.enqueueChange({ isUndoable: false }, writer => {
+                const root = editor.model.document.getRoot();
+                if (root) {
+                    const childrens = this.getViewChildrens(root, `${blockID}-inline`);
+                    const targetElement = childrens.length ? childrens[0] : null;
+                    if (targetElement) {
+                        const range = editor.model.createRangeIn(targetElement);
+                        writer.remove(range);
+                        writer.insertText(filteredText, targetElement, 'end');
+                    }
+                }
+            });
+        }
+        if (tempParagraph.innerHTML) {
+            // Filter out markdown code blocks from HTML content
+            const filteredHtml = tempParagraph.innerHTML.replace(this.FILTERED_STRINGS, '');
+            if (!filteredHtml) {
+                return;
+            }
+            editor.model.enqueueChange({ isUndoable: false }, writer => {
+                const root = editor.model.document.getRoot();
+                if (root) {
+                    const childrens = this.getViewChildrens(root, blockID);
+                    const targetElement = childrens.length ? childrens[0] : null;
+                    if (targetElement) {
+                        const range = editor.model.createRangeIn(targetElement);
+                        writer.remove(range);
+                        const viewFragment = editor.data.processor.toView(filteredHtml);
+                        const modelFragment = editor.data.toModel(viewFragment);
+                        writer.insert(modelFragment, targetElement, 'end');
+                    }
+                }
+            });
+        }
         await new Promise(resolve => setTimeout(resolve));
     }
     /**
@@ -477,20 +666,29 @@ export default class AiAgentService {
         try {
             console.log('--- Start of processContent ---');
             console.log('Processing content:', content, this.isInlineInsertion);
+            // Skip empty content early
+            if (!content?.trim()) {
+                return;
+            }
+            // Filter out markdown code blocks
+            const filteredContent = content.replace(this.FILTERED_STRINGS, '');
+            if (!filteredContent) {
+                return;
+            }
             if (this.isInlineInsertion) {
                 const position = this.editor.model.document.selection.getLastPosition();
                 const tempParagraph = document.createElement('div');
-                tempParagraph.innerHTML = content;
-                await this.htmlParser.insertAsText(tempParagraph || '', position !== null && position !== void 0 ? position : undefined, this.streamContent);
+                tempParagraph.innerHTML = filteredContent;
+                await this.htmlParser.insertAsText(tempParagraph || '', position ?? undefined, this.streamContent);
             }
             else {
                 if (this.streamContent) {
                     // Existing complex content processing logic
-                    await this.proceedHtmlResponse(content);
+                    await this.proceedHtmlResponse(filteredContent);
                 }
                 else {
                     // Use the simple HTML insertion method
-                    await this.htmlParser.insertSimpleHtml(content);
+                    await this.htmlParser.insertSimpleHtml(filteredContent);
                 }
             }
             console.log('--- End of processContent ---');
@@ -538,18 +736,68 @@ export default class AiAgentService {
      *
      * @param parent - The parent element whose content will be cleared.
      */
-    clearParentContent(parent) {
+    clearParentContent(parent, command) {
         const editor = this.editor;
         const model = editor.model;
         const root = model.document.getRoot();
-        const position = model.document.selection.getLastPosition();
-        const inlineSlash = Array.from(parent.getChildren()).find((child) => child.name === 'inline-slash');
-        if (root && position) {
+        const positionFirst = model.document.selection.getFirstPosition();
+        const positionLast = model.document.selection.getLastPosition();
+        if (root && positionFirst && positionLast) {
             editor.model.change(writer => {
-                const startingPath = (inlineSlash === null || inlineSlash === void 0 ? void 0 : inlineSlash.getPath()) || parent.getPath();
-                const range = model.createRange(model.createPositionFromPath(root, startingPath), model.createPositionFromPath(root, position.path));
-                writer.remove(range);
-                // writer.setSelection( model.createPositionFromPath( root, startingPath ) );
+                if (command) {
+                    const range = model.createRange(model.createPositionFromPath(root, positionFirst.path), model.createPositionFromPath(root, positionLast.path));
+                    writer.remove(range);
+                    const positionFirstAfterRemove = model.document.selection.getFirstPosition();
+                    if (positionFirstAfterRemove) {
+                        const positionParentFirst = positionFirstAfterRemove.parent;
+                        if (positionFirstAfterRemove.parent.childCount === 0) {
+                            writer.remove(positionParentFirst);
+                        }
+                        else if (positionFirstAfterRemove.parent.childCount === 1) {
+                            const tag = positionFirstAfterRemove.parent?.getChild(0);
+                            if (tag.name === 'ai-tag' && positionFirstAfterRemove.parent.name !== '$root') {
+                                writer.remove(positionParentFirst);
+                            }
+                        }
+                    }
+                    const positionLastAfterRemove = model.document.selection.getLastPosition();
+                    if (positionLastAfterRemove) {
+                        const positionParentLast = positionLastAfterRemove.parent;
+                        if (positionLastAfterRemove.parent.childCount === 0) {
+                            writer.remove(positionParentLast);
+                        }
+                        else if (positionLastAfterRemove.parent.childCount === 1) {
+                            const tag = positionLastAfterRemove.parent?.getChild(0);
+                            if (tag.name === 'ai-tag' && positionLastAfterRemove.parent.name !== '$root') {
+                                writer.remove(positionParentLast);
+                            }
+                        }
+                    }
+                }
+                else {
+                    const startingPath = parent.getPath();
+                    const range = model.createRange(model.createPositionFromPath(root, startingPath), model.createPositionFromPath(root, positionLast.path));
+                    writer.remove(range);
+                    if (parent.getPath()) {
+                        if (parent.name === 'inline-slash') {
+                            const position = model.document.selection.getLastPosition();
+                            const positionParent = position?.parent;
+                            let lineEmpty = true;
+                            if (position?.parent) {
+                                if (position?.parent?.getChildren().next().value) {
+                                    lineEmpty = false;
+                                }
+                            }
+                            if (lineEmpty) {
+                                writer.remove(positionParent);
+                            }
+                        }
+                        else {
+                            const positionParent = parent;
+                            writer.remove(positionParent);
+                        }
+                    }
+                }
             });
         }
     }
@@ -585,29 +833,111 @@ export default class AiAgentService {
         }
     }
     /**
-     * Retrieves and formats the error message from the response object.
+     * Handles the undo and redo commands for the editor.
      *
-     * @param response - The response object from the fetch request.
-     * @returns A promise that resolves to a JSON string containing the status and error message.
-     * The error message is extracted based on the content type of the response, which can be
-     * in JSON, HTML, or plain text format.
+     * This function adds event listeners to the undo and redo commands.
+     * If the editor's data contains any AI tags, executing the undo or redo command
+     * will trigger the respective command, allowing for proper management of AI-generated content.
+     *
+     * @returns void
      */
-    async getError(response) {
-        let errorData = '';
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            errorData = JSON.stringify(await response.json());
+    undoRedoHandler() {
+        const editor = this.editor;
+        const undoCommand = editor.commands.get('undo');
+        if (undoCommand) {
+            undoCommand.on('execute', () => {
+                const editorData = editor.getData();
+                if (editorData.indexOf('ai-tag') > -1) {
+                    editor.execute('undo');
+                }
+            });
         }
-        else if (contentType && contentType.includes('text/html')) {
-            errorData = await response.text();
+        const redoCommand = editor.commands.get('redo');
+        if (redoCommand) {
+            redoCommand.on('execute', () => {
+                const editorData = editor.getData();
+                if (editorData.indexOf('ai-tag') > -1) {
+                    editor.execute('redo');
+                }
+            });
         }
-        else if (contentType && contentType.includes('text/plain')) {
-            errorData = await response.text();
+    }
+    /**
+     * Inserts AI tags into the editor at the current selection position.
+     *
+     * This function creates two AI tags: one inline tag and one block tag.
+     * The inline tag is inserted immediately after the current selection,
+     * while the block tag is inserted after the parent element of the selection.
+     *
+     * @param blockID - The unique identifier for the AI block, used to set the ID of the tags.
+     *
+     * @returns A Promise that resolves when the tags have been successfully inserted.
+     */
+    async insertAiTag(blockID) {
+        const editor = this.editor;
+        editor.model.change(writer => {
+            const position = this.editor.model.document.selection.getLastPosition();
+            let newPosition;
+            if (position) {
+                if (position?.parent.name === 'inline-slash') {
+                    if (position?.parent?.parent) {
+                        newPosition = writer.createPositionAt(position.parent.parent, 'after');
+                    }
+                    if (position?.parent) {
+                        const parentJson = position?.parent?.parent?.toJSON();
+                        if (parentJson.children.length > 1) {
+                            const positionInline = writer.createPositionAt(position.parent, 'after');
+                            const aiTagInline = writer.createElement('ai-tag', {
+                                id: `${blockID}-inline`
+                            });
+                            writer.insert(aiTagInline, positionInline);
+                        }
+                    }
+                }
+                else {
+                    const aiTagInline = writer.createElement('ai-tag', {
+                        id: `${blockID}-inline`
+                    });
+                    writer.insert(aiTagInline, position);
+                    newPosition = writer.createPositionAt(position.parent, 'after');
+                }
+                if (newPosition) {
+                    const aiTag = writer.createElement('ai-tag', {
+                        id: blockID
+                    });
+                    writer.insert(aiTag, newPosition);
+                }
+            }
+        });
+    }
+    /**
+     * Generates a stream of messages from the specified language model (LLM) based on the provided input thread.
+     * This method handles the streaming of responses, yielding each message as it is received.
+     *
+     * @param llm - The language model instance used for generating responses.
+     * @param model - The identifier of the model to be used for generation.
+     * @param thread - An array of messages that form the context for the generation.
+     * @param opts - Options for the LLM completion, such as max tokens and temperature.
+     * @returns An async generator that yields messages from the LLM as they are received.
+     *
+     * @throws Will throw an error if the streaming process fails or if the model is invalid.
+     */
+    async *generate(llm, model, thread, opts) {
+        this.stream = await llm.stream(model, thread, opts);
+        while (this.stream != null) {
+            let stream2 = null;
+            for await (const chunk of this.stream) {
+                const stream3 = llm.nativeChunkToLlmChunk(chunk);
+                for await (const msg of stream3) {
+                    if (msg.type === 'stream') {
+                        stream2 = msg.stream;
+                    }
+                    else {
+                        yield msg;
+                    }
+                }
+            }
+            this.stream = stream2;
         }
-        const error = {
-            status: response.status,
-            error: errorData
-        };
-        return JSON.stringify(error);
     }
 }

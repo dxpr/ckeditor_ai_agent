@@ -1,23 +1,95 @@
 import { aiAgentContext } from '../aiagentcontext.js';
 import { removeLeadingSpaces, extractEditorContent, trimMultilineString } from './text-utils.js';
 import { countTokens, trimLLMContentByTokens } from './token-utils.js';
-import { fetchUrlContent } from './url-utils.js';
+import { fetchMultipleUrls } from './url-utils.js';
 import { getDefaultRules } from './default-rules.js';
 import { getAllowedHtmlTags } from './html-utils.js';
+// Default token limits if no specific match is found
+const DEFAULT_MAX_INPUT_TOKENS = 1000000;
+export function getModelTokenLimits(model) {
+    // OpenAI models
+    if (model.includes('o1')) {
+        return { maxInputContextTokens: 200000 };
+    }
+    if (model.includes('o3-mini')) {
+        return { maxInputContextTokens: 200000 };
+    }
+    if (model.includes('gpt-4o')) {
+        return { maxInputContextTokens: 128000 };
+    }
+    // Anthropic models
+    if (model.includes('claude-2.0')) {
+        return { maxInputContextTokens: 100000 };
+    }
+    if (model.includes('claude')) {
+        return { maxInputContextTokens: 200000 };
+    }
+    // Google models
+    if (model.includes('gemini-1.5-pro')) {
+        return { maxInputContextTokens: 2000000 };
+    }
+    if (model.includes('gemini') && model.includes('flash')) {
+        return { maxInputContextTokens: 1000000 };
+    }
+    if (model.includes('gemma')) {
+        return { maxInputContextTokens: 8192 };
+    }
+    // Mistral models
+    if (model.includes('codestral-mamba')) {
+        return { maxInputContextTokens: 256000 };
+    }
+    if (model.includes('mixtral-8x22b')) {
+        return { maxInputContextTokens: 65000 };
+    }
+    if (model.includes('mixtral-8x7b-32768')) {
+        return { maxInputContextTokens: 32768 };
+    }
+    if (model.includes('mixtral') ||
+        model.includes('mistral-medium') ||
+        model.includes('mistral-small') ||
+        model.includes('mistral-tiny')) {
+        return { maxInputContextTokens: 33000 };
+    }
+    if (model.includes('mistral-large') || model.includes('ministral')) {
+        return { maxInputContextTokens: 128000 };
+    }
+    // Default for all other models
+    return { maxInputContextTokens: DEFAULT_MAX_INPUT_TOKENS };
+}
 export class PromptHelper {
+    editor;
+    contextSize;
+    promptSettings;
+    debugMode;
+    editorContextRatio;
+    contentScope;
     constructor(editor, options = {}) {
-        var _a, _b, _c;
         this.editor = editor;
         const config = editor.config.get('aiAgent');
-        this.contextSize = config.contextSize;
-        this.promptSettings = (_a = config.promptSettings) !== null && _a !== void 0 ? _a : {};
-        this.debugMode = (_b = config.debugMode) !== null && _b !== void 0 ? _b : false;
-        this.editorContextRatio = (_c = options.editorContextRatio) !== null && _c !== void 0 ? _c : 0.3;
+        const model = (config.model ?? 'gpt-4o');
+        // Get model's maxInputContextTokens based on pattern matching
+        const { maxInputContextTokens } = getModelTokenLimits(model);
+        this.contextSize = config.contextSize ?? Math.floor(maxInputContextTokens * 0.75);
+        this.promptSettings = config.promptSettings ?? {};
+        this.debugMode = config.debugMode ?? false;
+        this.editorContextRatio = options.editorContextRatio ?? 0.3;
+        this.contentScope = config?.contentScope ?? '';
+        if (this.debugMode) {
+            console.log('[Context Init]', {
+                model,
+                maxInputContextTokens,
+                defaultContextSize: Math.floor(maxInputContextTokens * 0.75),
+                configuredContextSize: config.contextSize,
+                finalContextSize: this.contextSize
+            });
+        }
     }
     getSystemPrompt(isInlineResponse = false) {
-        var _a, _b;
         const defaultComponents = getDefaultRules(this.editor);
         let systemPrompt = '';
+        // Get custom tone if set
+        const toneCommand = this.editor.commands.get('aiAgentTone');
+        const customTone = toneCommand?.value;
         // Process each component
         for (const [id, defaultContent] of Object.entries(defaultComponents)) {
             // Skip components that are not allowed in the editor and not inline response
@@ -27,16 +99,24 @@ export class PromptHelper {
             }
             const componentId = id;
             let content = defaultContent;
-            // Apply overrides if they exist
-            if ((_a = this.promptSettings.overrides) === null || _a === void 0 ? void 0 : _a[componentId]) {
-                content = this.promptSettings.overrides[componentId];
+            // Handle tone component specially
+            if (componentId === 'tone' && customTone) {
+                content = customTone;
             }
-            // Apply additions if they exist
-            if ((_b = this.promptSettings.additions) === null || _b === void 0 ? void 0 : _b[componentId]) {
-                content += '\n' + this.promptSettings.additions[componentId];
+            else {
+                // Apply overrides if they exist
+                if (this.promptSettings.overrides?.[componentId]) {
+                    content = this.promptSettings.overrides[componentId];
+                }
+                // Apply additions if they exist
+                if (this.promptSettings.additions?.[componentId]) {
+                    content += '\n' + this.promptSettings.additions[componentId];
+                }
             }
-            // Add the component to the system prompt
-            systemPrompt += trimMultilineString(content) + ('\n\n');
+            // Convert componentId to uppercase for XML tag
+            const xmlTag = componentId.replace(/([A-Z])/g, '_$1').toUpperCase();
+            // Add the component to the system prompt with XML tags
+            systemPrompt += `<${xmlTag}>\n${trimMultilineString(content)}\n</${xmlTag}>\n\n`;
         }
         if (this.debugMode) {
             console.group('AiAgent System Prompt Debug');
@@ -46,18 +126,41 @@ export class PromptHelper {
         return systemPrompt;
     }
     trimContext(prompt, promptContainerText = '') {
-        var _a, _b, _c, _d, _e;
         let contentBeforePrompt = '';
         let contentAfterPrompt = '';
-        const splitText = promptContainerText !== null && promptContainerText !== void 0 ? promptContainerText : prompt;
-        const view = (_d = (_c = (_b = (_a = this.editor) === null || _a === void 0 ? void 0 : _a.editing) === null || _b === void 0 ? void 0 : _b.view) === null || _c === void 0 ? void 0 : _c.domRoots) === null || _d === void 0 ? void 0 : _d.get('main');
-        const context = (_e = view === null || view === void 0 ? void 0 : view.innerText) !== null && _e !== void 0 ? _e : '';
+        const splitText = promptContainerText ?? prompt;
+        const view = this.editor?.editing?.view?.domRoots?.get('main');
+        let context = view?.innerHTML ?? '';
+        if (this.debugMode) {
+            console.group('HTML Content Debug');
+            console.log('1. Initial HTML context:', context);
+        }
+        if (this.contentScope) {
+            const activeEditorElement = this.editor.editing.view.getDomRoot();
+            const targetElement = activeEditorElement?.closest(this.contentScope);
+            const ckContents = targetElement?.querySelectorAll('.ck-content');
+            if (ckContents?.length) {
+                context = '';
+                Array.from(ckContents).map(item => {
+                    context += context ? `\n${item.innerHTML}` : item.innerHTML;
+                });
+                if (this.debugMode) {
+                    console.log('2. Content scope HTML:', context);
+                }
+            }
+        }
         const matchIndex = context.indexOf(splitText);
         const nextEnterIndex = context.indexOf('\n', matchIndex);
         const firstNewlineIndex = nextEnterIndex !== -1 ? nextEnterIndex : matchIndex + splitText.length;
         const beforeNewline = context.substring(0, firstNewlineIndex);
         const afterNewline = context.substring(firstNewlineIndex + 1);
         const contextParts = [beforeNewline, afterNewline];
+        if (this.debugMode) {
+            console.log('3. Split context parts:', {
+                beforeNewline,
+                afterNewline
+            });
+        }
         const allocatedEditorContextToken = Math.floor(this.contextSize * this.editorContextRatio);
         if (contextParts.length > 1) {
             if (contextParts[0].length < contextParts[1].length) {
@@ -69,19 +172,29 @@ export class PromptHelper {
                 contentBeforePrompt = extractEditorContent(contextParts[0], allocatedEditorContextToken - contentAfterPrompt.length / 4, true, this.editor);
             }
         }
+        if (this.debugMode) {
+            console.log('4. After extractEditorContent:', {
+                contentBeforePrompt,
+                contentAfterPrompt
+            });
+        }
         // Combine the trimmed context with the cursor placeholder
         const escapedPrompt = prompt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escapes special characters
         contentBeforePrompt = contentBeforePrompt.trim()
             .replace(new RegExp(escapedPrompt.slice(1)), '@@@cursor@@@')
             .replace('/@@@cursor@@@', '@@@cursor@@@'); // Remove forward slash if present
         const trimmedContext = `${contentBeforePrompt}\n${contentAfterPrompt}`;
+        if (this.debugMode) {
+            console.log('5. Final trimmed context:', trimmedContext);
+            console.groupEnd();
+        }
         return trimmedContext.trim();
     }
     formatFinalPrompt(request, context, selectedContent, markDownContents, isEditorEmpty = false) {
         if (this.debugMode) {
             console.group('formatFinalPrompt Debug');
             console.log('Request:', request);
-            console.log('Context:', context);
+            console.log('Context received:', context);
             console.log('MarkDownContents:', markDownContents);
             console.log('IsEditorEmpty:', isEditorEmpty);
         }
@@ -92,7 +205,7 @@ export class PromptHelper {
         corpus.push(request);
         corpus.push('</TASK>');
         // Context Section
-        if ((context === null || context === void 0 ? void 0 : context.length) && !selectedContent) {
+        if (context?.length && !selectedContent) {
             corpus.push('\n<CONTEXT>');
             corpus.push(context);
             corpus.push('</CONTEXT>');
@@ -103,7 +216,7 @@ export class PromptHelper {
             corpus.push('</SELECTED_CONTENT>');
         }
         // Markdown Content Section
-        if (markDownContents === null || markDownContents === void 0 ? void 0 : markDownContents.length) {
+        if (markDownContents?.length) {
             corpus.push('\n<REFERENCE_CONTENT>');
             for (const content of markDownContents) {
                 corpus.push(`<SOURCE url="${content.url}">\n${content.content}\n</SOURCE>`);
@@ -133,36 +246,30 @@ export class PromptHelper {
         return corpus.map(text => removeLeadingSpaces(text)).join('\n');
     }
     getComponentContent(componentId) {
-        var _a, _b;
         const defaultComponents = getDefaultRules(this.editor);
         let content = defaultComponents[componentId];
-        if ((_a = this.promptSettings.overrides) === null || _a === void 0 ? void 0 : _a[componentId]) {
+        if (this.promptSettings.overrides?.[componentId]) {
             content = this.promptSettings.overrides[componentId];
         }
-        if ((_b = this.promptSettings.additions) === null || _b === void 0 ? void 0 : _b[componentId]) {
+        if (this.promptSettings.additions?.[componentId]) {
             content += '\n' + this.promptSettings.additions[componentId];
         }
         return trimMultilineString(content);
     }
     async generateMarkDownForUrls(urls) {
         try {
+            const results = await fetchMultipleUrls(urls);
             const markdownContents = [];
-            for (const url of urls) {
-                try {
-                    const content = await fetchUrlContent(url);
-                    if (content) {
-                        markdownContents.push({
-                            content,
-                            url,
-                            tokenCount: countTokens(content)
-                        });
-                    }
+            for (const result of results) {
+                if (result.content && !result.error) {
+                    markdownContents.push({
+                        content: result.content,
+                        url: result.url,
+                        tokenCount: countTokens(result.content)
+                    });
                 }
-                catch (error) {
-                    if (this.debugMode) {
-                        console.error(`Failed to fetch content from ${url}:`, error);
-                    }
-                    aiAgentContext.showError(`Failed to fetch content from ${url}`);
+                else if (this.debugMode) {
+                    console.error(`Failed to fetch content from ${result.url}:`, result.error);
                 }
             }
             return this.allocateTokensToFetchedContent(this.getSystemPrompt(), markdownContents);
@@ -176,8 +283,7 @@ export class PromptHelper {
         }
     }
     allocateTokensToFetchedContent(prompt, fetchedContent) {
-        var _a, _b, _c, _d, _e, _f;
-        const editorContent = (_f = (_e = (_d = (_c = (_b = (_a = this.editor) === null || _a === void 0 ? void 0 : _a.editing) === null || _b === void 0 ? void 0 : _b.view) === null || _c === void 0 ? void 0 : _c.domRoots) === null || _d === void 0 ? void 0 : _d.get('main')) === null || _e === void 0 ? void 0 : _e.innerText) !== null && _f !== void 0 ? _f : '';
+        const editorContent = this.editor?.editing?.view?.domRoots?.get('main')?.innerText ?? '';
         const editorToken = Math.min(Math.floor(this.contextSize * this.editorContextRatio), countTokens(editorContent));
         const availableLimit = this.contextSize - editorToken;
         if (availableLimit === 0 || !fetchedContent.length) {
