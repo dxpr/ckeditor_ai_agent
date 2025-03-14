@@ -134,8 +134,12 @@ function _ckeditor_ai_agent_create_tone_vocabulary() {
     
     // Define the default tones
     $default_tones = [
-      'Professional' => 'Clear, professional',
-      'Conversational' => 'Write in a friendly, approachable manner as if you are having a conversation with the reader. Use contractions, simple language, and occasionally ask questions. The tone should be warm and personable while still being informative. Use "you" and "we" to create connection.',
+      'Professional' => 'Use clear, concise language with a business-appropriate tone suitable for formal contexts.',
+      'Educational' => 'Explain concepts clearly with an informative approach that helps readers understand complex topics.',
+      'Persuasive' => 'Use compelling language to convince readers and support arguments with strong reasoning.',
+      'Approachable' => 'Write in a friendly and accessible manner while maintaining professionalism.',
+      'Formal' => 'Employ precise, structured language appropriate for official documentation and communications.',
+      'Inspirational' => 'Use motivational language that encourages action and creates a sense of possibility.',
     ];
     
     // Create terms for each tone
