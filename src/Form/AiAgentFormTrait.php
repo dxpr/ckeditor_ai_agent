@@ -29,6 +29,9 @@ trait AiAgentFormTrait {
       $config = \Drupal::config('ckeditor_ai_agent.settings');
     }
 
+    // Add styling for the AI Agent settings
+    $elements['#attached']['library'][] = 'ckeditor_ai_agent/ai_agent_settings';
+
     // Helper function to get config value based on context.
     $getConfigValue = function ($key, $default = NULL) use ($is_plugin, $config) {
       if ($is_plugin) {
@@ -650,9 +653,6 @@ trait AiAgentFormTrait {
       ];
     }
 
-    // Add some styling for the commands section
-    $elements['#attached']['library'][] = 'ckeditor_ai_agent/commands';
-
     return $elements;
   }
 
@@ -823,8 +823,17 @@ trait AiAgentFormTrait {
             : ($description ?: $this->t('- No tone defined -'));
           
           $rows[] = [
-            $term->label(),
-            $short_description,
+            'data' => [
+              [
+                'data' => $term->label(),
+                'class' => ['tone-name'],
+              ],
+              [
+                'data' => $short_description,
+                'class' => ['tone-description'],
+              ],
+            ],
+            'class' => ['tone-row'],
           ];
         }
 
@@ -872,8 +881,7 @@ trait AiAgentFormTrait {
       ];
     }
 
-    // Add some styling for the tone of voice section
-    $elements['#attached']['library'][] = 'ckeditor_ai_agent/tone_of_voice';
+    // No need to add commands library separately as it's included in ai_agent_settings
   }
 
   /**
@@ -1059,9 +1067,5 @@ trait AiAgentFormTrait {
         ]),
       ];
     }
-
-    // Add some styling for the commands section
-    $elements['#attached']['library'][] = 'ckeditor_ai_agent/commands';
   }
-
 }

@@ -14,18 +14,21 @@ aiagent.admin:
     theme:
       css/aiagent.admin.css: { }
 
-tone_of_voice:
+ai_agent_settings:
   version: 1.x
   css:
     theme:
-      css/tone-of-voice.css: {}
+      css/ai_agent_settings.css: {}
   dependencies:
     - core/drupal
+    - core/jquery
+
+tone_of_voice:
+  version: 1.x
+  dependencies:
+    - ckeditor_ai_agent/ai_agent_settings
 
 commands:
   version: 1.x
-  css:
-    theme:
-      css/commands.css: {}
   dependencies:
-    - core/drupal
+    - ckeditor_ai_agent/ai_agent_settings

@@ -1,9 +1,10 @@
 /**
  * @file
- * Styles for the AI Edit Commands UI.
+ * Styles for the CKEditor AI Agent settings UI.
  */
 
-/* Base styles for the AI Edit Commands section */
+/* Common base styles for sections */
+.tone-of-voice-tip,
 .commands-section-tip {
   margin-top: 1em;
   padding: 0.75em 1em;
@@ -12,22 +13,26 @@
   font-size: 0.9em;
 }
 
+.tone-of-voice-tip ol,
 .commands-section-tip ol {
   padding-left: 1.25em;
   margin: 0.5em 0;
 }
 
+.tone-of-voice-tip li,
 .commands-section-tip li {
   margin-bottom: 0.4em;
   line-height: 1.4;
 }
 
+.tone-of-voice-tip p,
 .commands-section-tip p {
   margin: 0.5em 0 0;
   font-style: italic;
 }
 
-/* Style the table for better visualization */
+/* Common table styles */
+.tone-terms-table,
 .commands-table {
   width: 100%;
   margin-top: 0.75em;
@@ -35,6 +40,7 @@
   font-size: 0.9em;
 }
 
+.tone-terms-table th,
 .commands-table th {
   background-color: #f5f5f5;
   padding: 8px 10px;
@@ -43,13 +49,14 @@
   font-weight: 600;
 }
 
+.tone-terms-table td,
 .commands-table td {
   padding: 8px 10px;
   border-bottom: 1px solid #eee;
   vertical-align: top;
 }
 
-/* Style for category headers */
+/* Style for category headers (commands only) */
 .command-category-header {
   background-color: #e9ecef;
   font-weight: 600;
@@ -66,11 +73,14 @@
   padding-left: 20px;
 }
 
+/* Common styles for name and description cells */
+.tone-name,
 .command-name {
   width: 30%;
   font-weight: 500;
 }
 
+.tone-description,
 .command-description {
   width: 70%;
   color: #666;
@@ -83,11 +93,13 @@
   padding-left: 20px !important;
 }
 
-/* Style for the manage link */
+/* Common styles for manage links */
+.tone-manage-link,
 .commands-manage-link {
   margin-top: 1em;
 }
 
+.tone-manage-link a.button,
 .commands-manage-link a.button {
   display: inline-block;
   padding: 6px 12px;
@@ -100,16 +112,19 @@
   font-size: 0.9em;
 }
 
+.tone-manage-link a.button:hover,
 .commands-manage-link a.button:hover {
   background-color: #0062a0;
 }
 
 /* Responsive styling for small screens */
 @media screen and (max-width: 768px) {
+  .tone-terms-table thead,
   .commands-table thead {
     display: none;
   }
 
+  .tone-terms-table tr,
   .commands-table tr {
     display: block;
     margin-bottom: 0.75em;
@@ -117,6 +132,7 @@
     border-radius: 4px;
   }
 
+  .tone-terms-table td,
   .commands-table td {
     display: block;
     text-align: right;
@@ -135,6 +151,7 @@
     padding-left: 50%;
   }
 
+  .tone-terms-table td:before,
   .commands-table td:before {
     content: attr(data-label);
     position: absolute;
@@ -146,6 +163,16 @@
     font-weight: 600;
   }
   
+  /* Specific labels for tone table */
+  .tone-terms-table td:nth-of-type(1):before {
+    content: "Label";
+  }
+  
+  .tone-terms-table td:nth-of-type(2):before {
+    content: "Tone";
+  }
+  
+  /* Specific labels for command table */
   .command-name:before {
     content: "Command";
   }
@@ -155,23 +182,35 @@
   }
 }
 
-/* Make the form more compact */
+/* Common form element styles */
+.tone-of-voice .form-item,
 .commands .form-item {
   margin-bottom: 0.75em;
 }
 
-/* Improve checkbox styling */
+.tone-of-voice .form-checkbox,
 .commands .form-checkbox {
   margin-right: 0.5em;
 }
 
-/* Make fieldsets more compact */
+.tone-of-voice fieldset,
 .commands fieldset {
   padding: 0.75em;
   margin-top: 0.75em;
 }
 
+.tone-of-voice fieldset legend,
 .commands fieldset legend {
   font-weight: 600;
   font-size: 1em;
+}
+
+/* Disabled tone fields */
+.tone-vocab-disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.tone-vocab-warning {
+  margin: 1em 0;
 } 
