@@ -164,32 +164,25 @@ function _ckeditor_ai_agent_create_tone_vocabulary() {
  */
 function _ckeditor_ai_agent_update_editor_toolbars() {
   $config_factory = \Drupal::configFactory();
-  
-  // Check for Basic HTML format
-  $basic_html_editor = $config_factory->getEditable('editor.editor.basic_html');
-  if (!$basic_html_editor->isNew()) {
-    $settings = $basic_html_editor->get('settings');
-    if (isset($settings['toolbar']['items'])) {
-      // Add AI buttons to the beginning of the toolbar
-      array_unshift($settings['toolbar']['items'], '|');
-      array_unshift($settings['toolbar']['items'], 'aiAgentToneButton');
-      array_unshift($settings['toolbar']['items'], 'aiAgentButton');
-      $basic_html_editor->set('settings.toolbar.items', $settings['toolbar']['items']);
-      $basic_html_editor->save();
-    }
-  }
-  
-  // Check for Full HTML format
-  $full_html_editor = $config_factory->getEditable('editor.editor.full_html');
-  if (!$full_html_editor->isNew()) {
-    $settings = $full_html_editor->get('settings');
-    if (isset($settings['toolbar']['items'])) {
-      // Add AI buttons to the beginning of the toolbar
-      array_unshift($settings['toolbar']['items'], '|');
-      array_unshift($settings['toolbar']['items'], 'aiAgentToneButton');
-      array_unshift($settings['toolbar']['items'], 'aiAgentButton');
-      $full_html_editor->set('settings.toolbar.items', $settings['toolbar']['items']);
-      $full_html_editor->save();
+  $editor_formats = ['basic_html', 'full_html', 'content_format'];
+
+  foreach ($editor_formats as $format_id) {
+    $editor_config_name = 'editor.editor.' . $format_id;
+    $editor_config = $config_factory->getEditable($editor_config_name);
+
+    if (!$editor_config->isNew()) {
+      $settings = $editor_config->get('settings');
+      if (isset($settings['toolbar']['items'])) {
+        // Check if buttons are already present to avoid duplicates
+        if (!in_array('aiAgentButton', $settings['toolbar']['items'])) {
+          // Add AI buttons to the beginning of the toolbar
+          array_unshift($settings['toolbar']['items'], '|');
+          array_unshift($settings['toolbar']['items'], 'aiAgentToneButton');
+          array_unshift($settings['toolbar']['items'], 'aiAgentButton');
+          $editor_config->set('settings.toolbar.items', $settings['toolbar']['items']);
+          $editor_config->save();
+        }
+      }
     }
   }
 }
