@@ -9,5 +9,6 @@ export declare function getDefaultAiAgentDropdownMenu(editor: Editor): Array<{
 }>;
 export declare function getDefaultAiAgentToneDropdownMenu(editor: Editor): Array<{
     label: string;
+    key: string;
     tone: string;
 }>;

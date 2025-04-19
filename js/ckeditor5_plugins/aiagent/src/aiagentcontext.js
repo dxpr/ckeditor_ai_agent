@@ -21,14 +21,14 @@ export class AiAgentContext {
             this._uiComponent.showGptErrorToolTip(message);
         }
     }
-    showLoader(rect) {
+    showLoader(editor) {
         if (this._uiComponent) {
-            this._uiComponent.showLoader(rect);
+            this._uiComponent.showLoader(editor);
         }
     }
-    hideLoader() {
+    hideLoader(editor) {
         if (this._uiComponent) {
-            this._uiComponent.hideLoader();
+            this._uiComponent.hideLoader(editor);
         }
     }
 }

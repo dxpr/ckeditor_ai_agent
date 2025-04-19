@@ -118,10 +118,7 @@ export default class AiAgentService {
             }
         }
         try {
-            const domSelection = window.getSelection();
-            const domRange = domSelection?.getRangeAt(0);
-            const rect = domRange.getBoundingClientRect();
-            aiAgentContext.showLoader(rect);
+            aiAgentContext.showLoader(editor);
             const prompt = await this.generateGptPromptBasedOnUserPrompt(content, parentEquivalentHTML?.innerHTML, selectedContent);
             if (parent && prompt) {
                 await this.fetchAndProcessGptResponse(!!command, prompt, parent);
@@ -133,7 +130,7 @@ export default class AiAgentService {
         }
         finally {
             this.isInlineInsertion = false;
-            aiAgentContext.hideLoader();
+            aiAgentContext.hideLoader(editor);
         }
     }
     /**
@@ -401,7 +398,7 @@ export default class AiAgentService {
         try {
             for await (const c of stream) {
                 if (isFirstChunk) {
-                    aiAgentContext.hideLoader();
+                    aiAgentContext.hideLoader(this.editor);
                     this.cancelGenerationButton(blockID, controller, llm);
                     this.undoRedoHandler();
                     this.insertAiTag(blockID);
@@ -431,7 +428,7 @@ export default class AiAgentService {
         this.processCompleted(blockID);
     }
     async handleNonStreamingResponse(content, blockID, parent, command) {
-        aiAgentContext.hideLoader();
+        aiAgentContext.hideLoader(this.editor);
         this.insertAiTag(blockID);
         this.clearParentContent(parent, command);
         // Filter out markdown code blocks and normalize content
@@ -923,13 +920,14 @@ export default class AiAgentService {
      * @throws Will throw an error if the streaming process fails or if the model is invalid.
      */
     async *generate(llm, model, thread, opts) {
-        this.stream = await llm.stream(model, thread, opts);
-        while (this.stream != null) {
+        const response = await llm.stream(model, thread, opts);
+        this.stream = response?.stream;
+        while (true) {
             let stream2 = null;
             for await (const chunk of this.stream) {
-                const stream3 = llm.nativeChunkToLlmChunk(chunk);
+                const stream3 = llm.nativeChunkToLlmChunk(chunk, response.context);
                 for await (const msg of stream3) {
-                    if (msg.type === 'stream') {
+                    if (msg.type === "stream") {
                         stream2 = msg.stream;
                     }
                     else {
@@ -937,6 +935,8 @@ export default class AiAgentService {
                     }
                 }
             }
+            if (!stream2)
+                break;
             this.stream = stream2;
         }
     }

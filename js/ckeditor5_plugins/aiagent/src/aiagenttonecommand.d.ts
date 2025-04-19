@@ -19,18 +19,28 @@ export default class AiAgentToneCommand extends Command {
         value: string;
     }): Promise<void>;
     /**
-     * Saves the tone selection label to localStorage with the plugin's namespace.
-     * Only the label is stored, not the full tone description, as descriptions may change.
+     * Saves the selected tone to localStorage for future use.
      *
-     * @param toneLabel - The label of the selected tone to save.
+     * This method stores the specified tone under a unique key in localStorage,
+     * allowing the application to remember the user's tone preference across sessions.
+     * It also logs the saved value for debugging purposes if debug mode is enabled.
+     *
+     * @param toneKey - The toneKey string to be saved in localStorage.
+     * @returns {void} This function does not return a value.
+     *
+     * @throws {Error} If localStorage is not available, a warning is logged to the console.
      */
     private saveToneSelection;
     /**
-     * Loads the tone selection from localStorage.
-     * Retrieves the stored label and finds the corresponding tone description
-     * from the current configuration.
+     * Loads the selected tone from localStorage.
      *
-     * @returns The current tone description string or null if not found or invalid.
+     * This method retrieves the tone string stored under a unique key in localStorage,
+     * allowing the application to remember the user's tone preference across sessions.
+     * If no tone is found, it returns null.
+     *
+     * @returns {string | null} The stored tone string if found, or null if no tone is stored.
+     *
+     * @throws {Error} If localStorage is not available, a warning is logged to the console.
      */
     private loadToneSelection;
 }

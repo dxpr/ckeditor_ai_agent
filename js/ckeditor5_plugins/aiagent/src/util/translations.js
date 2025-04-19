@@ -135,30 +135,37 @@ export function getDefaultAiAgentToneDropdownMenu(editor) {
     return [
         {
             label: t('Default tone'),
+            key: 'default_tone',
             tone: ''
         },
         {
             label: t('Professional'),
+            key: 'professional',
             tone: 'Use clear, concise language with a business-appropriate tone suitable for formal contexts.'
         },
         {
             label: t('Educational'),
+            key: 'educational',
             tone: 'Explain concepts clearly with an informative approach that helps readers understand complex topics.'
         },
         {
             label: t('Persuasive'),
+            key: 'persuasive',
             tone: 'Use compelling language to convince readers and support arguments with strong reasoning.'
         },
         {
             label: t('Approachable'),
+            key: 'approachable',
             tone: 'Write in a friendly and accessible manner while maintaining professionalism.'
         },
         {
             label: t('Formal'),
+            key: 'formal',
             tone: 'Employ precise, structured language appropriate for official documentation and communications.'
         },
         {
             label: t('Inspirational'),
+            key: 'inspirational',
             tone: 'Use motivational language that encourages action and creates a sense of possibility.'
         }
     ];

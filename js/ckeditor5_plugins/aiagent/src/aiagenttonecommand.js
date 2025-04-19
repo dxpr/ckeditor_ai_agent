@@ -13,20 +13,15 @@ export default class AiAgentToneCommand extends Command {
         // Store available tones for validation when loading from storage
         const config = editor.config.get('aiAgent');
         this.debugMode = !!config?.debugMode;
-        // Get default tones from the shared utility function
         const defaultTones = getDefaultAiAgentToneDropdownMenu(editor);
-        // Initialize with default tones
-        this.availableTones = config?.tonesDropdown ?
-            [defaultTones[0], ...config.tonesDropdown] :
+        const configTonesDropdown = config?.tonesDropdown?.map(item => ({
+            label: item.label,
+            key: item.label,
+            tone: item.tone
+        }));
+        this.availableTones = configTonesDropdown ?
+            [defaultTones[0], ...configTonesDropdown] :
             defaultTones;
-        if (this.debugMode) {
-            // CRITICAL DEBUG: Show what tones are available at initialization
-            console.log('[TONE DEBUG] Available tones at init:', {
-                defaultTones,
-                configTones: config?.tonesDropdown || [],
-                mergedTones: this.availableTones.map(t => t.label)
-            });
-        }
         // Initialize with the stored tone or default to empty string
         this.value = this.loadToneSelection() || '';
     }
@@ -41,113 +36,71 @@ export default class AiAgentToneCommand extends Command {
         // Set the value directly, replacing any previous tone
         this.value = value;
         this.fire('change:value', { value });
-        // First try to find an exact match for the tone value
-        let selectedTone = this.availableTones.find(item => item.tone === value);
-        // If no exact match, try to find a match by label (for backward compatibility)
-        if (!selectedTone) {
-            selectedTone = this.availableTones.find(item => item.label === value);
-        }
-        // If still no match, try to find a tone where the value contains the label
-        if (!selectedTone) {
-            selectedTone = this.availableTones.find(item => item.label && value.includes(item.label));
-        }
-        // If we still don't have a match, check if we're dealing with a hardcoded tone description
-        if (!selectedTone) {
-            // Map of known tone descriptions to their labels
-            const toneDescriptions = {
-                'Use compelling language to convince readers and support arguments with strong reasoning.': 'Persuasive',
-                'Use clear, concise language with a business-appropriate tone suitable for formal contexts.': 'Professional',
-                'Explain concepts clearly with an informative approach that helps readers understand complex topics.': 'Educational',
-                'Write in a friendly and accessible manner while maintaining professionalism.': 'Approachable',
-                'Employ precise, structured language appropriate for official documentation and communications.': 'Formal',
-                'Use motivational language that encourages action and creates a sense of possibility.': 'Inspirational'
-            };
-            const matchedLabel = toneDescriptions[value];
-            if (matchedLabel) {
-                selectedTone = this.availableTones.find(item => item.label === matchedLabel);
-            }
-        }
-        // Last resort: if the value is the actual tone description, try to match by position in dropdown
-        if (!selectedTone && this.availableTones.length > 0) {
-            // This is a fallback for when the tone value is the description instead of the identifier
-            const selectedLabel = 'Persuasive'; // Default fallback
-            // If we can't find a match, create a temporary tone object
-            selectedTone = {
-                label: selectedLabel,
-                tone: value // Use the full description as the tone value
-            };
-        }
+        // Find the label for the selected tone value and persist it to localStorage
+        const selectedTone = this.availableTones.find(item => item.tone === value);
         if (selectedTone) {
-            this.saveToneSelection(selectedTone.label);
+            this.saveToneSelection(selectedTone.key);
         }
     }
     /**
-     * Saves the tone selection label to localStorage with the plugin's namespace.
-     * Only the label is stored, not the full tone description, as descriptions may change.
+     * Saves the selected tone to localStorage for future use.
      *
-     * @param toneLabel - The label of the selected tone to save.
+     * This method stores the specified tone under a unique key in localStorage,
+     * allowing the application to remember the user's tone preference across sessions.
+     * It also logs the saved value for debugging purposes if debug mode is enabled.
+     *
+     * @param toneKey - The toneKey string to be saved in localStorage.
+     * @returns {void} This function does not return a value.
+     *
+     * @throws {Error} If localStorage is not available, a warning is logged to the console.
      */
-    saveToneSelection(toneLabel) {
+    saveToneSelection(toneKey) {
         try {
             const key = `${this.STORAGE_PREFIX}:${this.STORAGE_KEY}`;
-            localStorage.setItem(key, toneLabel);
+            // Compare with models endpoint cache key format
+            const modelsKey = `${this.STORAGE_PREFIX}:openai_models`;
+            const hasModelsCache = localStorage.getItem(modelsKey) !== null;
+            localStorage.setItem(key, toneKey);
             if (this.debugMode) {
-                // CRITICAL DEBUG: Verify the tone was actually saved
                 const savedValue = localStorage.getItem(key);
-                console.log('[TONE DEBUG] Tone saved to localStorage:', {
+                console.log('[DEBUG] Tone localStorage:', {
                     key,
-                    toneLabel,
+                    toneKey,
                     savedValue,
-                    success: savedValue === toneLabel
+                    modelsKey,
+                    hasModelsCache
                 });
             }
         }
         catch (error) {
-            if (this.debugMode) {
-                console.warn('[TONE DEBUG] localStorage error:', error);
-            }
-            else {
-                console.warn('Could not save tone to localStorage', error);
-            }
+            // Fail silently if localStorage is not available
+            console.warn('Could not save tone to localStorage', error);
         }
     }
     /**
-     * Loads the tone selection from localStorage.
-     * Retrieves the stored label and finds the corresponding tone description
-     * from the current configuration.
+     * Loads the selected tone from localStorage.
      *
-     * @returns The current tone description string or null if not found or invalid.
+     * This method retrieves the tone string stored under a unique key in localStorage,
+     * allowing the application to remember the user's tone preference across sessions.
+     * If no tone is found, it returns null.
+     *
+     * @returns {string | null} The stored tone string if found, or null if no tone is stored.
+     *
+     * @throws {Error} If localStorage is not available, a warning is logged to the console.
      */
     loadToneSelection() {
         try {
             const key = `${this.STORAGE_PREFIX}:${this.STORAGE_KEY}`;
-            const storedToneLabel = localStorage.getItem(key);
-            if (!storedToneLabel) {
+            const storedToneKey = localStorage.getItem(key);
+            if (!storedToneKey) {
                 return null;
             }
-            // Find the tone description that matches the stored label
-            if (this.availableTones.length) {
-                const matchingTone = this.availableTones.find(item => item.label === storedToneLabel);
-                if (this.debugMode) {
-                    // CRITICAL DEBUG: Show if we found a matching tone for the stored label
-                    console.log('[TONE DEBUG] Loading tone from localStorage:', {
-                        storedLabel: storedToneLabel,
-                        availableToneLabels: this.availableTones.map(t => t.label),
-                        found: !!matchingTone,
-                        loadedValue: matchingTone ? matchingTone.tone : null
-                    });
-                }
-                return matchingTone ? matchingTone.tone : null;
-            }
-            return null;
+            const matchingTone = this.availableTones.find(item => item.key === storedToneKey);
+            return matchingTone ? matchingTone.tone : null;
         }
         catch (error) {
-            if (this.debugMode) {
-                console.warn('[TONE DEBUG] localStorage read error:', error);
-            }
-            else {
-                console.warn('Could not load tone from localStorage', error);
-            }
+            // Fail silently if localStorage is not available
+            console.warn('Could not load tone from localStorage', error);
             return null;
         }
     }

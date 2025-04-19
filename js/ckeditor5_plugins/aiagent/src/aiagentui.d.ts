@@ -98,11 +98,11 @@ export default class AiAgentUI extends Plugin {
      *
      * @param rect - The DOMRect object defining the position to show the loader.
      */
-    showLoader(rect?: DOMRect): void;
+    showLoader(editor: Editor): void;
     /**
      * Hides the loader element from the document.
      */
-    hideLoader(): void;
+    hideLoader(editor: Editor): void;
     /**
      * Adds an error tooltip element to the document body for displaying error messages.
      */

@@ -23,8 +23,13 @@ export default class AiAgentUI extends Plugin {
         this.showErrorDuration = config?.showErrorDuration ?? SHOW_ERROR_DURATION;
         this.commandsDropdown = config?.commandsDropdown ?? getDefaultAiAgentDropdownMenu(editor);
         const defaultTones = getDefaultAiAgentToneDropdownMenu(editor);
-        this.tonesDropdown = config?.tonesDropdown ?
-            [defaultTones[0], ...config?.tonesDropdown] :
+        const configTonesDropdown = config?.tonesDropdown?.map(item => ({
+            label: item.label,
+            key: item.label.toLowerCase().replace(/ /g, '_'),
+            tone: item.tone
+        }));
+        this.tonesDropdown = configTonesDropdown ?
+            [defaultTones[0], ...configTonesDropdown] :
             defaultTones;
     }
     static get pluginName() {
@@ -97,8 +102,6 @@ export default class AiAgentUI extends Plugin {
                 });
             }
         });
-        this.addPlaceholder();
-        this.addLoader();
         this.addGptErrorToolTip();
         this.addAiAgentButton();
         this.addAiAgentToneButton();
@@ -372,9 +375,6 @@ export default class AiAgentUI extends Plugin {
     addAiAgentToneButton() {
         const editor = this.editor;
         const t = editor.t;
-        // Get the current tone value from the command (which may be loaded from localStorage)
-        const toneCommand = editor.commands.get('aiAgentTone');
-        const currentToneValue = toneCommand?.value || '';
         editor.ui.componentFactory.add('aiAgentToneButton', locale => {
             const dropdownView = createDropdown(locale);
             dropdownView.class = 'ck-ai-tone-list';
@@ -404,6 +404,9 @@ export default class AiAgentUI extends Plugin {
                 checkIconView.set({
                     content: checkIcon
                 });
+                // Get the current tone value from the command (which may be loaded from localStorage)
+                const toneCommand = editor.commands.get('aiAgentTone');
+                const currentToneValue = toneCommand?.value || '';
                 // Set initial visibility based on the current tone value from localStorage
                 // The command now loads the tone description based on the stored label
                 checkIconView.isVisible = item.tone === currentToneValue;
@@ -519,6 +522,9 @@ export default class AiAgentUI extends Plugin {
         document.addEventListener('scroll', () => {
             this.hidePlaceHolder();
         });
+        editor.editing.view.document.on('blur', () => {
+            this.hidePlaceHolder();
+        });
     }
     /**
      * Applies the placeholder to the current line in the editor if it is empty.
@@ -558,7 +564,14 @@ export default class AiAgentUI extends Plugin {
         if (equivalentView) {
             const domElement = view.domConverter.mapViewToDom(equivalentView);
             if (domElement) {
-                return domElement.getBoundingClientRect();
+                const childPos = domElement.getBoundingClientRect();
+                const parentPos = editor.ui.view.editable.element?.parentElement?.getBoundingClientRect();
+                const topRelative = childPos.top - (parentPos?.top ?? 0);
+                const leftRelative = childPos.left - (parentPos?.left ?? 0);
+                return {
+                    top: topRelative,
+                    left: leftRelative
+                };
             }
         }
         return null;
@@ -568,20 +581,25 @@ export default class AiAgentUI extends Plugin {
      */
     addPlaceholder() {
         const editor = this.editor;
-        const t = editor.t;
-        const placeholder = document.createElement('p');
-        placeholder.id = this.PLACEHOLDER_TEXT_ID;
-        placeholder.onclick = () => {
-            editor.focus();
-        };
-        placeholder.classList.add('place-holder');
-        placeholder.textContent = t('Type / to request AI content');
-        setTimeout(async () => {
-            const panelContent = editor.ui.view.element;
-            if (panelContent) {
-                panelContent.append(placeholder);
+        const ele = editor.ui.view.editable.element?.parentElement?.querySelector(`#${this.PLACEHOLDER_TEXT_ID}`);
+        if (!ele) {
+            const t = editor.t;
+            const placeholder = document.createElement('p');
+            placeholder.id = this.PLACEHOLDER_TEXT_ID;
+            placeholder.onclick = () => {
+                editor.focus();
+            };
+            placeholder.classList.add('place-holder');
+            placeholder.textContent = t('Type / to request AI content');
+            const parentPanelContent = editor.ui.view.editable.element?.parentElement;
+            if (parentPanelContent) {
+                parentPanelContent.style.position = 'relative';
             }
-        });
+            const panelContent = editor.ui.view.editable.element;
+            if (panelContent) {
+                panelContent.insertAdjacentElement('afterend', placeholder);
+            }
+        }
     }
     /**
      * Shows the placeholder at the specified position.
@@ -589,15 +607,17 @@ export default class AiAgentUI extends Plugin {
      * @param rect - The DOMRect object defining the position to show the placeholder.
      */
     showPlaceHolder(rect) {
+        this.addPlaceholder();
         const editor = this.editor;
-        const ele = editor.ui.view.element?.querySelector(`#${this.PLACEHOLDER_TEXT_ID}`);
+        const ele = editor.ui.view.editable.element?.parentElement?.querySelector(`#${this.PLACEHOLDER_TEXT_ID}`);
         const isReadOnlyMode = this.editor.isReadOnly;
         if (ele && rect && !isReadOnlyMode) {
             ele.classList.add('show-place-holder');
             ele.style.top = `${rect.top}px`;
+            ele.style.left = `${rect.left}px`;
         }
         else if (ele) {
-            ele.classList.remove('show-place-holder');
+            ele.remove();
         }
     }
     /**
@@ -605,43 +625,57 @@ export default class AiAgentUI extends Plugin {
      */
     hidePlaceHolder() {
         const editor = this.editor;
-        const ele = editor.ui.view.element?.querySelector(`#${this.PLACEHOLDER_TEXT_ID}`);
+        const ele = editor.ui.view.editable.element?.parentElement?.querySelector(`#${this.PLACEHOLDER_TEXT_ID}`);
         if (ele) {
-            ele.classList.remove('show-place-holder');
+            ele.remove();
         }
     }
     /**
      * Adds a loader element to the document body for indicating processing.
      */
-    addLoader() {
-        const loaderElement = document.createElement('div');
-        loaderElement.id = this.GPT_RESPONSE_LOADER_ID;
-        loaderElement.classList.add('gpt-loader');
-        document.body.appendChild(loaderElement);
+    addLoader(editor) {
+        const ele = editor.ui.view.editable.element?.parentElement?.querySelector(`#${this.GPT_RESPONSE_LOADER_ID}`);
+        if (!ele) {
+            const loaderElement = document.createElement('div');
+            loaderElement.id = this.GPT_RESPONSE_LOADER_ID;
+            loaderElement.classList.add('gpt-loader');
+            const parentPanelContent = editor.ui.view.editable.element?.parentElement;
+            if (parentPanelContent) {
+                parentPanelContent.style.position = 'relative';
+            }
+            const panelContent = editor.ui.view.editable.element;
+            if (panelContent) {
+                panelContent.insertAdjacentElement('afterend', loaderElement);
+            }
+        }
     }
     /**
      * Shows the loader at the specified position.
      *
      * @param rect - The DOMRect object defining the position to show the loader.
      */
-    showLoader(rect) {
-        const ele = document.getElementById(this.GPT_RESPONSE_LOADER_ID);
-        if (ele && rect) {
-            ele.style.left = `${rect.left + 10}px`;
-            ele.style.top = `${rect.top + 10}px`;
+    showLoader(editor) {
+        this.addLoader(editor);
+        const ele = editor.ui.view.editable.element?.parentElement?.querySelector(`#${this.GPT_RESPONSE_LOADER_ID}`);
+        const domSelection = window.getSelection();
+        const domRange = domSelection?.getRangeAt(0);
+        const childPos = domRange.getBoundingClientRect();
+        const parentPos = editor.ui.view.editable.element?.parentElement?.getBoundingClientRect();
+        const top = childPos.top - (parentPos?.top ?? 0);
+        const left = childPos.left - (parentPos?.left ?? 0);
+        if (ele) {
+            ele.style.left = `${left + 10}px`;
+            ele.style.top = `${top + 10}px`;
             ele.classList.add('show-gpt-loader');
-        }
-        else if (ele) {
-            ele.classList.remove('show-gpt-loader');
         }
     }
     /**
      * Hides the loader element from the document.
      */
-    hideLoader() {
-        const ele = document.getElementById(this.GPT_RESPONSE_LOADER_ID);
+    hideLoader(editor) {
+        const ele = editor.ui.view.editable.element?.parentElement?.querySelector(`#${this.GPT_RESPONSE_LOADER_ID}`);
         if (ele) {
-            ele.classList.remove('show-gpt-loader');
+            ele.remove();
         }
     }
     /**
