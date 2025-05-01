@@ -1125,9 +1125,9 @@
   integrity sha512-+nxncfwHM5SgAtrVzgpzJOI1ol0PkumhVo469KCf9lUi21IGcY90G98VuHm9VRrUypmAzawAHO9bs6hqeADaVg==
 
 "@dxpr/ckeditor5-ai-agent@^1.0.0-beta59":
-  version "1.0.0-beta59"
-  resolved "https://registry.npmjs.org/@dxpr/ckeditor5-ai-agent/-/ckeditor5-ai-agent-1.0.0-beta59.tgz"
-  integrity sha512-SP7SW/6UXGdE9DRoczHNCj7Lymv4WiZvL8peer7R4DQuBPtB5Rt6tpPvchoXGkKF9gTkPxsCDyAOdY+6Onii7g==
+  version "1.0.0-beta60"
+  resolved "https://registry.npmjs.org/@dxpr/ckeditor5-ai-agent/-/ckeditor5-ai-agent-1.0.0-beta60.tgz"
+  integrity sha512-67tM4i4nQ3/LPkKilznsWVZYGGpsxK+6vTADk/Gx4eGogPP/ZDp0TsHo8NmpqDcmri0GiH/987kJJmS7D9UHig==
   dependencies:
     "@ckeditor/ckeditor5-core" "^43.0.0 || ^44.0.0 || ^45.0.0"
     "@ckeditor/ckeditor5-utils" "^43.0.0 || ^44.0.0 || ^45.0.0"
