@@ -41,7 +41,7 @@ async function fetchUrlWithRetry(url, maxRetries = 3) {
             const requestURL = `https://r.jina.ai/${cleanedUrl.trim()}`;
             const response = await fetch(requestURL.trim(), {
                 headers: {
-                    'X-With-Generated-Alt': 'true'
+                    'X-With-Generated-Alt': 'false'
                 }
             });
             if (!response.ok) {

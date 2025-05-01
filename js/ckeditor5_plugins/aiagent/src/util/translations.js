@@ -1,5 +1,4 @@
-export function getErrorMessages(status, editor) {
-    const t = editor.t;
+export function getErrorMessages(status, t) {
     const messages = {
         100: t('Continue: The server has received the request headers and the client should proceed to send the request body.'),
         101: t('Switching Protocols: The server is switching protocols according to the Upgrade header.'),

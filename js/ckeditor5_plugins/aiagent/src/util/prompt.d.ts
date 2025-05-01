@@ -1,5 +1,4 @@
 import type { Editor } from 'ckeditor5/src/core.js';
-import type { MarkdownContent } from '../type-identifiers.js';
 export interface ModelTokenLimits {
     maxInputContextTokens: number;
 }
@@ -14,10 +13,11 @@ export declare class PromptHelper {
     constructor(editor: Editor, options?: {
         editorContextRatio?: number;
     });
+    generateGptPromptBasedOnUserPrompt(prompt: string, promptContainerText?: string, selectedContent?: string): Promise<string | null>;
     getSystemPrompt(isInlineResponse?: boolean): string;
-    trimContext(prompt: string, promptContainerText?: string): string;
-    formatFinalPrompt(request: string, context?: string, selectedContent?: string, markDownContents?: Array<MarkdownContent>, isEditorEmpty?: boolean): string;
+    private trimContext;
+    private formatFinalPrompt;
     private getComponentContent;
-    generateMarkDownForUrls(urls: Array<string>): Promise<Array<MarkdownContent>>;
-    allocateTokensToFetchedContent(prompt: string, fetchedContent: Array<MarkdownContent>): Array<MarkdownContent>;
+    private generateMarkDownForUrls;
+    private allocateTokensToFetchedContent;
 }

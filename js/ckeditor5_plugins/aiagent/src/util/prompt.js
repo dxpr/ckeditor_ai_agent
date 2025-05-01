@@ -84,6 +84,28 @@ export class PromptHelper {
             });
         }
     }
+    async generateGptPromptBasedOnUserPrompt(prompt, promptContainerText, selectedContent) {
+        try {
+            const context = this.trimContext(prompt, promptContainerText);
+            const request = selectedContent ? prompt : prompt.slice(1);
+            let markDownContents = [];
+            const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
+            const urls = prompt.match(urlRegex);
+            if (Array.isArray(urls) && urls.length) {
+                const formattedUrl = urls.map(url => {
+                    return url.replace(/[,.]$/, '');
+                });
+                markDownContents = await this.generateMarkDownForUrls(formattedUrl);
+                markDownContents = this.allocateTokensToFetchedContent(prompt, markDownContents);
+            }
+            const isEditorEmpty = context === '@@@cursor@@@';
+            return this.formatFinalPrompt(request, context, selectedContent, markDownContents, isEditorEmpty);
+        }
+        catch (error) {
+            console.error(error);
+            return null;
+        }
+    }
     getSystemPrompt(isInlineResponse = false) {
         const defaultComponents = getDefaultRules(this.editor);
         let systemPrompt = '';

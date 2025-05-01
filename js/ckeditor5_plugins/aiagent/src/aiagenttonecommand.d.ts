@@ -1,6 +1,5 @@
 import { Command, type Editor } from 'ckeditor5/src/core.js';
 export default class AiAgentToneCommand extends Command {
-    private readonly STORAGE_PREFIX;
     private readonly STORAGE_KEY;
     private availableTones;
     private debugMode;
