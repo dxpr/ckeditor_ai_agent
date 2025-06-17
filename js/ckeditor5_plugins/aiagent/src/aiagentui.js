@@ -96,11 +96,6 @@ export default class AiAgentUI extends Plugin {
     attachListener() {
         const editor = this.editor;
         const model = editor.model;
-        model.document.on('change:data', () => {
-            setTimeout(() => {
-                this.applyPlaceholderToCurrentLine();
-            }, 10);
-        });
         model.document.selection.on('change:range', () => {
             setTimeout(() => {
                 this.applyPlaceholderToCurrentLine();
@@ -120,6 +115,13 @@ export default class AiAgentUI extends Plugin {
                         writer.remove(item);
                     }
                 });
+            }
+        });
+        editor.editing.view.document.on('change:isFocused', (evt, data, isFocused) => {
+            if (isFocused) {
+                setTimeout(() => {
+                    this.applyPlaceholderToCurrentLine();
+                }, 10);
             }
         });
         editor.editing.view.document.on('scroll', () => {
@@ -199,7 +201,9 @@ export default class AiAgentUI extends Plugin {
             placeholder.textContent = t('Type / to request AI content');
             const parentPanelContent = editor.ui.view.editable.element?.parentElement;
             if (parentPanelContent) {
-                parentPanelContent.style.position = 'relative';
+                if (parentPanelContent.style.position !== 'absolute') {
+                    parentPanelContent.style.position = 'relative';
+                }
             }
             const panelContent = editor.ui.view.editable.element;
             if (panelContent) {
