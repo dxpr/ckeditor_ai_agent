@@ -20,12 +20,14 @@ ckeditor_ai_agent.settings:
     toneOfVoiceVocabulary:
       type: string
       label: 'Tone of Voice Vocabulary'
-    commandsVocabulary:
-      type: string
-      label: 'Commands Vocabulary'
     defaultToneOfVoice:
       type: string
       label: 'Default Tone of Voice'
+    
+    # AI Edit Commands
+    commandsVocabulary:
+      type: string
+      label: 'Commands Vocabulary'
 
     # Advanced Settings
     temperature:
