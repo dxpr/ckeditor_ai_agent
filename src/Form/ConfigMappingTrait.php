@@ -80,7 +80,7 @@ trait ConfigMappingTrait {
       $parts = explode('.', $path);
       $config_key = end($parts);
       // Replace the last part of the path with the mapped key if it exists.
-      $config_key = isset($settingsMap[$config_key]) ? $settingsMap[$config_key] : $config_key; 
+      $config_key = $settingsMap[$config_key] ??  $config_key;
       $settings_mapping[$path] = [
         'type' => $settings['type'],
         'config_key' => $config_key,
