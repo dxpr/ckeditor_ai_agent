@@ -320,35 +320,4 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     // Required by interface, but no validation needed.
   }
 
-  /**
-   * Gets the settings map.
-   *
-   * @return array<string, string>
-   *   The settings map.
-   */
-  protected function getSettingsMap(): array {
-    return [
-      'apiKey' => 'key_provider',
-      'model' => 'model',
-      'ollamaModel' => 'ollamaModel',
-      'endpointUrl' => 'endpointUrl',
-      'contentScope' => 'contentScope',
-      'temperature' => 'temperature',
-      'maxOutputTokens' => 'maxOutputTokens',
-      'maxInputTokens' => 'maxInputTokens',
-      'contextSize' => 'contextSize',
-      'editorContextRatio' => 'editorContextRatio',
-      'timeOutDuration' => 'timeOutDuration',
-      'retryAttempts' => 'retryAttempts',
-      'debugMode' => 'debugMode',
-      'streamContent' => 'streamContent',
-      'showErrorDuration' => 'showErrorDuration',
-      'moderationEnable' => 'moderationEnable',
-      'moderationKey' => 'moderationKey',
-      'toneOfVoiceVocabulary' => 'toneOfVoiceVocabulary',
-      'commandsVocabulary' => 'commandsVocabulary',
-      'defaultToneOfVoice' => 'defaultToneOfVoice',
-    ];
-  }
-
 }

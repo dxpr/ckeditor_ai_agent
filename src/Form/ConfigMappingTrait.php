@@ -75,11 +75,15 @@ trait ConfigMappingTrait {
     ];
 
     $settings_mapping = [];
+    $settingsMap = $this->getSettingsMap();
     foreach ($base_mapping as $path => $settings) {
       $parts = explode('.', $path);
+      $config_key = end($parts);
+      // Replace the last part of the path with the mapped key if it exists.
+      $config_key = isset($settingsMap[$config_key]) ? $settingsMap[$config_key] : $config_key; 
       $settings_mapping[$path] = [
         'type' => $settings['type'],
-        'config_key' => end($parts),
+        'config_key' => $config_key,
       ];
     }
     return $settings_mapping;
@@ -101,6 +105,37 @@ trait ConfigMappingTrait {
       'imageHandling',
       'referenceGuidelines',
       'contextRequirements',
+    ];
+  }
+
+  /**
+   * Gets the settings map.
+   *
+   * @return array<string, string>
+   *   The settings map.
+   */
+  protected function getSettingsMap(): array {
+    return [
+      'apiKey' => 'key_provider',
+      'model' => 'model',
+      'ollamaModel' => 'ollamaModel',
+      'endpointUrl' => 'endpointUrl',
+      'contentScope' => 'contentScope',
+      'temperature' => 'temperature',
+      'maxOutputTokens' => 'maxOutputTokens',
+      'maxInputTokens' => 'maxInputTokens',
+      'contextSize' => 'contextSize',
+      'editorContextRatio' => 'editorContextRatio',
+      'timeOutDuration' => 'timeOutDuration',
+      'retryAttempts' => 'retryAttempts',
+      'debugMode' => 'debugMode',
+      'streamContent' => 'streamContent',
+      'showErrorDuration' => 'showErrorDuration',
+      'moderationEnable' => 'moderationEnable',
+      'moderationKey' => 'moderationKey',
+      'toneOfVoiceVocabulary' => 'toneOfVoiceVocabulary',
+      'commandsVocabulary' => 'commandsVocabulary',
+      'defaultToneOfVoice' => 'defaultToneOfVoice',
     ];
   }
 
