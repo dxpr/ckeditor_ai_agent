@@ -13,7 +13,7 @@
     attach: function (context, settings) {
       // Handle the tone of voice vocabulary field requirement
       const $toneCheckbox = $('input[name="tone_of_voice[enable_taxonomy_tones]"]', context);
-      const $toneVocabulary = $('select[name="tone_of_voice[tone_of_voice_vocabulary]"]', context);
+      const $toneVocabulary = $('select[name="tone_of_voice[toneOfVoiceVocabulary]"]', context);
 
       // Set initial state
       this.updateToneVocabularyRequired($toneCheckbox, $toneVocabulary);
@@ -25,7 +25,7 @@
 
       // Handle the commands vocabulary field requirement
       const $commandsCheckbox = $('input[name="commands[enable_taxonomy_commands]"]', context);
-      const $commandsVocabulary = $('select[name="commands[commands_vocabulary]"]', context);
+      const $commandsVocabulary = $('select[name="commands[commandsVocabulary]"]', context);
 
       // Set initial state
       this.updateCommandsVocabularyRequired($commandsCheckbox, $commandsVocabulary);
