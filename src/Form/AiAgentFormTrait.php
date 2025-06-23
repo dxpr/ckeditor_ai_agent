@@ -653,6 +653,9 @@ trait AiAgentFormTrait {
       ];
     }
 
+    // Enforce nested collections of form elements.
+    $elements['#tree'] = TRUE;
+
     return $elements;
   }
 

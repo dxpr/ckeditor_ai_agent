@@ -69,9 +69,6 @@ class AiAgentSettingsForm extends ConfigFormBase {
     // Get common form elements.
     $form = $this->getCommonFormElements(FALSE, $config);
 
-    // Enforce nested collections of form elements.
-    $form['#tree'] = TRUE;
-
     // Set default values from config.
     $form['basic_settings']['apiKey']['#default_value'] = $config->get('apiKey');
     $form['basic_settings']['model']['#default_value'] = $config->get('model');
