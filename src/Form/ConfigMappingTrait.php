@@ -66,6 +66,12 @@ trait ConfigMappingTrait {
       'moderation_settings.moderationKey' => [
         'type' => 'string',
       ],
+      'tone_of_voice.toneOfVoiceVocabulary' => [
+        'type' => 'string',
+      ],
+      'commands.commandsVocabulary' => [
+        'type' => 'string',
+      ],
     ];
 
     $settings_mapping = [];
