@@ -147,7 +147,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     }
     
     // Add taxonomy-based tones of voice if configured
-    $tone_vocabulary = $config->get('toneOfVoiceVocabulary');
+    $tone_vocabulary = $result['aiAgent']['toneOfVoiceVocabulary'] ?? '';
     
     if (!empty($tone_vocabulary)) {
       try {
@@ -205,7 +205,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     }
     
     // Add taxonomy-based commands if configured
-    $commands_vocabulary = $config->get('commandsVocabulary');
+    $commands_vocabulary = $result['aiAgent']['commandsVocabulary'] ?? '';
     
     if (!empty($commands_vocabulary)) {
       try {
