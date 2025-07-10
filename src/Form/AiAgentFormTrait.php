@@ -496,7 +496,7 @@ trait AiAgentFormTrait {
     ];
 
     // Add the vocabulary selector
-    $elements['commands']['commands_vocabulary'] = [
+    $elements['commands']['commandsVocabulary'] = [
       '#type' => 'select',
       '#title' => $this->t('Command Collection'),
       '#description' => $this->t('Select or create a vocabulary to manage your commands'),
@@ -653,6 +653,9 @@ trait AiAgentFormTrait {
       ];
     }
 
+    // Enforce nested collections of form elements.
+    $elements['#tree'] = TRUE;
+
     return $elements;
   }
 
@@ -779,7 +782,7 @@ trait AiAgentFormTrait {
     }
 
     // Add the vocabulary selector
-    $elements['tone_of_voice']['tone_of_voice_vocabulary'] = [
+    $elements['tone_of_voice']['toneOfVoiceVocabulary'] = [
       '#type' => 'select',
       '#title' => $this->t('Tone Collection'),
       '#description' => $this->t('Select a vocabulary to manage your tones'),
@@ -939,7 +942,7 @@ trait AiAgentFormTrait {
     }
 
     // Add the vocabulary selector
-    $elements['commands']['commands_vocabulary'] = [
+    $elements['commands']['commandsVocabulary'] = [
       '#type' => 'select',
       '#title' => $this->t('Command Collection'),
       '#description' => $this->t('Select a vocabulary to manage your commands'),

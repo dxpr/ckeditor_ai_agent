@@ -69,9 +69,6 @@ class AiAgentSettingsForm extends ConfigFormBase {
     // Get common form elements.
     $form = $this->getCommonFormElements(FALSE, $config);
 
-    // Enforce nested collections of form elements.
-    $form['#tree'] = TRUE;
-
     // Set default values from config.
     $form['basic_settings']['apiKey']['#default_value'] = $config->get('apiKey');
     $form['basic_settings']['model']['#default_value'] = $config->get('model');
@@ -164,8 +161,8 @@ class AiAgentSettingsForm extends ConfigFormBase {
       $tone_settings = $values['tone_of_voice'];
       
       // Save the vocabulary reference if taxonomy tones are enabled
-      if (!empty($tone_settings['enable_taxonomy_tones']) && !empty($tone_settings['tone_of_voice_vocabulary'])) {
-        $config->set('toneOfVoiceVocabulary', $tone_settings['tone_of_voice_vocabulary']);
+      if (!empty($tone_settings['enable_taxonomy_tones']) && !empty($tone_settings['toneOfVoiceVocabulary'])) {
+        $config->set('toneOfVoiceVocabulary', $tone_settings['toneOfVoiceVocabulary']);
       } else {
         $config->set('toneOfVoiceVocabulary', '');
       }
@@ -176,8 +173,8 @@ class AiAgentSettingsForm extends ConfigFormBase {
       $command_settings = $values['commands'];
       
       // Save the vocabulary reference if taxonomy commands are enabled
-      if (!empty($command_settings['enable_taxonomy_commands']) && !empty($command_settings['commands_vocabulary'])) {
-        $config->set('commandsVocabulary', $command_settings['commands_vocabulary']);
+      if (!empty($command_settings['enable_taxonomy_commands']) && !empty($command_settings['commandsVocabulary'])) {
+        $config->set('commandsVocabulary', $command_settings['commandsVocabulary']);
       } else {
         $config->set('commandsVocabulary', '');
       }

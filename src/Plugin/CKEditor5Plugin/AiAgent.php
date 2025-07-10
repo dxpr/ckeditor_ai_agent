@@ -80,25 +80,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state): void {
     $values = $form_state->getValues();
-    
-    // Initialize aiAgent configuration
-    $this->configuration['aiAgent'] = [];
-    
-    // Handle basic settings
-    foreach ($this->getSettingsMap() as $js_key => $drupal_key) {
-      // Special handling for key_provider which is in basic_settings
-      if ($js_key === 'apiKey') {
-        if (isset($values['basic_settings']['key_provider'])) {
-          $this->configuration['aiAgent']['key_provider'] = $values['basic_settings']['key_provider'];
-        }
-        continue;
-      }
-
-      // Handle other settings
-      if (isset($values['basic_settings'][$js_key])) {
-        $this->configuration['aiAgent'][$js_key] = $values['basic_settings'][$js_key];
-      }
-    }
+    $configMapping = $this->getConfigMapping();    
+    $this->configuration['aiAgent'] = $this->processConfigValues($values, $configMapping);
 
     // Handle prompt settings
     if (isset($values['promptSettings'])) {
@@ -164,7 +147,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     }
     
     // Add taxonomy-based tones of voice if configured
-    $tone_vocabulary = $config->get('toneOfVoiceVocabulary');
+    $tone_vocabulary = $result['aiAgent']['toneOfVoiceVocabulary'] ?? '';
     
     if (!empty($tone_vocabulary)) {
       try {
@@ -222,7 +205,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     }
     
     // Add taxonomy-based commands if configured
-    $commands_vocabulary = $config->get('commandsVocabulary');
+    $commands_vocabulary = $result['aiAgent']['commandsVocabulary'] ?? '';
     
     if (!empty($commands_vocabulary)) {
       try {
@@ -335,37 +318,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state): void {
     // Required by interface, but no validation needed.
-  }
-
-  /**
-   * Gets the settings map.
-   *
-   * @return array<string, string>
-   *   The settings map.
-   */
-  protected function getSettingsMap(): array {
-    return [
-      'apiKey' => 'key_provider',
-      'model' => 'model',
-      'ollamaModel' => 'ollamaModel',
-      'endpointUrl' => 'endpointUrl',
-      'contentScope' => 'contentScope',
-      'temperature' => 'temperature',
-      'maxOutputTokens' => 'maxOutputTokens',
-      'maxInputTokens' => 'maxInputTokens',
-      'contextSize' => 'contextSize',
-      'editorContextRatio' => 'editorContextRatio',
-      'timeOutDuration' => 'timeOutDuration',
-      'retryAttempts' => 'retryAttempts',
-      'debugMode' => 'debugMode',
-      'streamContent' => 'streamContent',
-      'showErrorDuration' => 'showErrorDuration',
-      'moderationEnable' => 'moderationEnable',
-      'moderationKey' => 'moderationKey',
-      'toneOfVoiceVocabulary' => 'toneOfVoiceVocabulary',
-      'commandsVocabulary' => 'commandsVocabulary',
-      'defaultToneOfVoice' => 'defaultToneOfVoice',
-    ];
   }
 
 }
