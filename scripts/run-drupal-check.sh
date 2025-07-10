@@ -2,7 +2,6 @@
 set -vo pipefail
 
 DRUPAL_RECOMMENDED_PROJECT=${DRUPAL_RECOMMENDED_PROJECT:-11.x-dev}
-DRUPAL_CHECK_TOOL="mglaman/drupal-check"
 
 # Create Drupal project if it doesn't exist
 if [ ! -d "/drupal" ]; then
@@ -17,11 +16,19 @@ if [ ! -L "web/modules/contrib/ckeditor_ai_agent" ]; then
   ln -s /src web/modules/contrib/ckeditor_ai_agent
 fi
 
-# Install drupal-check if not already installed
-if [ ! -f "./vendor/bin/drupal-check" ]; then
-  composer config allow-plugins.tbachert/spi true
-  composer require $DRUPAL_CHECK_TOOL --dev --ignore-platform-reqs
+# Create a phpstan.neon configuration if it doesn't exist
+if [ ! -f "phpstan.neon" ]; then
+  cat > phpstan.neon << 'EOF'
+parameters:
+  level: 2
+  paths:
+    - web/modules/contrib/ckeditor_ai_agent
+  excludePaths:
+    - web/modules/contrib/ckeditor_ai_agent/tests (?)
+  drupal:
+    drupal_root: .
+EOF
 fi
 
-# Run drupal-check with stderr redirected
-./vendor/bin/drupal-check --drupal-root . -ad web/modules/contrib/ckeditor_ai_agent 2>/dev/null
+# Run phpstan directly since drupal-check is not compatible with Drupal 11
+./vendor/bin/phpstan analyse --no-progress --memory-limit=256M
