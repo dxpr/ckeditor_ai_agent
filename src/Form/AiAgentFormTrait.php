@@ -3,12 +3,57 @@
 namespace Drupal\ckeditor_ai_agent\Form;
 
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ExtensionPathResolver;
+use Drupal\Core\Routing\UrlGeneratorInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 
 /**
  * Provides common form elements for AI Agent configuration.
  */
 trait AiAgentFormTrait {
   use StringTranslationTrait;
+
+  /**
+   * Gets the entity type manager.
+   *
+   * @return \Drupal\Core\Entity\EntityTypeManagerInterface
+   *   The entity type manager.
+   */
+  abstract protected function getEntityTypeManager(): EntityTypeManagerInterface;
+
+  /**
+   * Gets the extension path resolver.
+   *
+   * @return \Drupal\Core\Extension\ExtensionPathResolver
+   *   The extension path resolver.
+   */
+  abstract protected function getExtensionPathResolver(): ExtensionPathResolver;
+
+  /**
+   * Gets the URL generator.
+   *
+   * @return \Drupal\Core\Routing\UrlGeneratorInterface
+   *   The URL generator.
+   */
+  abstract protected function getUrlGenerator(): UrlGeneratorInterface;
+
+  /**
+   * Gets the config factory.
+   *
+   * @return \Drupal\Core\Config\ConfigFactoryInterface
+   *   The config factory.
+   */
+  abstract protected function getConfigFactory(): ConfigFactoryInterface;
+
+  /**
+   * Gets the messenger service.
+   *
+   * @return \Drupal\Core\Messenger\MessengerInterface
+   *   The messenger.
+   */
+  abstract protected function getMessenger(): MessengerInterface;
 
   /**
    * Gets the common form elements for AI Agent configuration.
@@ -26,7 +71,7 @@ trait AiAgentFormTrait {
 
     // Initialize config based on context.
     if (!$is_plugin) {
-      $config = \Drupal::config('ckeditor_ai_agent.settings');
+      $config = $this->getConfigFactory()->get('ckeditor_ai_agent.settings');
     }
 
     // Add styling for the AI Agent settings
@@ -74,7 +119,7 @@ trait AiAgentFormTrait {
 
     // Get available keys
     $key_options = [];
-    $key_storage = \Drupal::entityTypeManager()->getStorage('key');
+    $key_storage = $this->getEntityTypeManager()->getStorage('key');
     $keys = $key_storage->loadMultiple();
     foreach ($keys as $key) {
       $key_options[$key->id()] = $key->label();
@@ -85,7 +130,7 @@ trait AiAgentFormTrait {
       '#title' => $this->t('API Key'),
       '#description' => $is_plugin
         ? $this->t('Select the key that contains your API credentials or use the <a href="@url">global settings</a>. <a href="@keys_url">Manage keys</a>', [
-          '@url' => \Drupal::service('url_generator')->generateFromRoute('ckeditor_ai_agent.settings'),
+          '@url' => $this->getUrlGenerator()->generateFromRoute('ckeditor_ai_agent.settings'),
           '@keys_url' => '/admin/config/system/keys',
         ])
         : $this->t('Select the key that contains your API credentials. <a href="@url">Manage keys</a>', [
@@ -99,7 +144,7 @@ trait AiAgentFormTrait {
 
     // Load supported models from JSON file
     $supported_models = [];
-    $json_path = \Drupal::service('extension.path.resolver')->getPath('module', 'ckeditor_ai_agent') . '/js/ckeditor5_plugins/aiagent/src/SUPPORTED_MODELS.json';
+    $json_path = $this->getExtensionPathResolver()->getPath('module', 'ckeditor_ai_agent') . '/js/ckeditor5_plugins/aiagent/src/SUPPORTED_MODELS.json';
     if (file_exists($json_path)) {
       $supported_models = json_decode(file_get_contents($json_path), TRUE) ?: [];
     }
@@ -286,7 +331,7 @@ trait AiAgentFormTrait {
     ];
 
     try {
-      $module_path = \Drupal::service('extension.path.resolver')->getPath('module', 'ckeditor_ai_agent');
+      $module_path = $this->getExtensionPathResolver()->getPath('module', 'ckeditor_ai_agent');
       $default_rules_path = $module_path . '/js/ckeditor5_plugins/aiagent/src/config/default-rules.json';
       $default_rules = file_exists($default_rules_path)
             ? json_decode(file_get_contents($default_rules_path), TRUE) ?: []
@@ -338,7 +383,7 @@ trait AiAgentFormTrait {
       }
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addError(t('Error loading prompt settings: @error', ['@error' => $e->getMessage()]));
+      $this->getMessenger()->addError(t('Error loading prompt settings: @error', ['@error' => $e->getMessage()]));
     }
 
     // Performance Settings.
@@ -479,7 +524,7 @@ trait AiAgentFormTrait {
     ];
 
     // Get all vocabularies for the dropdown
-    $vocabularies = \Drupal::entityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
+    $vocabularies = $this->getEntityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
     $vocab_options = [];
     foreach ($vocabularies as $vocabulary) {
       $vocab_options[$vocabulary->id()] = $vocabulary->label();
@@ -526,7 +571,7 @@ trait AiAgentFormTrait {
     $selected_vocabulary = $getConfigValue('commandsVocabulary');
     if (!empty($selected_vocabulary)) {
       // Load the terms from the selected vocabulary, sorted by weight
-      $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+      $term_storage = $this->getEntityTypeManager()->getStorage('taxonomy_term');
       
       // First load all category terms (parent terms)
       $category_query = $term_storage->getQuery()
@@ -643,16 +688,6 @@ trait AiAgentFormTrait {
       }
     }
 
-    // Add information about creating a vocabulary if none exists
-    if (empty($vocab_options)) {
-      $elements['commands']['no_vocabularies'] = [
-        '#type' => 'markup',
-        '#markup' => $this->t('No vocabularies found. <a href="@link">Create one</a> to manage your commands.', [
-          '@link' => '/admin/structure/taxonomy/add',
-        ]),
-      ];
-    }
-
     // Enforce nested collections of form elements.
     $elements['#tree'] = TRUE;
 
@@ -686,7 +721,7 @@ trait AiAgentFormTrait {
     ];
 
     try {
-      $module_path = \Drupal::service('extension.path.resolver')->getPath('module', 'ckeditor_ai_agent');
+      $module_path = $this->getExtensionPathResolver()->getPath('module', 'ckeditor_ai_agent');
       $default_rules_path = $module_path . '/js/ckeditor5_plugins/aiagent/src/config/default-rules.json';
       $default_rules = file_exists($default_rules_path)
             ? json_decode(file_get_contents($default_rules_path), TRUE) ?: []
@@ -738,7 +773,7 @@ trait AiAgentFormTrait {
       }
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addError(t('Error loading prompt settings: @error', ['@error' => $e->getMessage()]));
+      $this->getMessenger()->addError(t('Error loading prompt settings: @error', ['@error' => $e->getMessage()]));
     }
   }
 
@@ -752,14 +787,17 @@ trait AiAgentFormTrait {
    */
   protected function addToneOfVoiceSettings(array &$elements, \Closure $getConfigValue): void {
     // Get all vocabularies for the dropdown
-    $vocabularies = \Drupal::entityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
+    $vocabularies = $this->getEntityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
     $vocab_options = [];
     foreach ($vocabularies as $vocabulary) {
       $vocab_options[$vocabulary->id()] = $vocabulary->label();
     }
 
+    // Track if we have any vocabularies
+    $has_vocabularies = !empty($vocab_options);
+
     // If no vocabularies exist at all, add a placeholder option
-    if (empty($vocab_options)) {
+    if (!$has_vocabularies) {
       $vocab_options[''] = $this->t('- No vocabularies available -');
     }
 
@@ -814,7 +852,7 @@ trait AiAgentFormTrait {
     $selected_vocabulary = $getConfigValue('toneOfVoiceVocabulary');
     if (!empty($selected_vocabulary)) {
       // Load the terms from the selected vocabulary, sorted by weight
-      $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+      $term_storage = $this->getEntityTypeManager()->getStorage('taxonomy_term');
       $query = $term_storage->getQuery()
         ->condition('vid', $selected_vocabulary)
         ->condition('status', 1) // Only use published terms
@@ -890,7 +928,7 @@ trait AiAgentFormTrait {
     }
 
     // Add information about creating a vocabulary if none exists
-    if (empty($vocab_options)) {
+    if (!$has_vocabularies) {
       $elements['tone_of_voice']['no_vocabularies'] = [
         '#type' => 'markup',
         '#markup' => $this->t('No vocabularies found. <a href="@link">Create one</a> to manage your tones.', [
@@ -912,14 +950,17 @@ trait AiAgentFormTrait {
    */
   protected function addCommandSettings(array &$elements, \Closure $getConfigValue): void {
     // Get all vocabularies for the dropdown
-    $vocabularies = \Drupal::entityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
+    $vocabularies = $this->getEntityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
     $vocab_options = [];
     foreach ($vocabularies as $vocabulary) {
       $vocab_options[$vocabulary->id()] = $vocabulary->label();
     }
 
+    // Track if we have any vocabularies
+    $has_vocabularies = !empty($vocab_options);
+
     // If no vocabularies exist at all, add a placeholder option
-    if (empty($vocab_options)) {
+    if (!$has_vocabularies) {
       $vocab_options[''] = $this->t('- No vocabularies available -');
     }
 
@@ -974,7 +1015,7 @@ trait AiAgentFormTrait {
     $selected_vocabulary = $getConfigValue('commandsVocabulary');
     if (!empty($selected_vocabulary)) {
       // Load the terms from the selected vocabulary, sorted by weight
-      $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+      $term_storage = $this->getEntityTypeManager()->getStorage('taxonomy_term');
       
       // First load all category terms (parent terms)
       $category_query = $term_storage->getQuery()
@@ -1092,7 +1133,7 @@ trait AiAgentFormTrait {
     }
 
     // Add information about creating a vocabulary if none exists
-    if (empty($vocab_options)) {
+    if (!$has_vocabularies) {
       $elements['commands']['no_vocabularies'] = [
         '#type' => 'markup',
         '#markup' => $this->t('No vocabularies found. <a href="@link">Create one</a> to manage your commands.', [

@@ -3,6 +3,8 @@
 namespace Drupal\ckeditor_ai_agent;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\editor\Entity\Editor;
 use Drupal\ckeditor_ai_agent\Service\AiAgentKeyService;
 
@@ -26,19 +28,41 @@ class AiAgentConfigurationManager {
   protected $keyService;
 
   /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * The logger factory.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
+   */
+  protected $loggerFactory;
+
+  /**
    * Constructs a new AiAgentConfigurationManager.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
    * @param \Drupal\ckeditor_ai_agent\Service\AiAgentKeyService $key_service
    *   The key service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
+   *   The logger factory.
    */
   public function __construct(
     ConfigFactoryInterface $config_factory,
-    AiAgentKeyService $key_service
+    AiAgentKeyService $key_service,
+    EntityTypeManagerInterface $entity_type_manager,
+    LoggerChannelFactoryInterface $logger_factory
   ) {
     $this->configFactory = $config_factory;
     $this->keyService = $key_service;
+    $this->entityTypeManager = $entity_type_manager;
+    $this->loggerFactory = $logger_factory;
   }
 
   /**
@@ -145,7 +169,7 @@ class AiAgentConfigurationManager {
     if (!empty($tone_vocabulary)) {
       try {
         // Load the terms from the vocabulary, sorted by weight
-        $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+        $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
         $query = $term_storage->getQuery()
           ->condition('vid', $tone_vocabulary)
           ->condition('status', 1) // Only use published terms
@@ -196,7 +220,7 @@ class AiAgentConfigurationManager {
         }
       }
       catch (\Exception $e) {
-        \Drupal::logger('ckeditor_ai_agent')->error('Error loading tone of voice taxonomy terms: @error', [
+        $this->loggerFactory->get('ckeditor_ai_agent')->error('Error loading tone of voice taxonomy terms: @error', [
           '@error' => $e->getMessage(),
         ]);
       }
@@ -208,7 +232,7 @@ class AiAgentConfigurationManager {
     if (!empty($commands_vocabulary)) {
       try {
         // Load the terms from the vocabulary, sorted by weight
-        $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+        $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
         
         // First load all category terms (parent terms)
         $category_query = $term_storage->getQuery()
@@ -270,7 +294,7 @@ class AiAgentConfigurationManager {
         }
       }
       catch (\Exception $e) {
-        \Drupal::logger('ckeditor_ai_agent')->error('Error loading commands taxonomy terms: @error', [
+        $this->loggerFactory->get('ckeditor_ai_agent')->error('Error loading commands taxonomy terms: @error', [
           '@error' => $e->getMessage(),
         ]);
       }

@@ -8,10 +8,20 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\ckeditor5\Plugin\CKEditor5PluginConfigurableInterface;
 use Drupal\ckeditor5\Plugin\CKEditor5PluginConfigurableTrait;
 use Drupal\ckeditor5\Plugin\CKEditor5PluginDefault;
+use Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\Extension\ExtensionPathResolver;
+use Drupal\Core\Routing\UrlGeneratorInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\editor\EditorInterface;
 use Drupal\ckeditor_ai_agent\Form\AiAgentFormTrait;
 use Drupal\ckeditor_ai_agent\Form\ConfigSetterTrait;
 use Drupal\ckeditor_ai_agent\Form\ConfigMappingTrait;
+use Drupal\ckeditor_ai_agent\Service\AiAgentKeyService;
 
 /**
  * CKEditor 5 AI Agent plugin.
@@ -19,11 +29,159 @@ use Drupal\ckeditor_ai_agent\Form\ConfigMappingTrait;
  * @internal
  *   Plugin classes are internal.
  */
-class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigurableInterface {
+class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigurableInterface, ContainerFactoryPluginInterface {
   use CKEditor5PluginConfigurableTrait;
   use AiAgentFormTrait;
   use ConfigSetterTrait;
   use ConfigMappingTrait;
+
+  /**
+   * The configuration factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected ConfigFactoryInterface $configFactory;
+
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected EntityTypeManagerInterface $entityTypeManager;
+
+  /**
+   * The logger factory.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
+   */
+  protected LoggerChannelFactoryInterface $loggerFactory;
+
+  /**
+   * The AI Agent key service.
+   *
+   * @var \Drupal\ckeditor_ai_agent\Service\AiAgentKeyService
+   */
+  protected AiAgentKeyService $keyService;
+
+  /**
+   * The extension path resolver.
+   *
+   * @var \Drupal\Core\Extension\ExtensionPathResolver
+   */
+  protected ExtensionPathResolver $extensionPathResolver;
+
+  /**
+   * The URL generator.
+   *
+   * @var \Drupal\Core\Routing\UrlGeneratorInterface
+   */
+  protected UrlGeneratorInterface $urlGenerator;
+
+  /**
+   * The messenger.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
+   * Constructs an AiAgent plugin instance.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin_id for the plugin instance.
+   * @param \Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition $plugin_definition
+   *   The plugin implementation definition.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The configuration factory.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
+   *   The logger factory.
+   * @param \Drupal\ckeditor_ai_agent\Service\AiAgentKeyService $key_service
+   *   The AI Agent key service.
+   * @param \Drupal\Core\Extension\ExtensionPathResolver $extension_path_resolver
+   *   The extension path resolver.
+   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
+   *   The URL generator.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger.
+   */
+  public function __construct(
+    array $configuration,
+    string $plugin_id,
+    CKEditor5PluginDefinition $plugin_definition,
+    ConfigFactoryInterface $config_factory,
+    EntityTypeManagerInterface $entity_type_manager,
+    LoggerChannelFactoryInterface $logger_factory,
+    AiAgentKeyService $key_service,
+    ExtensionPathResolver $extension_path_resolver,
+    UrlGeneratorInterface $url_generator,
+    MessengerInterface $messenger
+  ) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->configFactory = $config_factory;
+    $this->entityTypeManager = $entity_type_manager;
+    $this->loggerFactory = $logger_factory;
+    $this->keyService = $key_service;
+    $this->extensionPathResolver = $extension_path_resolver;
+    $this->urlGenerator = $url_generator;
+    $this->messenger = $messenger;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new self(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('config.factory'),
+      $container->get('entity_type.manager'),
+      $container->get('logger.factory'),
+      $container->get('ckeditor_ai_agent.key_service'),
+      $container->get('extension.path.resolver'),
+      $container->get('url_generator'),
+      $container->get('messenger')
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getEntityTypeManager(): EntityTypeManagerInterface {
+    return $this->entityTypeManager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getExtensionPathResolver(): ExtensionPathResolver {
+    return $this->extensionPathResolver;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getUrlGenerator(): UrlGeneratorInterface {
+    return $this->urlGenerator;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getConfigFactory(): ConfigFactoryInterface {
+    return $this->configFactory;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getMessenger(): MessengerInterface {
+    return $this->messenger;
+  }
 
   /**
    * {@inheritdoc}
@@ -97,9 +255,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    * @phpstan-return array<string, mixed>
    */
   public function getDynamicPluginConfig(array $static_plugin_config, EditorInterface $editor): array {
-    $config = \Drupal::config('ckeditor_ai_agent.settings');
+    $config = $this->configFactory->get('ckeditor_ai_agent.settings');
     $editor_config = $this->configuration['aiAgent'] ?? [];
-    $key_service = \Drupal::service('ckeditor_ai_agent.key_service');
 
     // Build configuration with proper fallback handling.
     $result = ['aiAgent' => []];
@@ -111,11 +268,11 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       if ($js_key === 'apiKey') {
         // First check for editor-specific key provider
         if (isset($editor_config['key_provider']) && $editor_config['key_provider'] !== '') {
-          $result['aiAgent'][$js_key] = $key_service->getKeyValue($editor_config['key_provider']);
+          $result['aiAgent'][$js_key] = $this->keyService->getKeyValue($editor_config['key_provider']);
         }
         // Then fall back to global key
         else {
-          $result['aiAgent'][$js_key] = $key_service->getApiKey();
+          $result['aiAgent'][$js_key] = $this->keyService->getApiKey();
         }
         continue;
       }
@@ -152,7 +309,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     if (!empty($tone_vocabulary)) {
       try {
         // Load the terms from the vocabulary, sorted by weight
-        $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+        $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
         $query = $term_storage->getQuery()
           ->condition('vid', $tone_vocabulary)
           ->condition('status', 1) // Only use published terms
@@ -198,7 +355,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         }
       }
       catch (\Exception $e) {
-        \Drupal::logger('ckeditor_ai_agent')->error('Error loading tone of voice taxonomy terms in AiAgent plugin: @error', [
+        $this->loggerFactory->get('ckeditor_ai_agent')->error('Error loading tone of voice taxonomy terms in AiAgent plugin: @error', [
           '@error' => $e->getMessage(),
         ]);
       }
@@ -210,7 +367,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     if (!empty($commands_vocabulary)) {
       try {
         // Load the terms from the vocabulary, sorted by weight
-        $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+        $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
         
         // First load all category terms (parent terms)
         $category_query = $term_storage->getQuery()
@@ -272,7 +429,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         }
       }
       catch (\Exception $e) {
-        \Drupal::logger('ckeditor_ai_agent')->error('Error loading commands taxonomy terms: @error', [
+        $this->loggerFactory->get('ckeditor_ai_agent')->error('Error loading commands taxonomy terms: @error', [
           '@error' => $e->getMessage(),
         ]);
       }
