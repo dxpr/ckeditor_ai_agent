@@ -74,15 +74,15 @@ trait AiAgentFormTrait {
       $config = $this->getConfigFactory()->get('ckeditor_ai_agent.settings');
     }
 
-    // Add styling for the AI Agent settings
+    // Add styling for the AI Agent settings.
     $elements['#attached']['library'][] = 'ckeditor_ai_agent/ai_agent_settings';
 
     // Helper function to get config value based on context.
     $getConfigValue = function ($key, $default = NULL) use ($is_plugin, $config) {
       if ($is_plugin) {
-        // For plugin config, values are nested under aiAgent
+        // For plugin config, values are nested under aiAgent.
         $value = $config['aiAgent'] ?? [];
-        // Special case for ollamaModel to match the structure in settings
+        // Special case for ollamaModel to match the structure in settings.
         if ($key === 'ollamaModel') {
           return $value['ollamaModel'] ?? $default;
         }
@@ -95,7 +95,7 @@ trait AiAgentFormTrait {
         }
         return $value;
       }
-      // For settings form, use direct config get
+      // For settings form, use direct config get.
       return $config->get($key) ?? $default;
     };
 
@@ -117,7 +117,7 @@ trait AiAgentFormTrait {
       '#ajax' => FALSE,
     ];
 
-    // Get available keys
+    // Get available keys.
     $key_options = [];
     $key_storage = $this->getEntityTypeManager()->getStorage('key');
     $keys = $key_storage->loadMultiple();
@@ -142,14 +142,14 @@ trait AiAgentFormTrait {
       '#ajax' => FALSE,
     ];
 
-    // Load supported models from JSON file
+    // Load supported models from JSON file.
     $supported_models = [];
     $json_path = $this->getExtensionPathResolver()->getPath('module', 'ckeditor_ai_agent') . '/js/ckeditor5_plugins/aiagent/src/SUPPORTED_MODELS.json';
     if (file_exists($json_path)) {
       $supported_models = json_decode(file_get_contents($json_path), TRUE) ?: [];
     }
 
-    // Create model options grouped by engine
+    // Create model options grouped by engine.
     $model_options = [];
     foreach ($supported_models as $engine => $models) {
       $model_options[$engine] = [];
@@ -158,18 +158,17 @@ trait AiAgentFormTrait {
       }
     }
 
-    // Add ollama as a special case
+    // Add ollama as a special case.
     $model_options['ollama'] = ['ollama:custom' => $this->t('Custom Model')];
 
-    // Add DXAI as a new engine
+    // Add DXAI as a new engine.
     $model_options['dxai'] = [
       'dxai:kavya-m1' => 'Kavya M1',
-      'dxai:kavya-m1-eu' => 'Kavya M1 European Union'
+      'dxai:kavya-m1-eu' => 'Kavya M1 European Union',
     ];
 
     ksort($model_options);
 
-    $model_field_name = $is_plugin ? 'aiAgent[model]' : 'model';
     $elements['basic_settings']['model'] = [
       '#type' => 'select',
       '#title' => $this->t('AI Engine/Model'),
@@ -194,7 +193,7 @@ trait AiAgentFormTrait {
       ],
     ];
 
-    // For plugin context, ensure ollamaModel is saved under aiAgent
+    // For plugin context, ensure ollamaModel is saved under aiAgent.
     if ($is_plugin) {
       $elements['basic_settings']['ollamaModel']['#description'] = $this->t('Not available in plugin context due to ckeditor5 module limitations.');
       $elements['basic_settings']['ollamaModel']['#disabled'] = TRUE;
@@ -211,16 +210,17 @@ trait AiAgentFormTrait {
     // Add prompt settings.
     $this->addPromptSettings($elements, $getConfigValue);
 
-    // Add the tone of voice taxonomy integration as a separate fieldset
+    // Add the tone of voice taxonomy integration as a separate fieldset.
     $elements['tone_of_voice'] = [
       '#type' => 'details',
       '#title' => $this->t('Tone of Voice'),
       '#open' => FALSE,
       '#description' => $this->t('Configure the tones of voice available to content creators when interacting with the AI Agent.'),
-      '#weight' => 5, // Place right after basic settings
+    // Place right after basic settings.
+      '#weight' => 5,
     ];
 
-    // Move tone of voice settings to the new fieldset
+    // Move tone of voice settings to the new fieldset.
     $this->addToneOfVoiceSettings($elements, $getConfigValue);
 
     // Advanced Settings.
@@ -229,7 +229,8 @@ trait AiAgentFormTrait {
       '#title' => $this->t('AI Response Configuration'),
       '#open' => FALSE,
       '#ajax' => FALSE,
-      '#weight' => 10, // Place after tone of voice settings
+    // Place after tone of voice settings.
+      '#weight' => 10,
     ];
 
     $elements['advanced_settings']['temperature'] = [
@@ -310,13 +311,14 @@ trait AiAgentFormTrait {
       ];
     }
 
-    // Create the advanced prompt settings fieldset
+    // Create the advanced prompt settings fieldset.
     $elements['promptSettings'] = [
       '#type' => 'details',
       '#title' => $this->t('Advanced Prompt Settings'),
       '#open' => FALSE,
       '#ajax' => FALSE,
-      '#weight' => 15, // After AI Response Configuration
+    // After AI Response Configuration.
+      '#weight' => 15,
     ];
 
     $prompt_components = [
@@ -338,7 +340,7 @@ trait AiAgentFormTrait {
             : [];
 
       foreach ($prompt_components as $key => $label) {
-        // Handle tone fields differently when using taxonomy integration
+        // Handle tone fields differently when using taxonomy integration.
         $is_tone_with_vocab = ($key === 'tone' && !empty($getConfigValue('toneOfVoiceVocabulary')));
 
         $elements['promptSettings']["override_$key"] = [
@@ -346,7 +348,7 @@ trait AiAgentFormTrait {
           '#title' => $this->t('@label Override', ['@label' => $label]),
           '#default_value' => $getConfigValue("promptSettings.overrides.$key"),
           '#placeholder' => $default_rules[$key] ?? '',
-          '#description' => $is_tone_with_vocab 
+          '#description' => $is_tone_with_vocab
             ? $this->t('This field is disabled because you are using the Tone of Voice vocabulary. The tone will be set automatically based on the selected vocabulary terms. To modify tones, please edit the terms in the vocabulary above.')
             : $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower((string) $label)]),
           '#rows' => 6,
@@ -368,7 +370,7 @@ trait AiAgentFormTrait {
           '#attributes' => $is_tone_with_vocab ? ['class' => ['tone-vocab-disabled']] : [],
         ];
 
-        // Add a warning message above the tone fields when using vocabulary
+        // Add a warning message above the tone fields when using vocabulary.
         if ($is_tone_with_vocab) {
           $elements['promptSettings']["tone_vocab_warning"] = [
             '#type' => 'html_tag',
@@ -392,7 +394,8 @@ trait AiAgentFormTrait {
       '#title' => $this->t('Performance Settings'),
       '#open' => FALSE,
       '#ajax' => FALSE,
-      '#weight' => 20, // After Advanced Prompt Settings
+    // After Advanced Prompt Settings.
+      '#weight' => 20,
     ];
 
     $performance_fields = [
@@ -427,7 +430,8 @@ trait AiAgentFormTrait {
       '#title' => $this->t('Debug & Error Settings'),
       '#open' => FALSE,
       '#ajax' => FALSE,
-      '#weight' => 25, // After Performance Settings
+    // After Performance Settings.
+      '#weight' => 25,
     ];
 
     $boolean_options = ['0' => $this->t('Disabled'), '1' => $this->t('Enabled')];
@@ -448,7 +452,7 @@ trait AiAgentFormTrait {
 
     foreach ($behavior_fields as $field => $settings) {
       $elements['behavior_settings'][$field] = [
-        '#type' => isset($settings['type']) ? $settings['type'] : 'number',
+        '#type' => $settings['type'] ?? 'number',
         '#title' => $settings['title'],
         '#description' => $settings['description'],
         '#min' => $settings['min'] ?? NULL,
@@ -465,7 +469,8 @@ trait AiAgentFormTrait {
       '#title' => $this->t('Moderation'),
       '#open' => FALSE,
       '#ajax' => FALSE,
-      '#weight' => 30, // After Debug & Error Settings
+    // After Debug & Error Settings.
+      '#weight' => 30,
     ];
 
     $elements['moderation_settings']['moderationEnable'] = $is_plugin
@@ -498,39 +503,24 @@ trait AiAgentFormTrait {
       '#ajax' => FALSE,
     ];
 
-    $moderation_flags = [
-      'sexual' => $this->t('Sexual content'),
-      'sexual/minors' => $this->t('Sexual content involving minors'),
-      'harassment' => $this->t('Harassment'),
-      'harassment/threatening' => $this->t('Threatening harassment'),
-      'hate' => $this->t('Hate speech'),
-      'hate/threatening' => $this->t('Threatening hate speech'),
-      'illicit' => $this->t('Illicit content'),
-      'illicit/violent' => $this->t('Violent illicit content'),
-      'self-harm' => $this->t('Self-harm'),
-      'self-harm/intent' => $this->t('Self-harm intent'),
-      'self-harm/instructions' => $this->t('Self-harm instructions'),
-      'violence' => $this->t('Violence'),
-      'violence/graphic' => $this->t('Graphic violence'),
-    ];
-
-    // Add the commands section to the form
+    // Add the commands section to the form.
     $elements['commands'] = [
       '#type' => 'details',
       '#title' => $this->t('AI Edit Commands'),
       '#open' => FALSE,
       '#description' => $this->t('Configure the commands available to content creators when interacting with the AI Agent.'),
-      '#weight' => 6, // Place right after tone of voice settings
+    // Place right after tone of voice settings.
+      '#weight' => 6,
     ];
 
-    // Get all vocabularies for the dropdown
+    // Get all vocabularies for the dropdown.
     $vocabularies = $this->getEntityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
     $vocab_options = [];
     foreach ($vocabularies as $vocabulary) {
       $vocab_options[$vocabulary->id()] = $vocabulary->label();
     }
 
-    // Add a toggle to enable/disable the taxonomy integration
+    // Add a toggle to enable/disable the taxonomy integration.
     $elements['commands']['enable_taxonomy_commands'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Organize commands in categories'),
@@ -540,7 +530,7 @@ trait AiAgentFormTrait {
       '#default_value' => !empty($getConfigValue('commandsVocabulary')),
     ];
 
-    // Add the vocabulary selector
+    // Add the vocabulary selector.
     $elements['commands']['commandsVocabulary'] = [
       '#type' => 'select',
       '#title' => $this->t('Command Collection'),
@@ -557,7 +547,7 @@ trait AiAgentFormTrait {
       ],
     ];
 
-    // Add a container to preview available commands
+    // Add a container to preview available commands.
     $elements['commands']['preview_container'] = [
       '#type' => 'container',
       '#states' => [
@@ -567,29 +557,30 @@ trait AiAgentFormTrait {
       ],
     ];
 
-    // Add a preview of available commands if a vocabulary is selected
+    // Add a preview of available commands if a vocabulary is selected.
     $selected_vocabulary = $getConfigValue('commandsVocabulary');
     if (!empty($selected_vocabulary)) {
-      // Load the terms from the selected vocabulary, sorted by weight
+      // Load the terms from the selected vocabulary, sorted by weight.
       $term_storage = $this->getEntityTypeManager()->getStorage('taxonomy_term');
-      
+
       // First load all category terms (parent terms)
       $category_query = $term_storage->getQuery()
         ->condition('vid', $selected_vocabulary)
         ->condition('parent', 0)
-        ->condition('status', 1) // Only use published category terms
+      // Only use published category terms.
+        ->condition('status', 1)
         ->sort('weight')
         ->accessCheck(FALSE);
       $category_tids = $category_query->execute();
-      
+
       if (!empty($category_tids)) {
         $categories = $term_storage->loadMultiple($category_tids);
-        
-        // Create a structured table showing the command hierarchy
+
+        // Create a structured table showing the command hierarchy.
         $rows = [];
-        
+
         foreach ($categories as $category_term) {
-          // Add the category as a header-like row
+          // Add the category as a header-like row.
           $rows[] = [
             'data' => [
               [
@@ -600,28 +591,29 @@ trait AiAgentFormTrait {
             ],
             'class' => ['command-category-row'],
           ];
-          
-          // Load child terms for this category
+
+          // Load child terms for this category.
           $command_query = $term_storage->getQuery()
             ->condition('vid', $selected_vocabulary)
             ->condition('parent', $category_term->id())
-            ->condition('status', 1) // Only use published command terms
+          // Only use published command terms.
+            ->condition('status', 1)
             ->sort('weight')
             ->accessCheck(FALSE);
           $command_tids = $command_query->execute();
-          
+
           if (!empty($command_tids)) {
             $commands = $term_storage->loadMultiple($command_tids);
-            
-            // Add each command to the table
+
+            // Add each command to the table.
             foreach ($commands as $command_term) {
               $description = $command_term->getDescription();
-              // Strip HTML and truncate for display
+              // Strip HTML and truncate for display.
               $description = strip_tags($description);
-              $short_description = strlen($description) > 100 
-                ? substr($description, 0, 100) . '...' 
+              $short_description = strlen($description) > 100
+                ? substr($description, 0, 100) . '...'
                 : ($description ?: $this->t('- No instruction defined -'));
-              
+
               $rows[] = [
                 'data' => [
                   [
@@ -636,7 +628,8 @@ trait AiAgentFormTrait {
                 'class' => ['command-row'],
               ];
             }
-          } else {
+          }
+          else {
             $rows[] = [
               'data' => [
                 [
@@ -648,12 +641,12 @@ trait AiAgentFormTrait {
             ];
           }
         }
-        
+
         $header = [
           $this->t('Command'),
           $this->t('Instruction'),
         ];
-        
+
         $elements['commands']['preview_container']['commands_table'] = [
           '#type' => 'table',
           '#header' => $header,
@@ -665,8 +658,8 @@ trait AiAgentFormTrait {
             'class' => ['commands-table'],
           ],
         ];
-        
-        // Add a link to manage the terms
+
+        // Add a link to manage the terms.
         $elements['commands']['preview_container']['manage_link'] = [
           '#type' => 'html_tag',
           '#tag' => 'div',
@@ -703,10 +696,10 @@ trait AiAgentFormTrait {
    *   Helper function to get config value based on context.
    */
   protected function addPromptSettings(array &$elements, \Closure $getConfigValue): void {
-    // Add the tone of voice taxonomy integration
+    // Add the tone of voice taxonomy integration.
     $this->addToneOfVoiceSettings($elements, $getConfigValue);
-    
-    // Add the commands taxonomy integration
+
+    // Add the commands taxonomy integration.
     $this->addCommandSettings($elements, $getConfigValue);
 
     $prompt_components = [
@@ -728,7 +721,7 @@ trait AiAgentFormTrait {
             : [];
 
       foreach ($prompt_components as $key => $label) {
-        // Handle tone fields differently when using taxonomy integration
+        // Handle tone fields differently when using taxonomy integration.
         $is_tone_with_vocab = ($key === 'tone' && !empty($getConfigValue('toneOfVoiceVocabulary')));
 
         $elements['promptSettings']["override_$key"] = [
@@ -736,7 +729,7 @@ trait AiAgentFormTrait {
           '#title' => $this->t('@label Override', ['@label' => $label]),
           '#default_value' => $getConfigValue("promptSettings.overrides.$key"),
           '#placeholder' => $default_rules[$key] ?? '',
-          '#description' => $is_tone_with_vocab 
+          '#description' => $is_tone_with_vocab
             ? $this->t('This field is disabled because you are using the Tone of Voice vocabulary. The tone will be set automatically based on the selected vocabulary terms. To modify tones, please edit the terms in the vocabulary above.')
             : $this->t('Override the default @label rules. Leave empty to use the default values shown above.', ['@label' => strtolower((string) $label)]),
           '#rows' => 6,
@@ -758,7 +751,7 @@ trait AiAgentFormTrait {
           '#attributes' => $is_tone_with_vocab ? ['class' => ['tone-vocab-disabled']] : [],
         ];
 
-        // Add a warning message above the tone fields when using vocabulary
+        // Add a warning message above the tone fields when using vocabulary.
         if ($is_tone_with_vocab) {
           $elements['promptSettings']["tone_vocab_warning"] = [
             '#type' => 'html_tag',
@@ -786,22 +779,22 @@ trait AiAgentFormTrait {
    *   Helper function to get config value based on context.
    */
   protected function addToneOfVoiceSettings(array &$elements, \Closure $getConfigValue): void {
-    // Get all vocabularies for the dropdown
+    // Get all vocabularies for the dropdown.
     $vocabularies = $this->getEntityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
     $vocab_options = [];
     foreach ($vocabularies as $vocabulary) {
       $vocab_options[$vocabulary->id()] = $vocabulary->label();
     }
 
-    // Track if we have any vocabularies
+    // Track if we have any vocabularies.
     $has_vocabularies = !empty($vocab_options);
 
-    // If no vocabularies exist at all, add a placeholder option
+    // If no vocabularies exist at all, add a placeholder option.
     if (!$has_vocabularies) {
       $vocab_options[''] = $this->t('- No vocabularies available -');
     }
 
-    // Add a toggle to enable/disable the taxonomy integration
+    // Add a toggle to enable/disable the taxonomy integration.
     $elements['tone_of_voice']['enable_taxonomy_tones'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Organize tones in categories'),
@@ -811,15 +804,15 @@ trait AiAgentFormTrait {
       '#default_value' => !empty($getConfigValue('toneOfVoiceVocabulary')),
     ];
 
-    // Get saved tone vocabulary and check if it exists
+    // Get saved tone vocabulary and check if it exists.
     $saved_tone_vocab = $getConfigValue('toneOfVoiceVocabulary');
     $tone_default_value = '';
-    
+
     if ($saved_tone_vocab && isset($vocab_options[$saved_tone_vocab])) {
       $tone_default_value = $saved_tone_vocab;
     }
 
-    // Add the vocabulary selector
+    // Add the vocabulary selector.
     $elements['tone_of_voice']['toneOfVoiceVocabulary'] = [
       '#type' => 'select',
       '#title' => $this->t('Tone Collection'),
@@ -838,7 +831,7 @@ trait AiAgentFormTrait {
       '#empty_value' => '',
     ];
 
-    // Add a container to preview available tones
+    // Add a container to preview available tones.
     $elements['tone_of_voice']['preview_container'] = [
       '#type' => 'container',
       '#states' => [
@@ -848,18 +841,19 @@ trait AiAgentFormTrait {
       ],
     ];
 
-    // Add a preview of available tones if a vocabulary is selected
+    // Add a preview of available tones if a vocabulary is selected.
     $selected_vocabulary = $getConfigValue('toneOfVoiceVocabulary');
     if (!empty($selected_vocabulary)) {
-      // Load the terms from the selected vocabulary, sorted by weight
+      // Load the terms from the selected vocabulary, sorted by weight.
       $term_storage = $this->getEntityTypeManager()->getStorage('taxonomy_term');
       $query = $term_storage->getQuery()
         ->condition('vid', $selected_vocabulary)
-        ->condition('status', 1) // Only use published terms
+      // Only use published terms.
+        ->condition('status', 1)
         ->sort('weight')
         ->accessCheck(FALSE);
       $tids = $query->execute();
-      
+
       if (!empty($tids)) {
         $terms = $term_storage->loadMultiple($tids);
 
@@ -872,12 +866,12 @@ trait AiAgentFormTrait {
 
         foreach ($terms as $term) {
           $description = $term->getDescription();
-          // Strip HTML and truncate for display
+          // Strip HTML and truncate for display.
           $description = strip_tags($description);
-          $short_description = strlen($description) > 100 
-            ? substr($description, 0, 100) . '...' 
+          $short_description = strlen($description) > 100
+            ? substr($description, 0, 100) . '...'
             : ($description ?: $this->t('- No tone defined -'));
-          
+
           $rows[] = [
             'data' => [
               [
@@ -904,8 +898,8 @@ trait AiAgentFormTrait {
             'class' => ['tone-terms-table'],
           ],
         ];
-        
-        // Add a link to manage the terms
+
+        // Add a link to manage the terms.
         $elements['tone_of_voice']['preview_container']['manage_link'] = [
           '#type' => 'html_tag',
           '#tag' => 'div',
@@ -927,7 +921,7 @@ trait AiAgentFormTrait {
       }
     }
 
-    // Add information about creating a vocabulary if none exists
+    // Add information about creating a vocabulary if none exists.
     if (!$has_vocabularies) {
       $elements['tone_of_voice']['no_vocabularies'] = [
         '#type' => 'markup',
@@ -937,7 +931,8 @@ trait AiAgentFormTrait {
       ];
     }
 
-    // No need to add commands library separately as it's included in ai_agent_settings
+    // No need to add commands library separately as it's included in
+    // ai_agent_settings.
   }
 
   /**
@@ -949,22 +944,22 @@ trait AiAgentFormTrait {
    *   Helper function to get config value based on context.
    */
   protected function addCommandSettings(array &$elements, \Closure $getConfigValue): void {
-    // Get all vocabularies for the dropdown
+    // Get all vocabularies for the dropdown.
     $vocabularies = $this->getEntityTypeManager()->getStorage('taxonomy_vocabulary')->loadMultiple();
     $vocab_options = [];
     foreach ($vocabularies as $vocabulary) {
       $vocab_options[$vocabulary->id()] = $vocabulary->label();
     }
 
-    // Track if we have any vocabularies
+    // Track if we have any vocabularies.
     $has_vocabularies = !empty($vocab_options);
 
-    // If no vocabularies exist at all, add a placeholder option
+    // If no vocabularies exist at all, add a placeholder option.
     if (!$has_vocabularies) {
       $vocab_options[''] = $this->t('- No vocabularies available -');
     }
 
-    // Add a toggle to enable/disable the taxonomy integration
+    // Add a toggle to enable/disable the taxonomy integration.
     $elements['commands']['enable_taxonomy_commands'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Organize commands in categories'),
@@ -974,15 +969,15 @@ trait AiAgentFormTrait {
       '#default_value' => !empty($getConfigValue('commandsVocabulary')),
     ];
 
-    // Get saved command vocabulary and check if it exists
+    // Get saved command vocabulary and check if it exists.
     $saved_command_vocab = $getConfigValue('commandsVocabulary');
     $command_default_value = '';
-    
+
     if ($saved_command_vocab && isset($vocab_options[$saved_command_vocab])) {
       $command_default_value = $saved_command_vocab;
     }
 
-    // Add the vocabulary selector
+    // Add the vocabulary selector.
     $elements['commands']['commandsVocabulary'] = [
       '#type' => 'select',
       '#title' => $this->t('Command Collection'),
@@ -1001,7 +996,7 @@ trait AiAgentFormTrait {
       '#empty_value' => '',
     ];
 
-    // Add a container to preview available commands
+    // Add a container to preview available commands.
     $elements['commands']['preview_container'] = [
       '#type' => 'container',
       '#states' => [
@@ -1011,29 +1006,30 @@ trait AiAgentFormTrait {
       ],
     ];
 
-    // Add a preview of available commands if a vocabulary is selected
+    // Add a preview of available commands if a vocabulary is selected.
     $selected_vocabulary = $getConfigValue('commandsVocabulary');
     if (!empty($selected_vocabulary)) {
-      // Load the terms from the selected vocabulary, sorted by weight
+      // Load the terms from the selected vocabulary, sorted by weight.
       $term_storage = $this->getEntityTypeManager()->getStorage('taxonomy_term');
-      
+
       // First load all category terms (parent terms)
       $category_query = $term_storage->getQuery()
         ->condition('vid', $selected_vocabulary)
         ->condition('parent', 0)
-        ->condition('status', 1) // Only use published category terms
+      // Only use published category terms.
+        ->condition('status', 1)
         ->sort('weight')
         ->accessCheck(FALSE);
       $category_tids = $category_query->execute();
-      
+
       if (!empty($category_tids)) {
         $categories = $term_storage->loadMultiple($category_tids);
-        
-        // Create a structured table showing the command hierarchy
+
+        // Create a structured table showing the command hierarchy.
         $rows = [];
-        
+
         foreach ($categories as $category_term) {
-          // Add the category as a header-like row
+          // Add the category as a header-like row.
           $rows[] = [
             'data' => [
               [
@@ -1044,28 +1040,29 @@ trait AiAgentFormTrait {
             ],
             'class' => ['command-category-row'],
           ];
-          
-          // Load child terms for this category
+
+          // Load child terms for this category.
           $command_query = $term_storage->getQuery()
             ->condition('vid', $selected_vocabulary)
             ->condition('parent', $category_term->id())
-            ->condition('status', 1) // Only use published command terms
+          // Only use published command terms.
+            ->condition('status', 1)
             ->sort('weight')
             ->accessCheck(FALSE);
           $command_tids = $command_query->execute();
-          
+
           if (!empty($command_tids)) {
             $commands = $term_storage->loadMultiple($command_tids);
-            
-            // Add each command to the table
+
+            // Add each command to the table.
             foreach ($commands as $command_term) {
               $description = $command_term->getDescription();
-              // Strip HTML and truncate for display
+              // Strip HTML and truncate for display.
               $description = strip_tags($description);
-              $short_description = strlen($description) > 100 
-                ? substr($description, 0, 100) . '...' 
+              $short_description = strlen($description) > 100
+                ? substr($description, 0, 100) . '...'
                 : ($description ?: $this->t('- No instruction defined -'));
-              
+
               $rows[] = [
                 'data' => [
                   [
@@ -1080,7 +1077,8 @@ trait AiAgentFormTrait {
                 'class' => ['command-row'],
               ];
             }
-          } else {
+          }
+          else {
             $rows[] = [
               'data' => [
                 [
@@ -1092,12 +1090,12 @@ trait AiAgentFormTrait {
             ];
           }
         }
-        
+
         $header = [
           $this->t('Command'),
           $this->t('Instruction'),
         ];
-        
+
         $elements['commands']['preview_container']['commands_table'] = [
           '#type' => 'table',
           '#header' => $header,
@@ -1109,8 +1107,8 @@ trait AiAgentFormTrait {
             'class' => ['commands-table'],
           ],
         ];
-        
-        // Add a link to manage the terms
+
+        // Add a link to manage the terms.
         $elements['commands']['preview_container']['manage_link'] = [
           '#type' => 'html_tag',
           '#tag' => 'div',
@@ -1132,7 +1130,7 @@ trait AiAgentFormTrait {
       }
     }
 
-    // Add information about creating a vocabulary if none exists
+    // Add information about creating a vocabulary if none exists.
     if (!$has_vocabularies) {
       $elements['commands']['no_vocabularies'] = [
         '#type' => 'markup',
@@ -1142,4 +1140,5 @@ trait AiAgentFormTrait {
       ];
     }
   }
+
 }

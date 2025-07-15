@@ -118,7 +118,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     AiAgentKeyService $key_service,
     ExtensionPathResolver $extension_path_resolver,
     UrlGeneratorInterface $url_generator,
-    MessengerInterface $messenger
+    MessengerInterface $messenger,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->configFactory = $config_factory;
@@ -238,10 +238,10 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state): void {
     $values = $form_state->getValues();
-    $configMapping = $this->getConfigMapping();    
+    $configMapping = $this->getConfigMapping();
     $this->configuration['aiAgent'] = $this->processConfigValues($values, $configMapping);
 
-    // Handle prompt settings
+    // Handle prompt settings.
     if (isset($values['promptSettings'])) {
       $prompt_settings = $this->processPromptSettings($values['promptSettings']);
       $this->configuration['aiAgent']['promptSettings'] = $prompt_settings;
@@ -264,13 +264,13 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     // Basic settings.
     $settings_map = $this->getSettingsMap();
     foreach ($settings_map as $js_key => $drupal_key) {
-      // Handle apiKey separately to use key service
+      // Handle apiKey separately to use key service.
       if ($js_key === 'apiKey') {
-        // First check for editor-specific key provider
+        // First check for editor-specific key provider.
         if (isset($editor_config['key_provider']) && $editor_config['key_provider'] !== '') {
           $result['aiAgent'][$js_key] = $this->keyService->getKeyValue($editor_config['key_provider']);
         }
-        // Then fall back to global key
+        // Then fall back to global key.
         else {
           $result['aiAgent'][$js_key] = $this->keyService->getApiKey();
         }
@@ -285,45 +285,47 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         $result['aiAgent'][$js_key] = $config->get($drupal_key);
       }
     }
-    
-    // Handle engine/model
+
+    // Handle engine/model.
     $model = $result['aiAgent']['model'] ?? 'openai:gpt-4o';
     if (str_contains($model, ':')) {
       [$engine, $model_name] = explode(':', $model, 2);
       $result['aiAgent']['engine'] = $engine;
       if ($engine === 'ollama') {
-        // For Ollama, use the ollamaModel value
+        // For Ollama, use the ollamaModel value.
         $result['aiAgent']['model'] = $result['aiAgent']['ollamaModel'] ?? $config->get('ollamaModel') ?? '';
-      } else {
+      }
+      else {
         $result['aiAgent']['model'] = $model_name;
       }
-    } else {
-      // Fallback for legacy configurations
+    }
+    else {
+      // Fallback for legacy configurations.
       $result['aiAgent']['engine'] = 'openai';
       $result['aiAgent']['model'] = $model ?: 'gpt-4o';
     }
-    
-    // Add taxonomy-based tones of voice if configured
+
+    // Add taxonomy-based tones of voice if configured.
     $tone_vocabulary = $result['aiAgent']['toneOfVoiceVocabulary'] ?? '';
-    
+
     if (!empty($tone_vocabulary)) {
       try {
-        // Load the terms from the vocabulary, sorted by weight
+        // Load the terms from the vocabulary, sorted by weight.
         $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
         $query = $term_storage->getQuery()
           ->condition('vid', $tone_vocabulary)
-          ->condition('status', 1) // Only use published terms
+        // Only use published terms.
+          ->condition('status', 1)
           ->sort('weight')
           ->accessCheck(FALSE);
         $tids = $query->execute();
-        
+
         if (!empty($tids)) {
           $terms = $term_storage->loadMultiple($tids);
           $tones_dropdown = [];
-          $default_tone = NULL;
           $first_term = NULL;
-          
-          // Add each taxonomy term as a tone option
+
+          // Add each taxonomy term as a tone option.
           foreach ($terms as $term) {
             $description = $term->getDescription();
             // Only add terms that have a description (tone)
@@ -332,22 +334,23 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
                 'label' => $term->label(),
                 'tone' => $description,
               ];
-              
+
               $tones_dropdown[] = $tone_item;
-              
-              // Keep track of the first valid term (lowest weight) to use as default
+
+              // Keep track of the first valid term (lowest weight) to use as
+              // default.
               if ($first_term === NULL) {
                 $first_term = $tone_item;
               }
             }
           }
-          
-          // Only add the tones to the configuration if we have valid tones
+
+          // Only add the tones to the configuration if we have valid tones.
           if (!empty($tones_dropdown)) {
-            // Use the exact key expected by the plugin
+            // Use the exact key expected by the plugin.
             $result['aiAgent']['tonesDropdown'] = $tones_dropdown;
-            
-            // Set the first term (lowest weight) as the default tone
+
+            // Set the first term (lowest weight) as the default tone.
             if ($first_term !== NULL) {
               $result['aiAgent']['defaultTone'] = $first_term;
             }
@@ -360,48 +363,50 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         ]);
       }
     }
-    
-    // Add taxonomy-based commands if configured
+
+    // Add taxonomy-based commands if configured.
     $commands_vocabulary = $result['aiAgent']['commandsVocabulary'] ?? '';
-    
+
     if (!empty($commands_vocabulary)) {
       try {
-        // Load the terms from the vocabulary, sorted by weight
+        // Load the terms from the vocabulary, sorted by weight.
         $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
-        
+
         // First load all category terms (parent terms)
         $category_query = $term_storage->getQuery()
           ->condition('vid', $commands_vocabulary)
           ->condition('parent', 0)
-          ->condition('status', 1) // Only use published category terms
+        // Only use published category terms.
+          ->condition('status', 1)
           ->sort('weight')
           ->accessCheck(FALSE);
         $category_tids = $category_query->execute();
-        
+
         if (!empty($category_tids)) {
           $categories = $term_storage->loadMultiple($category_tids);
           $commands_dropdown = [];
-          
+
           // For each category, load its child terms (commands)
           foreach ($categories as $category_term) {
             $command_group = [
               'title' => $category_term->label(),
               'items' => [],
             ];
-            
-            // Load child terms for this category
+
+            // Load child terms for this category.
             $command_query = $term_storage->getQuery()
               ->condition('vid', $commands_vocabulary)
               ->condition('parent', $category_term->id())
-              ->condition('status', 1) // Only use published command terms
+            // Only use published command terms.
+              ->condition('status', 1)
               ->sort('weight')
               ->accessCheck(FALSE);
             $command_tids = $command_query->execute();
-            
+
             if (!empty($command_tids)) {
               $commands = $term_storage->loadMultiple($command_tids);
-              
-              // Add each command to this category
+
+              // Add each command to this category.
               foreach ($commands as $command_term) {
                 $description = $command_term->getDescription();
                 // Only add terms that have a description (command)
@@ -410,19 +415,20 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
                     'title' => $command_term->label(),
                     'command' => $description,
                   ];
-                  
+
                   $command_group['items'][] = $command_item;
                 }
               }
             }
-            
-            // Only add the category if it has commands
+
+            // Only add the category if it has commands.
             if (!empty($command_group['items'])) {
               $commands_dropdown[] = $command_group;
             }
           }
-          
-          // Only add the commands dropdown to the configuration if we have valid categories
+
+          // Only add the commands dropdown to the configuration if we have
+          // valid categories.
           if (!empty($commands_dropdown)) {
             $result['aiAgent']['commandsDropdown'] = $commands_dropdown;
           }
@@ -435,7 +441,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       }
     }
 
-    // Handle prompt settings
+    // Handle prompt settings.
     $result['aiAgent']['promptSettings'] = [
       'overrides' => [],
       'additions' => [],
@@ -446,16 +452,16 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       $global_settings = $config->get("promptSettings.$type") ?? [];
 
       foreach ($this->getPromptComponents() as $component) {
-        // Special handling for tone when using taxonomy integration
+        // Special handling for tone when using taxonomy integration.
         if ($component === 'tone' && !empty($tone_vocabulary) && !empty($first_term)) {
-          // For overrides, use the first term's tone as the tone
+          // For overrides, use the first term's tone as the tone.
           if ($type === 'overrides') {
             $result['aiAgent']['promptSettings'][$type][$component] = $first_term['tone'];
           }
-          // Skip additions for tone when using taxonomy
+          // Skip additions for tone when using taxonomy.
           continue;
         }
-        
+
         if (!empty($editor_settings[$component])) {
           $result['aiAgent']['promptSettings'][$type][$component] = $editor_settings[$component];
         }

@@ -57,7 +57,7 @@ class AiAgentConfigurationManager {
     ConfigFactoryInterface $config_factory,
     AiAgentKeyService $key_service,
     EntityTypeManagerInterface $entity_type_manager,
-    LoggerChannelFactoryInterface $logger_factory
+    LoggerChannelFactoryInterface $logger_factory,
   ) {
     $this->configFactory = $config_factory;
     $this->keyService = $key_service;
@@ -75,26 +75,28 @@ class AiAgentConfigurationManager {
     $config = $this->configFactory->get('ckeditor_ai_agent.settings');
     $result = [];
 
-    // Get basic settings
+    // Get basic settings.
     $result['apiKey'] = $this->keyService->getApiKey();
-    
-    // Handle engine/model
+
+    // Handle engine/model.
     $model = $config->get('model');
     if ($model && str_contains($model, ':')) {
       [$engine, $model_name] = explode(':', $model, 2);
       $result['engine'] = $engine;
       if ($engine === 'ollama') {
         $result['model'] = $config->get('ollamaModel') ?: '';
-      } else {
+      }
+      else {
         $result['model'] = $model_name;
       }
-    } else {
-      // Fallback for legacy configurations
+    }
+    else {
+      // Fallback for legacy configurations.
       $result['engine'] = 'openai';
       $result['model'] = $model ?: 'gpt-4o';
     }
 
-    // Get other settings
+    // Get other settings.
     $result['endpointUrl'] = $config->get('endpointUrl');
     $result['contentScope'] = $config->get('contentScope');
     $result['temperature'] = $config->get('temperature');
@@ -153,7 +155,7 @@ class AiAgentConfigurationManager {
       ],
     ];
 
-    // Properly populate prompt settings from configuration
+    // Properly populate prompt settings from configuration.
     foreach (['overrides', 'additions'] as $type) {
       $settings = $global_config->get("promptSettings.$type");
       if (!empty($settings) && is_array($settings)) {
@@ -163,26 +165,27 @@ class AiAgentConfigurationManager {
       }
     }
 
-    // Add taxonomy-based tones of voice if configured
+    // Add taxonomy-based tones of voice if configured.
     $tone_vocabulary = $global_config->get('toneOfVoiceVocabulary');
-    
+
     if (!empty($tone_vocabulary)) {
       try {
-        // Load the terms from the vocabulary, sorted by weight
+        // Load the terms from the vocabulary, sorted by weight.
         $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
         $query = $term_storage->getQuery()
           ->condition('vid', $tone_vocabulary)
-          ->condition('status', 1) // Only use published terms
+        // Only use published terms.
+          ->condition('status', 1)
           ->sort('weight')
           ->accessCheck(FALSE);
         $tids = $query->execute();
-        
+
         if (!empty($tids)) {
           $terms = $term_storage->loadMultiple($tids);
           $tones_dropdown = [];
           $first_term = NULL;
-          
-          // Add each taxonomy term as a tone option
+
+          // Add each taxonomy term as a tone option.
           foreach ($terms as $term) {
             $description = $term->getDescription();
             // Only add terms that have a description (tone)
@@ -191,26 +194,27 @@ class AiAgentConfigurationManager {
                 'label' => $term->label(),
                 'tone' => $description,
               ];
-              
+
               $tones_dropdown[] = $tone_item;
-              
-              // Keep track of the first valid term (lowest weight) to use as default
+
+              // Keep track of the first valid term (lowest weight) to use as
+              // default.
               if ($first_term === NULL) {
                 $first_term = $tone_item;
               }
             }
           }
-          
-          // Only add the tones to the configuration if we have valid tones
+
+          // Only add the tones to the configuration if we have valid tones.
           if (!empty($tones_dropdown)) {
-            // Set the tones dropdown
+            // Set the tones dropdown.
             $config['aiAgent']['tonesDropdown'] = $tones_dropdown;
-            
-            // Set the first term (lowest weight) as the default tone
+
+            // Set the first term (lowest weight) as the default tone.
             if ($first_term !== NULL) {
               $config['aiAgent']['defaultTone'] = $first_term;
-              
-              // Also set the tone in the prompt settings
+
+              // Also set the tone in the prompt settings.
               if (!isset($config['aiAgent']['promptSettings']['overrides'])) {
                 $config['aiAgent']['promptSettings']['overrides'] = [];
               }
@@ -225,48 +229,50 @@ class AiAgentConfigurationManager {
         ]);
       }
     }
-    
-    // Add taxonomy-based commands if configured
+
+    // Add taxonomy-based commands if configured.
     $commands_vocabulary = $global_config->get('commandsVocabulary');
-    
+
     if (!empty($commands_vocabulary)) {
       try {
-        // Load the terms from the vocabulary, sorted by weight
+        // Load the terms from the vocabulary, sorted by weight.
         $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
-        
+
         // First load all category terms (parent terms)
         $category_query = $term_storage->getQuery()
           ->condition('vid', $commands_vocabulary)
           ->condition('parent', 0)
-          ->condition('status', 1) // Only use published category terms
+        // Only use published category terms.
+          ->condition('status', 1)
           ->sort('weight')
           ->accessCheck(FALSE);
         $category_tids = $category_query->execute();
-        
+
         if (!empty($category_tids)) {
           $categories = $term_storage->loadMultiple($category_tids);
           $commands_dropdown = [];
-          
+
           // For each category, load its child terms (commands)
           foreach ($categories as $category_term) {
             $command_group = [
               'title' => $category_term->label(),
               'items' => [],
             ];
-            
-            // Load child terms for this category
+
+            // Load child terms for this category.
             $command_query = $term_storage->getQuery()
               ->condition('vid', $commands_vocabulary)
               ->condition('parent', $category_term->id())
-              ->condition('status', 1) // Only use published command terms
+            // Only use published command terms.
+              ->condition('status', 1)
               ->sort('weight')
               ->accessCheck(FALSE);
             $command_tids = $command_query->execute();
-            
+
             if (!empty($command_tids)) {
               $commands = $term_storage->loadMultiple($command_tids);
-              
-              // Add each command to this category
+
+              // Add each command to this category.
               foreach ($commands as $command_term) {
                 $description = $command_term->getDescription();
                 // Only add terms that have a description (command)
@@ -275,19 +281,20 @@ class AiAgentConfigurationManager {
                     'title' => $command_term->label(),
                     'command' => $description,
                   ];
-                  
+
                   $command_group['items'][] = $command_item;
                 }
               }
             }
-            
-            // Only add the category if it has commands
+
+            // Only add the category if it has commands.
             if (!empty($command_group['items'])) {
               $commands_dropdown[] = $command_group;
             }
           }
-          
-          // Only add the commands dropdown to the configuration if we have valid categories
+
+          // Only add the commands dropdown to the configuration if we have
+          // valid categories.
           if (!empty($commands_dropdown)) {
             $config['aiAgent']['commandsDropdown'] = $commands_dropdown;
           }
@@ -299,7 +306,7 @@ class AiAgentConfigurationManager {
         ]);
       }
     }
-    
+
     return $config;
   }
 

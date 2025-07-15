@@ -60,7 +60,7 @@ class AiAgentSettingsForm extends ConfigFormBase {
     TypedConfigManagerInterface $typed_config_manager,
     ExtensionPathResolver $extension_path_resolver,
     EntityTypeManagerInterface $entity_type_manager,
-    UrlGeneratorInterface $url_generator
+    UrlGeneratorInterface $url_generator,
   ) {
     parent::__construct($config_factory, $typed_config_manager);
     $this->extensionPathResolver = $extension_path_resolver;
@@ -193,21 +193,22 @@ class AiAgentSettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $config = $this->config('ckeditor_ai_agent.settings');
     $values = $form_state->getValues();
-    
-    // Helper function to flatten array with dot notation
-    $flatten = function($array, $prefix = '') use (&$flatten) {
+
+    // Helper function to flatten array with dot notation.
+    $flatten = function ($array, $prefix = '') use (&$flatten) {
       $result = [];
       foreach ($array as $key => $value) {
-        // Skip Drupal form system keys
+        // Skip Drupal form system keys.
         if (in_array($key, ['form_build_id', 'form_token', 'form_id', 'op', 'actions'])) {
           continue;
         }
-        
+
         // Handle nested arrays (except promptSettings which stays nested)
         if (is_array($value) && $key !== 'promptSettings') {
           $result = array_merge($result, $flatten($value, $key . '.'));
-        } else {
-          // Convert boolean-like values
+        }
+        else {
+          // Convert boolean-like values.
           if (is_string($value) && ($value === '0' || $value === '1')) {
             $value = (bool) $value;
           }
@@ -217,40 +218,42 @@ class AiAgentSettingsForm extends ConfigFormBase {
       return $result;
     };
 
-    // Flatten form values
+    // Flatten form values.
     $flat_values = $flatten($values);
-    
-    // Remove section prefixes from keys
+
+    // Remove section prefixes from keys.
     foreach ($flat_values as $key => $value) {
       $clean_key = str_contains($key, '.') ? substr($key, strpos($key, '.') + 1) : $key;
       $config->set($clean_key, $value);
     }
 
-    // Handle prompt settings separately as they maintain their structure
+    // Handle prompt settings separately as they maintain their structure.
     if (isset($values['promptSettings'])) {
       $config->set('promptSettings', $this->processPromptSettings($values['promptSettings']));
     }
 
-    // Handle tone of voice taxonomy settings
+    // Handle tone of voice taxonomy settings.
     if (isset($values['tone_of_voice'])) {
       $tone_settings = $values['tone_of_voice'];
-      
-      // Save the vocabulary reference if taxonomy tones are enabled
+
+      // Save the vocabulary reference if taxonomy tones are enabled.
       if (!empty($tone_settings['enable_taxonomy_tones']) && !empty($tone_settings['toneOfVoiceVocabulary'])) {
         $config->set('toneOfVoiceVocabulary', $tone_settings['toneOfVoiceVocabulary']);
-      } else {
+      }
+      else {
         $config->set('toneOfVoiceVocabulary', '');
       }
     }
-    
-    // Handle commands taxonomy settings
+
+    // Handle commands taxonomy settings.
     if (isset($values['commands'])) {
       $command_settings = $values['commands'];
-      
-      // Save the vocabulary reference if taxonomy commands are enabled
+
+      // Save the vocabulary reference if taxonomy commands are enabled.
       if (!empty($command_settings['enable_taxonomy_commands']) && !empty($command_settings['commandsVocabulary'])) {
         $config->set('commandsVocabulary', $command_settings['commandsVocabulary']);
-      } else {
+      }
+      else {
         $config->set('commandsVocabulary', '');
       }
     }

@@ -96,7 +96,7 @@ trait ConfigSetterTrait {
       'additions' => [],
     ];
 
-    // Load default components from JSON
+    // Load default components from JSON.
     $module_path = \Drupal::service('extension.path.resolver')->getPath('module', 'ckeditor_ai_agent');
     $default_rules_path = $module_path . '/js/ckeditor5_plugins/aiagent/src/config/default-rules.json';
     $default_rules = file_exists($default_rules_path)

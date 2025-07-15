@@ -23,7 +23,8 @@ generating, modifying, and enhancing content directly within your editor.
    ```
 
 2. **Configure API Key Storage**
-   - Go to **Administration > Configuration > System > Keys** (`admin/config/system/keys`)
+   - Go to **Administration > Configuration > System > Keys**
+     (`admin/config/system/keys`)
    - Add a new key for your OpenAI API credentials
    - Select "Authentication" as the key type
    - Enter your OpenAI API key value

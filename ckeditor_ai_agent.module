@@ -7,7 +7,6 @@
 
 use Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\Url;
 
 /**
  * Implements hook_ckeditor5_plugin_info_alter().
@@ -33,7 +32,7 @@ function ckeditor_ai_agent_ckeditor5_plugin_info_alter(array &$plugin_definition
       $editor = $route_match->getParameter('editor');
     }
 
-    // Get our configuration
+    // Get our configuration.
     $our_config = $config_manager->getCKEditorConfig($editor);
 
     // Merge with our configuration.
@@ -77,49 +76,9 @@ function ckeditor_ai_agent_help($route_name, RouteMatchInterface $route_match) {
 }
 
 /**
- * Implements hook_requirements().
- */
-function ckeditor_ai_agent_requirements($phase) {
-  $requirements = [];
-
-  if ($phase === 'runtime') {
-    $key_exists = \Drupal::moduleHandler()->moduleExists('key');
-    $config = \Drupal::config('ckeditor_ai_agent.settings');
-    $key_service = \Drupal::service('ckeditor_ai_agent.key_service');
-
-    if (!$key_exists) {
-      $requirements['ckeditor_ai_agent_key'] = [
-        'title' => t('CKEditor AI Agent'),
-        'description' => t('The Key module is required but not installed. Please install and enable the <a href="@url">Key module</a>.', [
-          '@url' => 'https://www.drupal.org/project/key',
-        ]),
-        'severity' => REQUIREMENT_ERROR,
-      ];
-    }
-    elseif (!$key_service->getApiKey()) {
-      $requirements['ckeditor_ai_agent_key'] = [
-        'title' => t('CKEditor AI Agent'),
-        'description' => t('No API key has been configured. Please configure an API key in the <a href="@url">module settings</a>.', [
-          '@url' => Url::fromRoute('ckeditor_ai_agent.settings')->toString(),
-        ]),
-        'severity' => REQUIREMENT_ERROR,
-      ];
-    }
-    else {
-      $requirements['ckeditor_ai_agent_key'] = [
-        'title' => t('CKEditor AI Agent'),
-        'description' => t('API key is configured and stored securely.'),
-        'severity' => REQUIREMENT_OK,
-      ];
-    }
-  }
-
-  return $requirements;
-}
-
-/**
  * Implements hook_page_attachments_alter().
  */
 function ckeditor_ai_agent_page_attachments_alter(array &$attachments) {
-  // This implementation is no longer needed as we're handling tones directly in the AiAgent plugin
+  // This implementation is no longer needed as we're handling tones directly
+  // in the AiAgent plugin.
 }
