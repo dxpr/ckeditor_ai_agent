@@ -681,6 +681,16 @@ trait AiAgentFormTrait {
       }
     }
 
+    // Add information about creating a vocabulary if none exists.
+    if (empty($vocab_options)) {
+      $elements['commands']['no_vocabularies'] = [
+        '#type' => 'markup',
+        '#markup' => $this->t('No vocabularies found. <a href="@link">Create one</a> to manage your commands.', [
+          '@link' => '/admin/structure/taxonomy/add',
+        ]),
+      ];
+    }
+
     // Enforce nested collections of form elements.
     $elements['#tree'] = TRUE;
 

@@ -4,7 +4,7 @@ namespace Drupal\ckeditor_ai_agent;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\editor\Entity\Editor;
 use Drupal\ckeditor_ai_agent\Service\AiAgentKeyService;
 
@@ -35,11 +35,11 @@ class AiAgentConfigurationManager {
   protected $entityTypeManager;
 
   /**
-   * The logger factory.
+   * The logger channel.
    *
-   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
+   * @var \Drupal\Core\Logger\LoggerChannelInterface
    */
-  protected $loggerFactory;
+  protected $logger;
 
   /**
    * Constructs a new AiAgentConfigurationManager.
@@ -50,19 +50,19 @@ class AiAgentConfigurationManager {
    *   The key service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
-   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
-   *   The logger factory.
+   * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
+   *   The logger channel.
    */
   public function __construct(
     ConfigFactoryInterface $config_factory,
     AiAgentKeyService $key_service,
     EntityTypeManagerInterface $entity_type_manager,
-    LoggerChannelFactoryInterface $logger_factory,
+    LoggerChannelInterface $logger,
   ) {
     $this->configFactory = $config_factory;
     $this->keyService = $key_service;
     $this->entityTypeManager = $entity_type_manager;
-    $this->loggerFactory = $logger_factory;
+    $this->logger = $logger;
   }
 
   /**
@@ -224,7 +224,7 @@ class AiAgentConfigurationManager {
         }
       }
       catch (\Exception $e) {
-        $this->loggerFactory->get('ckeditor_ai_agent')->error('Error loading tone of voice taxonomy terms: @error', [
+        $this->logger->error('Error loading tone of voice taxonomy terms: @error', [
           '@error' => $e->getMessage(),
         ]);
       }
@@ -301,7 +301,7 @@ class AiAgentConfigurationManager {
         }
       }
       catch (\Exception $e) {
-        $this->loggerFactory->get('ckeditor_ai_agent')->error('Error loading commands taxonomy terms: @error', [
+        $this->logger->error('Error loading commands taxonomy terms: @error', [
           '@error' => $e->getMessage(),
         ]);
       }

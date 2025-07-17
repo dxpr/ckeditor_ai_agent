@@ -26,6 +26,8 @@ parameters:
   excludePaths:
     - web/modules/contrib/ckeditor_ai_agent/tests (?)
   drupal:
+    # This has been deprecated (https://github.com/mglaman/phpstan-drupal/releases/tag/1.3.0)
+    # For Drupal core, that would be 11.2.x and on, none of the 10.x.y are affected.
     drupal_root: .
 EOF
 fi
