@@ -5,7 +5,7 @@
  * Install, update and uninstall functions for the CKEditor AI Agent module.
  */
 
-use Drupal\Core\Config\FileStorage;
+use Drupal\Core\Url;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\taxonomy\Entity\Term;
 
@@ -43,22 +43,22 @@ function ckeditor_ai_agent_update_9004(): void {
  * Helper function to create the command vocabulary and default terms.
  */
 function _ckeditor_ai_agent_create_command_vocabulary() {
-  // Create vocabulary for commands if it doesn't exist
+  // Create vocabulary for commands if it doesn't exist.
   $command_vocabulary_name = 'ai_agent_commands';
   $vocabulary_exists = \Drupal::entityTypeManager()
     ->getStorage('taxonomy_vocabulary')
     ->load($command_vocabulary_name);
-    
+
   if (!$vocabulary_exists) {
-    // Create vocabulary for commands
+    // Create vocabulary for commands.
     $vocabulary = Vocabulary::create([
       'vid' => $command_vocabulary_name,
       'name' => 'AI Edit Commands',
       'description' => 'Commands for the CKEditor AI Agent editing tools',
     ]);
     $vocabulary->save();
-    
-    // Define the default command structure
+
+    // Define the default command structure.
     $default_commands = [
       'Edit or review' => [
         'Polish' => 'Fix spelling mistakes, use proper grammar and apply good writing practices.
@@ -84,17 +84,17 @@ Keep the added part short.
 You must keep the text formatting',
       ],
     ];
-    
-    // Create terms for each category and command
+
+    // Create terms for each category and command.
     foreach ($default_commands as $category => $commands) {
-      // Create the category term
+      // Create the category term.
       $category_term = Term::create([
         'vid' => $command_vocabulary_name,
         'name' => $category,
       ]);
       $category_term->save();
-      
-      // Create each command term as a child of this category
+
+      // Create each command term as a child of this category.
       foreach ($commands as $command_name => $command_instruction) {
         $command_term = Term::create([
           'vid' => $command_vocabulary_name,
@@ -105,8 +105,8 @@ You must keep the text formatting',
         $command_term->save();
       }
     }
-    
-    // Update the module configuration to use this vocabulary
+
+    // Update the module configuration to use this vocabulary.
     $config = \Drupal::configFactory()->getEditable('ckeditor_ai_agent.settings');
     $config->set('commandsVocabulary', $command_vocabulary_name);
     $config->save();
@@ -117,22 +117,22 @@ You must keep the text formatting',
  * Helper function to create the tone of voice vocabulary and default terms.
  */
 function _ckeditor_ai_agent_create_tone_vocabulary() {
-  // Create vocabulary for tones if it doesn't exist
+  // Create vocabulary for tones if it doesn't exist.
   $tone_vocabulary_name = 'ai_tone_of_voice';
   $vocabulary_exists = \Drupal::entityTypeManager()
     ->getStorage('taxonomy_vocabulary')
     ->load($tone_vocabulary_name);
-    
+
   if (!$vocabulary_exists) {
-    // Create vocabulary for tones
+    // Create vocabulary for tones.
     $vocabulary = Vocabulary::create([
       'vid' => $tone_vocabulary_name,
       'name' => 'AI Tone of Voice',
       'description' => 'Tones of voice for the CKEditor AI Agent',
     ]);
     $vocabulary->save();
-    
-    // Define the default tones
+
+    // Define the default tones.
     $default_tones = [
       'Professional' => 'Use clear, concise language with a business-appropriate tone suitable for formal contexts.',
       'Educational' => 'Explain concepts clearly with an informative approach that helps readers understand complex topics.',
@@ -141,8 +141,8 @@ function _ckeditor_ai_agent_create_tone_vocabulary() {
       'Formal' => 'Employ precise, structured language appropriate for official documentation and communications.',
       'Inspirational' => 'Use motivational language that encourages action and creates a sense of possibility.',
     ];
-    
-    // Create terms for each tone
+
+    // Create terms for each tone.
     foreach ($default_tones as $tone_name => $tone_description) {
       $tone_term = Term::create([
         'vid' => $tone_vocabulary_name,
@@ -151,8 +151,8 @@ function _ckeditor_ai_agent_create_tone_vocabulary() {
       ]);
       $tone_term->save();
     }
-    
-    // Update the module configuration to use this vocabulary
+
+    // Update the module configuration to use this vocabulary.
     $config = \Drupal::configFactory()->getEditable('ckeditor_ai_agent.settings');
     $config->set('toneOfVoiceVocabulary', $tone_vocabulary_name);
     $config->save();
@@ -173,9 +173,9 @@ function _ckeditor_ai_agent_update_editor_toolbars() {
     if (!$editor_config->isNew()) {
       $settings = $editor_config->get('settings');
       if (isset($settings['toolbar']['items'])) {
-        // Check if buttons are already present to avoid duplicates
+        // Check if buttons are already present to avoid duplicates.
         if (!in_array('aiAgentButton', $settings['toolbar']['items'])) {
-          // Add AI buttons to the beginning of the toolbar
+          // Add AI buttons to the beginning of the toolbar.
           array_unshift($settings['toolbar']['items'], '|');
           array_unshift($settings['toolbar']['items'], 'aiAgentToneButton');
           array_unshift($settings['toolbar']['items'], 'aiAgentButton');
@@ -197,13 +197,12 @@ function ckeditor_ai_agent_update_9001(): void {
 
   $config_factory = \Drupal::configFactory();
   $entity_type_manager = \Drupal::entityTypeManager();
-  $key_repository = \Drupal::service('key.repository');
 
-  // Migrate global settings key
+  // Migrate global settings key.
   $settings = $config_factory->getEditable('ckeditor_ai_agent.settings');
   $api_key = $settings->get('apiKey');
   if ($api_key) {
-    // Create a new key entity
+    // Create a new key entity.
     $values = [
       'id' => 'ckeditor_ai_agent_key',
       'label' => 'CKEditor AI Agent API Key',
@@ -218,7 +217,7 @@ function ckeditor_ai_agent_update_9001(): void {
     $key = $storage->create($values);
     $key->save();
 
-    // Update settings to use the key
+    // Update settings to use the key.
     $settings
       ->set('api_key_storage', 'key')
       ->set('key_provider', 'ckeditor_ai_agent_key')
@@ -226,14 +225,14 @@ function ckeditor_ai_agent_update_9001(): void {
       ->save();
   }
 
-  // Migrate editor-specific keys
+  // Migrate editor-specific keys.
   $editors = $entity_type_manager->getStorage('editor')->loadMultiple();
   foreach ($editors as $editor) {
     $settings = $editor->getSettings();
     if (isset($settings['plugins']['aiagent']['apiKey'])) {
       $api_key = $settings['plugins']['aiagent']['apiKey'];
       if ($api_key) {
-        // Create a new key entity
+        // Create a new key entity.
         $key_id = 'ckeditor_ai_agent_key_' . $editor->id();
         $values = [
           'id' => $key_id,
@@ -249,7 +248,7 @@ function ckeditor_ai_agent_update_9001(): void {
         $key = $storage->create($values);
         $key->save();
 
-        // Update editor settings
+        // Update editor settings.
         $settings['plugins']['aiagent']['api_key_storage'] = 'key';
         $settings['plugins']['aiagent']['key_provider'] = $key_id;
         $settings['plugins']['aiagent']['apiKey'] = NULL;
@@ -259,6 +258,46 @@ function ckeditor_ai_agent_update_9001(): void {
     }
   }
 
-  // Clear caches to ensure new services are discovered
+  // Clear caches to ensure new services are discovered.
   drupal_flush_all_caches();
-} 
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function ckeditor_ai_agent_requirements($phase) {
+  $requirements = [];
+
+  if ($phase === 'runtime') {
+    $key_exists = \Drupal::moduleHandler()->moduleExists('key');
+    $key_service = \Drupal::service('ckeditor_ai_agent.key_service');
+
+    if (!$key_exists) {
+      $requirements['ckeditor_ai_agent_key'] = [
+        'title' => t('CKEditor AI Agent'),
+        'description' => t('The Key module is required but not installed. Please install and enable the <a href="@url">Key module</a>.', [
+          '@url' => 'https://www.drupal.org/project/key',
+        ]),
+        'severity' => REQUIREMENT_ERROR,
+      ];
+    }
+    elseif (!$key_service->getApiKey()) {
+      $requirements['ckeditor_ai_agent_key'] = [
+        'title' => t('CKEditor AI Agent'),
+        'description' => t('No API key has been configured. Please configure an API key in the <a href="@url">module settings</a>.', [
+          '@url' => Url::fromRoute('ckeditor_ai_agent.settings')->toString(),
+        ]),
+        'severity' => REQUIREMENT_ERROR,
+      ];
+    }
+    else {
+      $requirements['ckeditor_ai_agent_key'] = [
+        'title' => t('CKEditor AI Agent'),
+        'description' => t('API key is configured and stored securely.'),
+        'severity' => REQUIREMENT_OK,
+      ];
+    }
+  }
+
+  return $requirements;
+}

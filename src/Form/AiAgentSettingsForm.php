@@ -5,6 +5,11 @@ namespace Drupal\ckeditor_ai_agent\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Routing\UrlGeneratorInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Config\TypedConfigManagerInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -23,21 +28,56 @@ class AiAgentSettingsForm extends ConfigFormBase {
   protected $extensionPathResolver;
 
   /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * The URL generator.
+   *
+   * @var \Drupal\Core\Routing\UrlGeneratorInterface
+   */
+  protected $urlGenerator;
+
+  /**
    * Constructs a new AiAgentSettingsForm.
    *
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The factory for configuration objects.
+   * @param \Drupal\Core\Config\TypedConfigManagerInterface $typed_config_manager
+   *   The typed configuration manager.
    * @param \Drupal\Core\Extension\ExtensionPathResolver $extension_path_resolver
    *   The extension path resolver.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
+   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
+   *   The URL generator.
    */
-  public function __construct(ExtensionPathResolver $extension_path_resolver) {
+  public function __construct(
+    ConfigFactoryInterface $config_factory,
+    TypedConfigManagerInterface $typed_config_manager,
+    ExtensionPathResolver $extension_path_resolver,
+    EntityTypeManagerInterface $entity_type_manager,
+    UrlGeneratorInterface $url_generator,
+  ) {
+    parent::__construct($config_factory, $typed_config_manager);
     $this->extensionPathResolver = $extension_path_resolver;
+    $this->entityTypeManager = $entity_type_manager;
+    $this->urlGenerator = $url_generator;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container): self {
-    return new static(
-      $container->get('extension.path.resolver')
+    return new self(
+      $container->get('config.factory'),
+      $container->get('config.typed'),
+      $container->get('extension.path.resolver'),
+      $container->get('entity_type.manager'),
+      $container->get('url_generator')
     );
   }
 
@@ -55,6 +95,41 @@ class AiAgentSettingsForm extends ConfigFormBase {
    */
   protected function getEditableConfigNames(): array {
     return ['ckeditor_ai_agent.settings'];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getEntityTypeManager(): EntityTypeManagerInterface {
+    return $this->entityTypeManager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getExtensionPathResolver(): ExtensionPathResolver {
+    return $this->extensionPathResolver;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getUrlGenerator(): UrlGeneratorInterface {
+    return $this->urlGenerator;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getConfigFactory(): ConfigFactoryInterface {
+    return $this->configFactory();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getMessenger(): MessengerInterface {
+    return $this->messenger();
   }
 
   /**
@@ -118,21 +193,22 @@ class AiAgentSettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $config = $this->config('ckeditor_ai_agent.settings');
     $values = $form_state->getValues();
-    
-    // Helper function to flatten array with dot notation
-    $flatten = function($array, $prefix = '') use (&$flatten) {
+
+    // Helper function to flatten array with dot notation.
+    $flatten = function ($array, $prefix = '') use (&$flatten) {
       $result = [];
       foreach ($array as $key => $value) {
-        // Skip Drupal form system keys
+        // Skip Drupal form system keys.
         if (in_array($key, ['form_build_id', 'form_token', 'form_id', 'op', 'actions'])) {
           continue;
         }
-        
+
         // Handle nested arrays (except promptSettings which stays nested)
         if (is_array($value) && $key !== 'promptSettings') {
           $result = array_merge($result, $flatten($value, $key . '.'));
-        } else {
-          // Convert boolean-like values
+        }
+        else {
+          // Convert boolean-like values.
           if (is_string($value) && ($value === '0' || $value === '1')) {
             $value = (bool) $value;
           }
@@ -142,40 +218,42 @@ class AiAgentSettingsForm extends ConfigFormBase {
       return $result;
     };
 
-    // Flatten form values
+    // Flatten form values.
     $flat_values = $flatten($values);
-    
-    // Remove section prefixes from keys
+
+    // Remove section prefixes from keys.
     foreach ($flat_values as $key => $value) {
       $clean_key = str_contains($key, '.') ? substr($key, strpos($key, '.') + 1) : $key;
       $config->set($clean_key, $value);
     }
 
-    // Handle prompt settings separately as they maintain their structure
+    // Handle prompt settings separately as they maintain their structure.
     if (isset($values['promptSettings'])) {
       $config->set('promptSettings', $this->processPromptSettings($values['promptSettings']));
     }
 
-    // Handle tone of voice taxonomy settings
+    // Handle tone of voice taxonomy settings.
     if (isset($values['tone_of_voice'])) {
       $tone_settings = $values['tone_of_voice'];
-      
-      // Save the vocabulary reference if taxonomy tones are enabled
+
+      // Save the vocabulary reference if taxonomy tones are enabled.
       if (!empty($tone_settings['enable_taxonomy_tones']) && !empty($tone_settings['toneOfVoiceVocabulary'])) {
         $config->set('toneOfVoiceVocabulary', $tone_settings['toneOfVoiceVocabulary']);
-      } else {
+      }
+      else {
         $config->set('toneOfVoiceVocabulary', '');
       }
     }
-    
-    // Handle commands taxonomy settings
+
+    // Handle commands taxonomy settings.
     if (isset($values['commands'])) {
       $command_settings = $values['commands'];
-      
-      // Save the vocabulary reference if taxonomy commands are enabled
+
+      // Save the vocabulary reference if taxonomy commands are enabled.
       if (!empty($command_settings['enable_taxonomy_commands']) && !empty($command_settings['commandsVocabulary'])) {
         $config->set('commandsVocabulary', $command_settings['commandsVocabulary']);
-      } else {
+      }
+      else {
         $config->set('commandsVocabulary', '');
       }
     }

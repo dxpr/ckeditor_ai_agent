@@ -107,7 +107,7 @@ class AiAgentKeyService {
    */
   public function setApiKey(
     ?string $selected_key_id = NULL,
-    ?string $editor_id = NULL
+    ?string $editor_id = NULL,
   ): void {
     if ($editor_id) {
       $this->setEditorKey($editor_id, $selected_key_id);
@@ -128,7 +128,7 @@ class AiAgentKeyService {
    */
   protected function setEditorKey(
     string $editor_id,
-    ?string $selected_key_id
+    ?string $selected_key_id,
   ): void {
     $config = $this->configFactory->getEditable('editor.editor.' . $editor_id);
     if (!$config) {
@@ -158,4 +158,4 @@ class AiAgentKeyService {
     return $key && method_exists($key, 'getKeyValue') ? $key->getKeyValue() : NULL;
   }
 
-} 
+}
