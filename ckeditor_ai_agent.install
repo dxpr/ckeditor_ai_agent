@@ -164,7 +164,12 @@ function _ckeditor_ai_agent_create_tone_vocabulary() {
  */
 function _ckeditor_ai_agent_update_editor_toolbars() {
   $config_factory = \Drupal::configFactory();
-  $editor_formats = ['basic_html', 'full_html', 'content_format'];
+  $editor_formats = [
+    'basic_html',
+    'full_html',
+    'content_format',
+    'easy_email',
+  ];
 
   foreach ($editor_formats as $format_id) {
     $editor_config_name = 'editor.editor.' . $format_id;
