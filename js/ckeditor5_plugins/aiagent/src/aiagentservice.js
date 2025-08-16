@@ -369,7 +369,8 @@ export default class AiAgentService {
      * @throws Will throw an error if the streaming process fails or if the model is invalid.
      */
     async *generate(llm, model, thread, opts) {
-        const response = await llm.stream(model, thread, opts);
+        const chatModel = llm.toModel(model);
+        const response = await llm.stream(chatModel, thread, opts);
         this.stream = response?.stream;
         while (true) {
             let stream2 = null;
@@ -380,6 +381,9 @@ export default class AiAgentService {
                         stream2 = msg.stream;
                     }
                     else {
+                        if (stream2 !== null && msg.type === "content" && msg.done) {
+                            msg.done = false;
+                        }
                         yield msg;
                     }
                 }

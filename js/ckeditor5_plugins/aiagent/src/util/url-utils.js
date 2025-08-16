@@ -21,6 +21,77 @@ export async function fetchMultipleUrls(urls, maxConcurrent = 5) {
     return results;
 }
 /**
+ * Tries to fetch internal markdown from the website by appending .md to the URL
+ *
+ * @param cleanedUrl - The cleaned URL to try
+ * @returns Promise resolving to markdown content or null
+ */
+async function fetchInternalMarkdown(cleanedUrl) {
+    try {
+        const markdownUrl = `${cleanedUrl}.md`;
+        const response = await fetch(markdownUrl, {
+            method: 'GET',
+            headers: {
+                Accept: 'text/markdown, text/plain, */*'
+            }
+        });
+        if (!response.ok) {
+            return null; // Not found or error, fallback to external service
+        }
+        const content = await response.text();
+        if (!content.trim()) {
+            return null; // Empty content, fallback to external service
+        }
+        return content.trim();
+    }
+    catch (error) {
+        // Any error means fallback to external service
+        return null;
+    }
+}
+/**
+ * Fetches content using jina.ai reader service
+ *
+ * @param cleanedUrl - The cleaned URL to fetch
+ * @param originalUrl - The original URL for error reporting
+ * @param maxRetries - Maximum number of retry attempts (default: 3)
+ * @returns Promise resolving to content or null
+ */
+async function fetchWithJina(cleanedUrl, originalUrl, maxRetries = 3) {
+    const requestURL = `https://r.jina.ai/${cleanedUrl.trim()}`;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const response = await fetch(requestURL.trim());
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const content = await response.text();
+            if (content.includes('Warning: Target URL returned error')) {
+                throw new Error(`Target URL (${originalUrl}) returned an error`);
+            }
+            if (content.trim().length === 0) {
+                throw new Error('Empty content received');
+            }
+            return content
+                .replace(/\(https?:\/\/[^\s]+\)/g, '')
+                .replace(/^\s*$/gm, '')
+                .trim();
+        }
+        catch (error) {
+            if (attempt === maxRetries - 1) {
+                console.error(`Failed to fetch content after ${maxRetries} attempts: ${originalUrl}`, error);
+                aiAgentContext.showError(`Failed to fetch content from ${originalUrl}`);
+                return null;
+            }
+            else {
+                // Exponential backoff
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            }
+        }
+    }
+    return null;
+}
+/**
  * Fetches content from a URL with retry logic
  *
  * @param url - The URL to fetch from
@@ -35,38 +106,17 @@ async function fetchUrlWithRetry(url, maxRetries = 3) {
         result.error = 'Invalid URL format';
         return result;
     }
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-            const cleanedUrl = trimmedUrl.replace(/[^\x20-\x7E]/g, '');
-            const requestURL = `https://r.jina.ai/${cleanedUrl.trim()}`;
-            const response = await fetch(requestURL.trim());
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const content = await response.text();
-            if (content.includes('Warning: Target URL returned error')) {
-                throw new Error(`Target URL (${trimmedUrl}) returned an error`);
-            }
-            if (content.trim().length === 0) {
-                throw new Error('Empty content received');
-            }
-            result.content = content
-                .replace(/\(https?:\/\/[^\s]+\)/g, '')
-                .replace(/^\s*$/gm, '')
-                .trim();
-            return result;
-        }
-        catch (error) {
-            if (attempt === maxRetries - 1) {
-                result.error = error.message;
-                console.error(`Failed to fetch content after ${maxRetries} attempts: ${url}`, error);
-                aiAgentContext.showError(`Failed to fetch content from ${url}`);
-            }
-            else {
-                // Exponential backoff
-                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-            }
-        }
+    const cleanedUrl = trimmedUrl.replace(/[^\x20-\x7E]/g, '');
+    // First, try to fetch internal markdown
+    const internalContent = await fetchInternalMarkdown(cleanedUrl);
+    if (internalContent) {
+        result.content = internalContent;
+        return result;
+    }
+    // Fallback to external service if internal markdown not available
+    const jinaContent = await fetchWithJina(cleanedUrl, trimmedUrl, maxRetries);
+    if (jinaContent) {
+        result.content = jinaContent;
     }
     return result;
 }

@@ -20,7 +20,7 @@ function cacheModels(engine, models) {
     const key = `${STORAGE_PREFIX}:${engine}_models`;
     const now = new Date();
     const data = {
-        expiry: now.getTime() + 24 * 60 * 60 * 1000,
+        expiry: now.getTime() + 24 * 60 * 60 * 1000, // 24 hours
         models
     };
     localStorage.setItem(key, JSON.stringify(data));

@@ -14,6 +14,10 @@ generating, modifying, and enhancing content directly within your editor.
 - Key module (for secure API key storage)
 - OpenAI API key
 
+### Optional Dependencies
+
+- **Markdownify module** (`drupal/markdownify`) - Enables internal links to unpublished content for users with appropriate access permissions. When installed, users can reference and link to draft content that they have permission to view, even if it's not published.
+
 ## Installation
 
 1. **Install the Module**
@@ -22,21 +26,28 @@ generating, modifying, and enhancing content directly within your editor.
    drush en ckeditor_ai_agent
    ```
 
-2. **Configure API Key Storage**
+2. **Install Optional Dependencies** (if desired)
+   ```bash
+   # For enhanced internal linking capabilities
+   composer require drupal/markdownify
+   drush en markdownify
+   ```
+
+3. **Configure API Key Storage**
    - Go to **Administration > Configuration > System > Keys**
      (`admin/config/system/keys`)
    - Add a new key for your OpenAI API credentials
    - Select "Authentication" as the key type
    - Enter your OpenAI API key value
 
-3. **Configure CKEditor Integration**
+4. **Configure CKEditor Integration**
    - Go to **Administration > Configuration > Content authoring > Text formats
    and editors** (`admin/config/content/formats`)
    - Edit your desired text format (typically Full HTML)
    - Drag and drop the "AI Agent" button into the CKEditor toolbar to make it
    available for content editors
 
-4. **Development**
+5. **Development**
 
    - **Code Quality Checks**
 

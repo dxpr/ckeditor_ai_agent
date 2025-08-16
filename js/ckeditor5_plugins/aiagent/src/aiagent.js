@@ -14,15 +14,15 @@ export default class AiAgent extends Plugin {
         this.isEnabled = Boolean(config.apiKey);
         // Set default values and merge with provided config
         const defaultConfig = {
-            engine: this.DEFAULT_GPT_ENGINE,
-            model: this.DEFAULT_GPT_MODEL,
-            apiKey: '',
-            endpointUrl: '',
-            timeOutDuration: 120000,
-            retryAttempts: 1,
-            stopSequences: [],
+            engine: this.DEFAULT_GPT_ENGINE, // Default AI model
+            model: this.DEFAULT_GPT_MODEL, // Default AI model
+            apiKey: '', // Default OpenAI key
+            endpointUrl: '', // Default endpoint URL
+            timeOutDuration: 120000, // Default timeout duration
+            retryAttempts: 1, // Default retry attempts
+            stopSequences: [], // Default stop sequences
             promptSettings: {},
-            debugMode: false,
+            debugMode: false, // Default debug mode
             streamContent: true // Default streaming mode
         };
         // Set default endpoint URL for DXAI engine
@@ -39,7 +39,7 @@ export default class AiAgent extends Plugin {
         if (model && AI_CUSTOM_ENGINE.includes(config.engine) && config.engine !== 'dxai') {
             const { maxInputContextTokens } = getModelTokenLimits(model);
             tokenLimits = {
-                maxOutputTokens: 16384,
+                maxOutputTokens: 16384, // Default max output tokens
                 maxInputTokens: maxInputContextTokens,
                 contextSize: maxInputContextTokens * 0.75
             };

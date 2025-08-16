@@ -1,5 +1,5 @@
 import type { Editor } from 'ckeditor5/src/core.js';
-import type { Element } from 'ckeditor5/src/engine.js';
+import type { ModelElement as Element } from 'ckeditor5/src/engine.js';
 export declare class ProcessContentHelper {
     private editor;
     private readonly FILTERED_STRINGS;
