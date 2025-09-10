@@ -32,7 +32,9 @@ if [[ $DRUPAL_RECOMMENDED_PROJECT == 11.* ]]; then
 fi
 
 # Install dependencies for ckeditor_ai_agent
-composer require drupal/key drupal/markdownify
+composer require drupal/key
+# markdownify is optional, try to install but don't fail if it's not available
+composer require drupal/markdownify || echo "markdownify module not available, continuing without it"
 
 # Install drupal-check
 composer require $DRUPAL_CHECK_TOOL --dev
