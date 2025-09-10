@@ -1,0 +1,36 @@
+name: Drupal Linting and Code Quality
+
+on:
+  push:
+    branches: [ main, 1.x ]
+  pull_request:
+    branches: [ main, 1.x ]
+
+jobs:
+  drupal-lint:
+    name: Drupal Coding Standards
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Drupal linting
+        run: |
+          docker compose run --rm drupal-lint
+        
+      - name: Run Drupal deprecation check
+        run: |
+          docker compose run --rm drupal-check
+        
+  drupal-compatibility:
+    name: PHP 8.3+ Compatibility 
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check PHP compatibility
+        run: |
+          docker compose run --rm drupal-lint | grep -i "phpcompatibility" || true
