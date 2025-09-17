@@ -24,6 +24,8 @@ cat <<EOF > phpstan.neon
 parameters:
     paths:
         - web/modules/contrib/ckeditor_ai_agent
+    excludePaths:
+        - web/modules/contrib/ckeditor_ai_agent/node_modules
     # Set the analysis level (0-9)
     level: 5
 EOF

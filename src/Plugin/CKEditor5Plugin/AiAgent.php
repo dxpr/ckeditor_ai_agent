@@ -133,7 +133,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
+    /** @var static */
     return new self(
       $configuration,
       $plugin_id,
