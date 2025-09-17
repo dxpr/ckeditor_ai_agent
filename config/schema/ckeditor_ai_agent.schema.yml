@@ -3,12 +3,18 @@ ckeditor_ai_agent.settings:
   label: 'CKEditor AI Agent Settings'
   mapping:
     # Basic Settings
+    key_provider:
+      type: string
+      label: 'API Key Provider'
     apiKey:
       type: string
       label: 'API Key'
     model:
       type: string
       label: 'AI Model'
+    ollamaModel:
+      type: string
+      label: 'Ollama Model'
     endpointUrl:
       type: string
       label: 'Endpoint URL'
@@ -66,16 +72,12 @@ ckeditor_ai_agent.settings:
       label: 'Show Error Duration'
 
     # Moderation Settings
-    moderation:
-      type: mapping
-      label: 'Moderation Settings'
-      mapping:
-        enable:
-          type: boolean
-          label: 'Enable'
-        key:
-          type: string
-          label: 'Key'
+    moderationEnable:
+      type: boolean
+      label: 'Enable Moderation'
+    moderationKey:
+      type: string
+      label: 'Moderation Key'
 
     # Prompt Settings
     promptSettings:
