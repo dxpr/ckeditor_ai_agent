@@ -76,13 +76,11 @@ class AiAgentKeyService {
     // First check editor-specific key if editor_id is provided.
     if ($editor_id) {
       $editor_config = $this->configFactory->get('editor.editor.' . $editor_id);
-      if ($editor_config && $editor_config->get('settings.plugins.ckeditor_ai_agent_ai_agent.aiAgent.key_provider')) {
-        $key_id = $editor_config->get('settings.plugins.ckeditor_ai_agent_ai_agent.aiAgent.key_provider');
-        if ($key_id !== '') {
-          $key_value = $this->getKeyValue($key_id);
-          if ($key_value) {
-            return $key_value;
-          }
+      $key_id = $editor_config->get('settings.plugins.ckeditor_ai_agent_ai_agent.aiAgent.key_provider');
+      if ($key_id) {
+        $key_value = $this->getKeyValue($key_id);
+        if ($key_value) {
+          return $key_value;
         }
       }
     }
@@ -90,7 +88,7 @@ class AiAgentKeyService {
     // Get global key.
     $config = $this->configFactory->get('ckeditor_ai_agent.settings');
     $key_id = $config->get('key_provider');
-    if ($key_id && $key_id !== '') {
+    if ($key_id) {
       return $this->getKeyValue($key_id);
     }
 
@@ -131,10 +129,6 @@ class AiAgentKeyService {
     ?string $selected_key_id,
   ): void {
     $config = $this->configFactory->getEditable('editor.editor.' . $editor_id);
-    if (!$config) {
-      return;
-    }
-
     $config
       ->set('settings.plugins.ckeditor_ai_agent_ai_agent.aiAgent.key_provider', $selected_key_id)
       ->save();

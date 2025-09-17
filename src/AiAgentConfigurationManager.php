@@ -215,9 +215,6 @@ class AiAgentConfigurationManager {
               $config['aiAgent']['defaultTone'] = $first_term;
 
               // Also set the tone in the prompt settings.
-              if (!isset($config['aiAgent']['promptSettings']['overrides'])) {
-                $config['aiAgent']['promptSettings']['overrides'] = [];
-              }
               $config['aiAgent']['promptSettings']['overrides']['tone'] = $first_term['tone'];
             }
           }

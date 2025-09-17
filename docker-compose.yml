@@ -1,36 +1,29 @@
 services:
-
   drupal-lint:
-    image: composer:latest
+    image: ${COMPOSER_IMAGE:-composer:2.7}
     profiles: ["lint"]
     working_dir: /src
-    command: bash -c "./scripts/run-drupal-lint.sh"
+    command: bash -c "./scripts/linters/run-drupal-lint.sh"
     environment:
-      TARGET_DRUPAL_CORE_VERSION: 10
+      TARGET_DRUPAL_CORE_VERSION: ${TARGET_DRUPAL_CORE_VERSION:-11}
     volumes:
       - .:/src
 
   drupal-lint-auto-fix:
-    image: composer:latest
+    image: ${COMPOSER_IMAGE:-composer:2.7}
     profiles: ["lint"]
     working_dir: /src
-    command: bash -c "./scripts/run-drupal-lint-auto-fix.sh"
+    command: bash -c "./scripts/linters/run-drupal-lint-auto-fix.sh"
     environment:
-      TARGET_DRUPAL_CORE_VERSION: 10
+      TARGET_DRUPAL_CORE_VERSION: ${TARGET_DRUPAL_CORE_VERSION:-11}
     volumes:
       - .:/src
 
   drupal-check:
-    image: composer:latest
+    image: composer:2.7
     profiles: ["lint"]
     working_dir: /
-    command: bash -c "/src/scripts/run-drupal-check.sh"
+    command: bash -c "/src/scripts/linters/run-drupal-check.sh"
     tty: true
-    environment:
-      DRUPAL_RECOMMENDED_PROJECT: 11.x-dev
-      COMPOSER_ALLOW_SUPERUSER: 1
     volumes:
       - .:/src
-    build:
-      context: .
-      dockerfile: Dockerfile.check
