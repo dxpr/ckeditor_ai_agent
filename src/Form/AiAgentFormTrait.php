@@ -563,28 +563,39 @@ trait AiAgentFormTrait {
       // Load the terms from the selected vocabulary, sorted by weight.
       $term_storage = $this->getEntityTypeManager()->getStorage('taxonomy_term');
 
-      // First load all category terms (parent terms)
-      $category_query = $term_storage->getQuery()
-        ->condition('vid', $selected_vocabulary)
-        ->condition('parent', 0)
-      // Only use published category terms.
-        ->condition('status', 1)
-        ->sort('weight')
-        ->accessCheck(FALSE);
-      $category_tids = $category_query->execute();
+      // Use loadTree() to get validated terms with correct hierarchy.
+      $tree_terms = $term_storage->loadTree($selected_vocabulary);
+      $categories = [];
 
-      if (!empty($category_tids)) {
-        $categories = $term_storage->loadMultiple($category_tids);
+      if (!empty($tree_terms)) {
+        // Organize terms by hierarchy (parent categories and child commands)
+        foreach ($tree_terms as $tree_term) {
+          if ($tree_term->parents[0] == 0) {
+            // This is a parent category
+            $categories[$tree_term->tid] = [
+              'term' => $tree_term,
+              'children' => []
+            ];
+          } else {
+            // This is a child command
+            $parent_id = $tree_term->parents[0];
+            if (isset($categories[$parent_id])) {
+              $categories[$parent_id]['children'][] = $tree_term;
+            }
+          }
+        }
+
+      if (!empty($categories)) {
 
         // Create a structured table showing the command hierarchy.
         $rows = [];
 
-        foreach ($categories as $category_term) {
+        foreach ($categories as $category_data) {
           // Add the category as a header-like row.
           $rows[] = [
             'data' => [
               [
-                'data' => $this->t('@category (Category)', ['@category' => $category_term->label()]),
+                'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
                 'colspan' => 2,
                 'class' => ['command-category-header'],
               ],
@@ -592,21 +603,13 @@ trait AiAgentFormTrait {
             'class' => ['command-category-row'],
           ];
 
-          // Load child terms for this category.
-          $command_query = $term_storage->getQuery()
-            ->condition('vid', $selected_vocabulary)
-            ->condition('parent', $category_term->id())
-          // Only use published command terms.
-            ->condition('status', 1)
-            ->sort('weight')
-            ->accessCheck(FALSE);
-          $command_tids = $command_query->execute();
+          // Add child commands to this category
+          if (!empty($category_data['children'])) {
+            foreach ($category_data['children'] as $command_tree_term) {
+              // Load the full term to get description
+              $command_term = $term_storage->load($command_tree_term->tid);
 
-          if (!empty($command_tids)) {
-            $commands = $term_storage->loadMultiple($command_tids);
-
-            // Add each command to the table.
-            foreach ($commands as $command_term) {
+              // Add each command to the table.
               $description = $command_term->getDescription();
               // Strip HTML and truncate for display.
               $description = strip_tags($description);
@@ -670,6 +673,7 @@ trait AiAgentFormTrait {
             'class' => ['commands-manage-link'],
           ],
         ];
+      }
       }
       else {
         $elements['commands']['preview_container']['no_terms'] = [
@@ -1018,28 +1022,39 @@ trait AiAgentFormTrait {
       // Load the terms from the selected vocabulary, sorted by weight.
       $term_storage = $this->getEntityTypeManager()->getStorage('taxonomy_term');
 
-      // First load all category terms (parent terms)
-      $category_query = $term_storage->getQuery()
-        ->condition('vid', $selected_vocabulary)
-        ->condition('parent', 0)
-      // Only use published category terms.
-        ->condition('status', 1)
-        ->sort('weight')
-        ->accessCheck(FALSE);
-      $category_tids = $category_query->execute();
+      // Use loadTree() to get validated terms with correct hierarchy.
+      $tree_terms = $term_storage->loadTree($selected_vocabulary);
+      $categories = [];
 
-      if (!empty($category_tids)) {
-        $categories = $term_storage->loadMultiple($category_tids);
+      if (!empty($tree_terms)) {
+        // Organize terms by hierarchy (parent categories and child commands)
+        foreach ($tree_terms as $tree_term) {
+          if ($tree_term->parents[0] == 0) {
+            // This is a parent category
+            $categories[$tree_term->tid] = [
+              'term' => $tree_term,
+              'children' => []
+            ];
+          } else {
+            // This is a child command
+            $parent_id = $tree_term->parents[0];
+            if (isset($categories[$parent_id])) {
+              $categories[$parent_id]['children'][] = $tree_term;
+            }
+          }
+        }
+
+      if (!empty($categories)) {
 
         // Create a structured table showing the command hierarchy.
         $rows = [];
 
-        foreach ($categories as $category_term) {
+        foreach ($categories as $category_data) {
           // Add the category as a header-like row.
           $rows[] = [
             'data' => [
               [
-                'data' => $this->t('@category (Category)', ['@category' => $category_term->label()]),
+                'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
                 'colspan' => 2,
                 'class' => ['command-category-header'],
               ],
@@ -1047,21 +1062,13 @@ trait AiAgentFormTrait {
             'class' => ['command-category-row'],
           ];
 
-          // Load child terms for this category.
-          $command_query = $term_storage->getQuery()
-            ->condition('vid', $selected_vocabulary)
-            ->condition('parent', $category_term->id())
-          // Only use published command terms.
-            ->condition('status', 1)
-            ->sort('weight')
-            ->accessCheck(FALSE);
-          $command_tids = $command_query->execute();
+          // Add child commands to this category
+          if (!empty($category_data['children'])) {
+            foreach ($category_data['children'] as $command_tree_term) {
+              // Load the full term to get description
+              $command_term = $term_storage->load($command_tree_term->tid);
 
-          if (!empty($command_tids)) {
-            $commands = $term_storage->loadMultiple($command_tids);
-
-            // Add each command to the table.
-            foreach ($commands as $command_term) {
+              // Add each command to the table.
               $description = $command_term->getDescription();
               // Strip HTML and truncate for display.
               $description = strip_tags($description);
@@ -1125,6 +1132,7 @@ trait AiAgentFormTrait {
             'class' => ['commands-manage-link'],
           ],
         ];
+      }
       }
       else {
         $elements['commands']['preview_container']['no_terms'] = [
