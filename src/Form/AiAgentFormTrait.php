@@ -856,15 +856,11 @@ trait AiAgentFormTrait {
     if (!empty($selected_vocabulary)) {
       // Load the terms from the selected vocabulary, sorted by weight.
       $term_storage = $this->getEntityTypeManager()->getStorage('taxonomy_term');
-      $query = $term_storage->getQuery()
-        ->condition('vid', $selected_vocabulary)
-      // Only use published terms.
-        ->condition('status', 1)
-        ->sort('weight')
-        ->accessCheck(FALSE);
-      $tids = $query->execute();
-
-      if (!empty($tids)) {
+      // Use loadTree() to get properly validated terms with correct hierarchy.
+      $tree_terms = $term_storage->loadTree($selected_vocabulary);
+      $terms = [];
+      if (!empty($tree_terms)) {
+        $tids = array_column($tree_terms, 'tid');
         $terms = $term_storage->loadMultiple($tids);
 
         $header = [

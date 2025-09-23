@@ -172,15 +172,11 @@ class AiAgentConfigurationManager {
       try {
         // Load the terms from the vocabulary, sorted by weight.
         $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
-        $query = $term_storage->getQuery()
-          ->condition('vid', $tone_vocabulary)
-        // Only use published terms.
-          ->condition('status', 1)
-          ->sort('weight')
-          ->accessCheck(FALSE);
-        $tids = $query->execute();
-
-        if (!empty($tids)) {
+        // Use loadTree() to get properly validated terms with correct hierarchy.
+        $tree_terms = $term_storage->loadTree($tone_vocabulary);
+        $terms = [];
+        if (!empty($tree_terms)) {
+          $tids = array_column($tree_terms, 'tid');
           $terms = $term_storage->loadMultiple($tids);
           $tones_dropdown = [];
           $first_term = NULL;
