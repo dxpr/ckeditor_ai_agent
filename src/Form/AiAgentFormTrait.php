@@ -571,13 +571,14 @@ trait AiAgentFormTrait {
         // Organize terms by hierarchy (parent categories and child commands)
         foreach ($tree_terms as $tree_term) {
           if ($tree_term->parents[0] == 0) {
-            // This is a parent category
+            // This is a parent category.
             $categories[$tree_term->tid] = [
               'term' => $tree_term,
-              'children' => []
+              'children' => [],
             ];
-          } else {
-            // This is a child command
+          }
+          else {
+            // This is a child command.
             $parent_id = $tree_term->parents[0];
             if (isset($categories[$parent_id])) {
               $categories[$parent_id]['children'][] = $tree_term;
@@ -585,40 +586,40 @@ trait AiAgentFormTrait {
           }
         }
 
-      if (!empty($categories)) {
+        if (!empty($categories)) {
 
-        // Create a structured table showing the command hierarchy.
-        $rows = [];
+          // Create a structured table showing the command hierarchy.
+          $rows = [];
 
-        foreach ($categories as $category_data) {
-          // Add the category as a header-like row.
-          $rows[] = [
-            'data' => [
+          foreach ($categories as $category_data) {
+            // Add the category as a header-like row.
+            $rows[] = [
+              'data' => [
               [
                 'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
                 'colspan' => 2,
                 'class' => ['command-category-header'],
               ],
-            ],
-            'class' => ['command-category-row'],
-          ];
+              ],
+              'class' => ['command-category-row'],
+            ];
 
-          // Add child commands to this category
-          if (!empty($category_data['children'])) {
-            foreach ($category_data['children'] as $command_tree_term) {
-              // Load the full term to get description
-              $command_term = $term_storage->load($command_tree_term->tid);
+            // Add child commands to this category.
+            if (!empty($category_data['children'])) {
+              foreach ($category_data['children'] as $command_tree_term) {
+                // Load the full term to get description.
+                $command_term = $term_storage->load($command_tree_term->tid);
 
-              // Add each command to the table.
-              $description = $command_term->getDescription();
-              // Strip HTML and truncate for display.
-              $description = strip_tags($description);
-              $short_description = strlen($description) > 100
+                // Add each command to the table.
+                $description = $command_term->getDescription();
+                // Strip HTML and truncate for display.
+                $description = strip_tags($description);
+                $short_description = strlen($description) > 100
                 ? substr($description, 0, 100) . '...'
                 : ($description ?: $this->t('- No instruction defined -'));
 
-              $rows[] = [
-                'data' => [
+                $rows[] = [
+                  'data' => [
                   [
                     'data' => $command_term->label(),
                     'class' => ['command-name'],
@@ -627,53 +628,53 @@ trait AiAgentFormTrait {
                     'data' => $short_description,
                     'class' => ['command-description'],
                   ],
-                ],
-                'class' => ['command-row'],
-              ];
+                  ],
+                  'class' => ['command-row'],
+                ];
+              }
             }
-          }
-          else {
-            $rows[] = [
-              'data' => [
+            else {
+              $rows[] = [
+                'data' => [
                 [
                   'data' => $this->t('No commands found in this category'),
                   'colspan' => 2,
                   'class' => ['empty-category'],
                 ],
-              ],
-            ];
+                ],
+              ];
+            }
           }
+
+          $header = [
+            $this->t('Command'),
+            $this->t('Instruction'),
+          ];
+
+          $elements['commands']['preview_container']['commands_table'] = [
+            '#type' => 'table',
+            '#header' => $header,
+            '#rows' => $rows,
+            '#empty' => $this->t('No commands found. <a href="@link">Add commands</a>', [
+              '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
+            ]),
+            '#attributes' => [
+              'class' => ['commands-table'],
+            ],
+          ];
+
+          // Add a link to manage the terms.
+          $elements['commands']['preview_container']['manage_link'] = [
+            '#type' => 'html_tag',
+            '#tag' => 'div',
+            '#value' => $this->t('<a href="@link" class="button">Manage Commands</a>', [
+              '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/overview',
+            ]),
+            '#attributes' => [
+              'class' => ['commands-manage-link'],
+            ],
+          ];
         }
-
-        $header = [
-          $this->t('Command'),
-          $this->t('Instruction'),
-        ];
-
-        $elements['commands']['preview_container']['commands_table'] = [
-          '#type' => 'table',
-          '#header' => $header,
-          '#rows' => $rows,
-          '#empty' => $this->t('No commands found. <a href="@link">Add commands</a>', [
-            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
-          ]),
-          '#attributes' => [
-            'class' => ['commands-table'],
-          ],
-        ];
-
-        // Add a link to manage the terms.
-        $elements['commands']['preview_container']['manage_link'] = [
-          '#type' => 'html_tag',
-          '#tag' => 'div',
-          '#value' => $this->t('<a href="@link" class="button">Manage Commands</a>', [
-            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/overview',
-          ]),
-          '#attributes' => [
-            'class' => ['commands-manage-link'],
-          ],
-        ];
-      }
       }
       else {
         $elements['commands']['preview_container']['no_terms'] = [
@@ -1030,13 +1031,14 @@ trait AiAgentFormTrait {
         // Organize terms by hierarchy (parent categories and child commands)
         foreach ($tree_terms as $tree_term) {
           if ($tree_term->parents[0] == 0) {
-            // This is a parent category
+            // This is a parent category.
             $categories[$tree_term->tid] = [
               'term' => $tree_term,
-              'children' => []
+              'children' => [],
             ];
-          } else {
-            // This is a child command
+          }
+          else {
+            // This is a child command.
             $parent_id = $tree_term->parents[0];
             if (isset($categories[$parent_id])) {
               $categories[$parent_id]['children'][] = $tree_term;
@@ -1044,40 +1046,40 @@ trait AiAgentFormTrait {
           }
         }
 
-      if (!empty($categories)) {
+        if (!empty($categories)) {
 
-        // Create a structured table showing the command hierarchy.
-        $rows = [];
+          // Create a structured table showing the command hierarchy.
+          $rows = [];
 
-        foreach ($categories as $category_data) {
-          // Add the category as a header-like row.
-          $rows[] = [
-            'data' => [
+          foreach ($categories as $category_data) {
+            // Add the category as a header-like row.
+            $rows[] = [
+              'data' => [
               [
                 'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
                 'colspan' => 2,
                 'class' => ['command-category-header'],
               ],
-            ],
-            'class' => ['command-category-row'],
-          ];
+              ],
+              'class' => ['command-category-row'],
+            ];
 
-          // Add child commands to this category
-          if (!empty($category_data['children'])) {
-            foreach ($category_data['children'] as $command_tree_term) {
-              // Load the full term to get description
-              $command_term = $term_storage->load($command_tree_term->tid);
+            // Add child commands to this category.
+            if (!empty($category_data['children'])) {
+              foreach ($category_data['children'] as $command_tree_term) {
+                // Load the full term to get description.
+                $command_term = $term_storage->load($command_tree_term->tid);
 
-              // Add each command to the table.
-              $description = $command_term->getDescription();
-              // Strip HTML and truncate for display.
-              $description = strip_tags($description);
-              $short_description = strlen($description) > 100
+                // Add each command to the table.
+                $description = $command_term->getDescription();
+                // Strip HTML and truncate for display.
+                $description = strip_tags($description);
+                $short_description = strlen($description) > 100
                 ? substr($description, 0, 100) . '...'
                 : ($description ?: $this->t('- No instruction defined -'));
 
-              $rows[] = [
-                'data' => [
+                $rows[] = [
+                  'data' => [
                   [
                     'data' => $command_term->label(),
                     'class' => ['command-name'],
@@ -1086,53 +1088,53 @@ trait AiAgentFormTrait {
                     'data' => $short_description,
                     'class' => ['command-description'],
                   ],
-                ],
-                'class' => ['command-row'],
-              ];
+                  ],
+                  'class' => ['command-row'],
+                ];
+              }
             }
-          }
-          else {
-            $rows[] = [
-              'data' => [
+            else {
+              $rows[] = [
+                'data' => [
                 [
                   'data' => $this->t('No commands found in this category'),
                   'colspan' => 2,
                   'class' => ['empty-category'],
                 ],
-              ],
-            ];
+                ],
+              ];
+            }
           }
+
+          $header = [
+            $this->t('Command'),
+            $this->t('Instruction'),
+          ];
+
+          $elements['commands']['preview_container']['commands_table'] = [
+            '#type' => 'table',
+            '#header' => $header,
+            '#rows' => $rows,
+            '#empty' => $this->t('No commands found. <a href="@link">Add commands</a>', [
+              '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
+            ]),
+            '#attributes' => [
+              'class' => ['commands-table'],
+            ],
+          ];
+
+          // Add a link to manage the terms.
+          $elements['commands']['preview_container']['manage_link'] = [
+            '#type' => 'html_tag',
+            '#tag' => 'div',
+            '#value' => $this->t('<a href="@link" class="button">Manage Commands</a>', [
+              '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/overview',
+            ]),
+            '#attributes' => [
+              'class' => ['commands-manage-link'],
+            ],
+          ];
         }
-
-        $header = [
-          $this->t('Command'),
-          $this->t('Instruction'),
-        ];
-
-        $elements['commands']['preview_container']['commands_table'] = [
-          '#type' => 'table',
-          '#header' => $header,
-          '#rows' => $rows,
-          '#empty' => $this->t('No commands found. <a href="@link">Add commands</a>', [
-            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/add',
-          ]),
-          '#attributes' => [
-            'class' => ['commands-table'],
-          ],
-        ];
-
-        // Add a link to manage the terms.
-        $elements['commands']['preview_container']['manage_link'] = [
-          '#type' => 'html_tag',
-          '#tag' => 'div',
-          '#value' => $this->t('<a href="@link" class="button">Manage Commands</a>', [
-            '@link' => '/admin/structure/taxonomy/manage/' . $selected_vocabulary . '/overview',
-          ]),
-          '#attributes' => [
-            'class' => ['commands-manage-link'],
-          ],
-        ];
-      }
       }
       else {
         $elements['commands']['preview_container']['no_terms'] = [

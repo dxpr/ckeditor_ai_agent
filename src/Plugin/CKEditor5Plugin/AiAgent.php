@@ -376,13 +376,14 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
           // Organize terms by hierarchy (parent categories and child commands)
           foreach ($tree_terms as $tree_term) {
             if ($tree_term->parents[0] == 0) {
-              // This is a parent category
+              // This is a parent category.
               $categories[$tree_term->tid] = [
                 'term' => $tree_term,
-                'children' => []
+                'children' => [],
               ];
-            } else {
-              // This is a child command
+            }
+            else {
+              // This is a child command.
               $parent_id = $tree_term->parents[0];
               if (isset($categories[$parent_id])) {
                 $categories[$parent_id]['children'][] = $tree_term;
@@ -390,16 +391,16 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
             }
           }
 
-          // Build the dropdown structure
+          // Build the dropdown structure.
           foreach ($categories as $category_data) {
             $command_group = [
               'title' => $category_data['term']->name,
               'items' => [],
             ];
 
-            // Add child commands to this category
+            // Add child commands to this category.
             foreach ($category_data['children'] as $command_tree_term) {
-              // Load the full term to get description
+              // Load the full term to get description.
               $command_term = $term_storage->load($command_tree_term->tid);
               $description = $command_term->getDescription();
 
