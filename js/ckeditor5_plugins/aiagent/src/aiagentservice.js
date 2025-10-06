@@ -168,6 +168,15 @@ export default class AiAgentService {
         try {
             let llm;
             let response;
+            const contentMatch = prompt.match(/<CONTEXT>([\s\S]*?)<\/CONTEXT>/);
+            let prediction;
+            if (contentMatch && contentMatch[1]) {
+                prediction = {
+                    type: "content",
+                    content: contentMatch[1]
+                };
+            }
+            const x = false;
             if (AI_ENGINE.includes(this.aiEngine)) {
                 const config = {
                     apiKey: this.apiKey
@@ -186,6 +195,11 @@ export default class AiAgentService {
                     maxTokens: this.maxTokens,
                     ...(this.temperature !== undefined && { temperature: this.temperature })
                 };
+                if (prediction) {
+                    completionOpts.customOpts = {
+                        prediction
+                    };
+                }
                 if (this.streamContent) {
                     // Streaming path
                     const stream = this.generate(llm, this.aiModel, messages, completionOpts);
@@ -219,7 +233,8 @@ export default class AiAgentService {
                 response = llmCustom.fetchAIStream(this.aiModel, messages, {
                     temperature: this.temperature,
                     max_tokens: this.maxTokens,
-                    stop: this.stopSequences
+                    stop: this.stopSequences,
+                    ...(prediction !== undefined && { prediction })
                 }, controller, retries);
                 await this.handleStreamingResponse(response, blockID, parent, command, controller, llm, resetTimeout);
             }

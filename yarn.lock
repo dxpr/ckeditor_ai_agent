@@ -1979,9 +1979,9 @@
   integrity sha512-+nxncfwHM5SgAtrVzgpzJOI1ol0PkumhVo469KCf9lUi21IGcY90G98VuHm9VRrUypmAzawAHO9bs6hqeADaVg==
 
 "@dxpr/ckeditor5-ai-agent@^1.0.0-beta66":
-  version "1.0.0-beta66"
-  resolved "https://registry.npmjs.org/@dxpr/ckeditor5-ai-agent/-/ckeditor5-ai-agent-1.0.0-beta66.tgz"
-  integrity sha512-NkyFe208P1HsvtOFwVqTNEkC3qC5axOkUpYZtSkpv94LxW86kxBVQF4uCTUf2XL7HOZkP2olUZOABHdQy6GWtA==
+  version "1.0.0-beta67"
+  resolved "https://registry.npmjs.org/@dxpr/ckeditor5-ai-agent/-/ckeditor5-ai-agent-1.0.0-beta67.tgz"
+  integrity sha512-dhpmGHCqQHGAVW0QXasb8ZvFWA/Rb9u0tncpWL8NlQWY42/QDGw9/IOXHPCMOd/1Fu8AjBif7TboUBYGu+knMA==
   dependencies:
     "@ckeditor/ckeditor5-core" "^46.0.0"
     "@ckeditor/ckeditor5-utils" "^46.0.0"
