@@ -231,55 +231,52 @@ class AiAgentConfigurationManager {
 
     if (!empty($commands_vocabulary)) {
       try {
-        // Load the terms from the vocabulary, sorted by weight.
+        // Use loadTree() to get validated terms with correct hierarchy.
         $term_storage = $this->entityTypeManager->getStorage('taxonomy_term');
+        $tree_terms = $term_storage->loadTree($commands_vocabulary);
 
-        // First load all category terms (parent terms)
-        $category_query = $term_storage->getQuery()
-          ->condition('vid', $commands_vocabulary)
-          ->condition('parent', 0)
-        // Only use published category terms.
-          ->condition('status', 1)
-          ->sort('weight')
-          ->accessCheck(FALSE);
-        $category_tids = $category_query->execute();
-
-        if (!empty($category_tids)) {
-          $categories = $term_storage->loadMultiple($category_tids);
+        if (!empty($tree_terms)) {
           $commands_dropdown = [];
+          $categories = [];
 
-          // For each category, load its child terms (commands)
-          foreach ($categories as $category_term) {
+          // Organize terms by hierarchy (parent categories and child commands)
+          foreach ($tree_terms as $tree_term) {
+            if ($tree_term->parents[0] == 0) {
+              // This is a parent category
+              $categories[$tree_term->tid] = [
+                'term' => $tree_term,
+                'children' => []
+              ];
+            } else {
+              // This is a child command
+              $parent_id = $tree_term->parents[0];
+              if (isset($categories[$parent_id])) {
+                $categories[$parent_id]['children'][] = $tree_term;
+              }
+            }
+          }
+
+          // Build the dropdown structure
+          foreach ($categories as $category_data) {
             $command_group = [
-              'title' => $category_term->label(),
+              'title' => $category_data['term']->name,
               'items' => [],
             ];
 
-            // Load child terms for this category.
-            $command_query = $term_storage->getQuery()
-              ->condition('vid', $commands_vocabulary)
-              ->condition('parent', $category_term->id())
-            // Only use published command terms.
-              ->condition('status', 1)
-              ->sort('weight')
-              ->accessCheck(FALSE);
-            $command_tids = $command_query->execute();
+            // Add child commands to this category
+            foreach ($category_data['children'] as $command_tree_term) {
+              // Load the full term to get description
+              $command_term = $term_storage->load($command_tree_term->tid);
+              $description = $command_term->getDescription();
 
-            if (!empty($command_tids)) {
-              $commands = $term_storage->loadMultiple($command_tids);
+              // Only add terms that have a description (command)
+              if (!empty($description)) {
+                $command_item = [
+                  'title' => $command_term->label(),
+                  'command' => $description,
+                ];
 
-              // Add each command to this category.
-              foreach ($commands as $command_term) {
-                $description = $command_term->getDescription();
-                // Only add terms that have a description (command)
-                if (!empty($description)) {
-                  $command_item = [
-                    'title' => $command_term->label(),
-                    'command' => $description,
-                  ];
-
-                  $command_group['items'][] = $command_item;
-                }
+                $command_group['items'][] = $command_item;
               }
             }
 
