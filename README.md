@@ -12,7 +12,7 @@ generating, modifying, and enhancing content directly within your editor.
 - CKEditor 5
 - PHP 8.1 or higher
 - Key module (for secure API key storage)
-- Markdownify module (enables AI to access unpublished Drupal content when URLs are included in prompts)
+- Markdownify module (provides markdown versions of Drupal content for AI to access when URLs are included in prompts)
 - OpenAI API key
 
 ## Installation
