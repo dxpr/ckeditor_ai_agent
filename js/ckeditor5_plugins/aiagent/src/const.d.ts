@@ -6,3 +6,5 @@ export declare const MODERATION_URL = "https://api.openai.com/v1/moderations";
 export declare const ALL_MODERATION_FLAGS: readonly ["harassment", "harassment/threatening", "hate", "hate/threatening", "self-harm", "self-harm/instructions", "self-harm/intent", "sexual", "sexual/minors", "violence", "violence/graphic"];
 export declare const SHOW_ERROR_DURATION = 5000;
 export declare const STORAGE_PREFIX = "ck5-ai-agent";
+/** Domain for the placeholder image service used for AI-generated images */
+export declare const PLACEHOLDER_SERVICE_DOMAIN = "promptahuman.com";

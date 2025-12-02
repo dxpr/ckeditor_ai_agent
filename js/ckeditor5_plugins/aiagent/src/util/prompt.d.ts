@@ -14,6 +14,7 @@ export declare class PromptHelper {
         editorContextRatio?: number;
     });
     generateGptPromptBasedOnUserPrompt(prompt: string, promptContainerText?: string, selectedContent?: string): Promise<string | null>;
+    private getToneFromStorage;
     getSystemPrompt(isInlineResponse?: boolean): string;
     private trimContext;
     private formatFinalPrompt;

@@ -6,6 +6,12 @@ import { env } from 'ckeditor5/src/utils.js';
 import { addAiAgentButton } from './util/ai-agent-button.js';
 import { addAiAgentToneButton } from './util/ai-agent-tone-button.js';
 import { registerInlineSlashSchema, registerAiTagSchema, registerAiAnimateStatusSchema } from './util/ai-agent-ui-schema.js';
+/** Maximum number of blocked URLs to display in the warning notification */
+const MAX_BLOCKED_URLS_DISPLAYED = 5;
+/** Maximum URL length before truncation in the warning notification */
+const MAX_URL_DISPLAY_LENGTH = 50;
+/** Duration in ms to show blocked URL warning (longer than errors for user to read URL list) */
+const BLOCKED_URL_WARNING_DURATION = 15000;
 export default class AiAgentUI extends Plugin {
     PLACEHOLDER_TEXT_ID = 'slash-placeholder';
     GPT_RESPONSE_LOADER_ID = 'gpt-response-loader';
@@ -62,13 +68,16 @@ export default class AiAgentUI extends Plugin {
             label: t('AI Agent'),
             keystrokes: [
                 {
-                    label: t('Slash Command: Open the AI Command Menu in an Empty Field'),
+                    label: t('Type / to Start Inline AI Prompt'),
                     keystroke: '/'
                 },
                 {
-                    // eslint-disable-next-line max-len
-                    label: t('Force Insert Slash Command: Add a Slash Command Within Existing Text'),
+                    label: t('Insert / to Start AI Prompt Within Existing Text'),
                     keystroke: env.isMac ? 'Cmd + /' : 'Ctrl + /'
+                },
+                {
+                    label: t('Submit Command from "Ask AI to Edit" Field in Dropdown'),
+                    keystroke: env.isMac ? 'Cmd + Enter' : 'Ctrl + Enter'
                 },
                 {
                     label: t('Cancel AI Generation'),
@@ -301,20 +310,75 @@ export default class AiAgentUI extends Plugin {
      * Displays an error tooltip with the specified message.
      *
      * @param message - The error message to display in the tooltip.
+     * @param options - Optional configuration for the tooltip.
      */
-    showGptErrorToolTip(message) {
+    showGptErrorToolTip(message, options) {
         console.log('Showing error message...', message);
         const editor = this.editor;
         const view = editor?.editing?.view?.domRoots?.get('main');
         const tooltipElement = document.getElementById(this.GPT_RESPONSE_ERROR_ID);
         const editorRect = view?.getBoundingClientRect();
         if (tooltipElement && editorRect) {
+            tooltipElement.classList.remove('response-error--warning');
+            if (options?.type === 'warning') {
+                tooltipElement.classList.add('response-error--warning');
+            }
             tooltipElement.classList.add('show-response-error');
-            tooltipElement.textContent = message;
+            if (options?.html) {
+                tooltipElement.innerHTML = message;
+            }
+            else {
+                tooltipElement.textContent = message;
+            }
+            const duration = options?.duration ?? this.showErrorDuration;
             setTimeout(() => {
                 this.hideGptErrorToolTip();
-            }, this.showErrorDuration);
+            }, duration);
         }
+    }
+    /**
+     * Displays a warning notification for blocked URLs.
+     *
+     * @param blockedUrls - Object containing arrays of blocked image and link URLs.
+     */
+    showBlockedUrlsWarning(blockedUrls) {
+        const totalBlocked = blockedUrls.images.length + blockedUrls.links.length;
+        if (totalBlocked === 0)
+            return;
+        const t = this.editor.t;
+        const parts = [];
+        if (blockedUrls.images.length > 0) {
+            const imageWord = blockedUrls.images.length === 1 ? t('image') : t('images');
+            parts.push(`${blockedUrls.images.length} ${imageWord}`);
+        }
+        if (blockedUrls.links.length > 0) {
+            const linkWord = blockedUrls.links.length === 1 ? t('link') : t('links');
+            parts.push(`${blockedUrls.links.length} ${linkWord}`);
+        }
+        const allUrls = [...blockedUrls.images, ...blockedUrls.links];
+        const displayUrls = allUrls.slice(0, MAX_BLOCKED_URLS_DISPLAYED);
+        const remainingCount = allUrls.length - displayUrls.length;
+        const urlListItems = displayUrls.map(url => {
+            const truncated = url.length > MAX_URL_DISPLAY_LENGTH
+                ? `${url.substring(0, MAX_URL_DISPLAY_LENGTH)}...`
+                : url;
+            return `<li>${this.escapeHtml(truncated)}</li>`;
+        });
+        if (remainingCount > 0) {
+            urlListItems.push(`<li>...${t('and %0 more', [remainingCount])}</li>`);
+        }
+        const message = `<strong>${t('External URLs filtered')}</strong><br>` +
+            `${parts.join(` ${t('and')} `)} ${t('blocked for security.')}<br>` +
+            `<ul class="blocked-urls-list">${urlListItems.join('')}</ul>`;
+        this.showGptErrorToolTip(message, { type: 'warning', html: true, duration: BLOCKED_URL_WARNING_DURATION });
+    }
+    /**
+     * Escapes HTML special characters to prevent XSS.
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
     /**
      * Hides the error tooltip element from the document.
