@@ -503,6 +503,34 @@ trait AiAgentFormTrait {
       '#ajax' => FALSE,
     ];
 
+    // AI Output Security Settings.
+    $elements['security_settings'] = [
+      '#type' => 'details',
+      '#title' => $this->t('AI Output Security'),
+      '#open' => FALSE,
+      '#ajax' => FALSE,
+      '#weight' => 31,
+      '#description' => $this->t('Mitigate prompt injection attacks (CVE-2025-32711) that attempt to exfiltrate data via malicious URLs in AI-generated content.'),
+    ];
+
+    $elements['security_settings']['allowedImageDomains'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Allowed Image Domains'),
+      '#description' => $this->t('List of domains allowed for external images in AI output (one per line). Supports wildcards (e.g., *.example.com). Default: promptahuman.com. Use * to allow all domains (not recommended).'),
+      '#default_value' => $this->formatDomainsForTextarea($getConfigValue('aiOutputSecurity.allowedImageDomains') ?? ['promptahuman.com']),
+      '#rows' => 4,
+      '#ajax' => FALSE,
+    ];
+
+    $elements['security_settings']['allowedLinkDomains'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Allowed Link Domains'),
+      '#description' => $this->t('List of domains allowed for external links in AI output (one per line). Supports wildcards (e.g., *.example.com). Default: none (all external links blocked). Use * to allow all domains.'),
+      '#default_value' => $this->formatDomainsForTextarea($getConfigValue('aiOutputSecurity.allowedLinkDomains') ?? []),
+      '#rows' => 4,
+      '#ajax' => FALSE,
+    ];
+
     // Add the commands section to the form.
     $elements['commands'] = [
       '#type' => 'details',
@@ -1155,6 +1183,42 @@ trait AiAgentFormTrait {
         ]),
       ];
     }
+  }
+
+  /**
+   * Formats an array of domains as a newline-separated string for textarea.
+   *
+   * @param array|string|null $domains
+   *   The domains array or string.
+   *
+   * @return string
+   *   The domains as a newline-separated string.
+   */
+  protected function formatDomainsForTextarea(array|string|null $domains): string {
+    if (empty($domains)) {
+      return '';
+    }
+    if (is_string($domains)) {
+      return $domains;
+    }
+    return implode("\n", $domains);
+  }
+
+  /**
+   * Parses a newline-separated string of domains into an array.
+   *
+   * @param string|null $text
+   *   The textarea value.
+   *
+   * @return array
+   *   The domains as an array.
+   */
+  protected function parseDomainsFromTextarea(?string $text): array {
+    if (empty($text)) {
+      return [];
+    }
+    $lines = preg_split('/\r\n|\r|\n/', $text);
+    return array_values(array_filter(array_map('trim', $lines)));
   }
 
 }
