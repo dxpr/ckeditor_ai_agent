@@ -7,6 +7,7 @@
  * Filters:
  * - Images: <img> tags and Markdown ![alt](url) syntax including reference-style (enabled by default)
  * - Links: <a> tags and Markdown [text](url) syntax including reference-style (enabled by default)
+ * - Plain text URLs: Bare http(s):// URLs in text content (replaced with EXTERNAL_URL_REDACTED)
  * - Iframes: All <iframe> tags are unconditionally removed (always enabled)
  * - Dangerous elements: <object>, <embed>, <applet>, SVG <image> (always enabled)
  *

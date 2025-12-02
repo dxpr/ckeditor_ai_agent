@@ -7,6 +7,7 @@
  * Filters:
  * - Images: <img> tags and Markdown ![alt](url) syntax including reference-style (enabled by default)
  * - Links: <a> tags and Markdown [text](url) syntax including reference-style (enabled by default)
+ * - Plain text URLs: Bare http(s):// URLs in text content (replaced with EXTERNAL_URL_REDACTED)
  * - Iframes: All <iframe> tags are unconditionally removed (always enabled)
  * - Dangerous elements: <object>, <embed>, <applet>, SVG <image> (always enabled)
  *
@@ -51,6 +52,8 @@ const XLINK_NAMESPACE = 'http://www.w3.org/1999/xlink';
 const MAX_FILENAME_LENGTH = 50;
 /** Default filename when extraction fails */
 const DEFAULT_FILENAME = 'image';
+/** Replacement text for blocked plain text URLs */
+const REDACTED_URL_TEXT = 'EXTERNAL_URL_REDACTED';
 // Regex patterns
 const PATTERNS = {
     /** Matches [refname]: url or [refname]: url "title" */
@@ -68,7 +71,12 @@ const PATTERNS = {
     /** Detects HTML content */
     htmlDetection: /<[^>]+>/,
     /** Escapes regex special characters */
-    regexEscape: /[.*+?^${}()|[\]\\]/g
+    regexEscape: /[.*+?^${}()|[\]\\]/g,
+    /**
+     * Matches plain text URLs (http:// or https://)
+     * Captures URLs that are not already inside HTML attributes or markdown syntax.
+     */
+    plainTextUrl: /https?:\/\/[^\s<>"')\]]+/gi
 };
 // ============================================================================
 // Helper Functions
@@ -182,6 +190,21 @@ const getReplacementImageSrc = (originalUrl, config) => {
     return PLACEHOLDER_IMAGE_URL + encodeURIComponent(extractFilename(originalUrl));
 };
 /**
+ * Filters plain text URLs in content.
+ * Replaces blocked URLs with EXTERNAL_URL_REDACTED.
+ * This handles URLs that aren't wrapped in <a> tags or markdown link syntax.
+ */
+const filterPlainTextUrls = (content, config, blockedUrls) => {
+    const regex = new RegExp(PATTERNS.plainTextUrl.source, 'gi');
+    return content.replace(regex, (url) => {
+        if (shouldBlockLinkUrl(url, config)) {
+            recordBlockedUrl(blockedUrls, url, 'link');
+            return REDACTED_URL_TEXT;
+        }
+        return url;
+    });
+};
+/**
  * Parses reference-style definitions from Markdown content.
  */
 const parseMarkdownReferences = (markdown) => {
@@ -244,6 +267,20 @@ const filterHtmlContent = (html, config, blockedUrls) => {
         if (href && shouldBlockLinkUrl(href, config)) {
             recordBlockedUrl(blockedUrls, href, 'link');
             anchor.setAttribute('href', '#');
+        }
+    });
+    // Filter plain text URLs in text nodes
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+        textNodes.push(node);
+    }
+    textNodes.forEach(textNode => {
+        const text = textNode.textContent || '';
+        const filtered = filterPlainTextUrls(text, config, blockedUrls);
+        if (filtered !== text) {
+            textNode.textContent = filtered;
         }
     });
     return doc.body.innerHTML;
@@ -318,6 +355,8 @@ const filterMarkdownContent = (markdown, config, blockedUrls) => {
     filtered = filterMarkdownReference(filtered, PATTERNS.markdownRefLink, references, config, false, blockedUrls);
     // Clean up orphaned reference definitions
     filtered = cleanupMarkdownReferences(filtered, markdown, config);
+    // Filter plain text URLs (not in markdown syntax)
+    filtered = filterPlainTextUrls(filtered, config, blockedUrls);
     return filtered;
 };
 // ============================================================================
