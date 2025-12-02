@@ -74,8 +74,26 @@ export default class AiAgentUI extends Plugin {
      * Displays an error tooltip with the specified message.
      *
      * @param message - The error message to display in the tooltip.
+     * @param options - Optional configuration for the tooltip.
      */
-    showGptErrorToolTip(message: string): void;
+    showGptErrorToolTip(message: string, options?: {
+        type?: 'error' | 'warning';
+        html?: boolean;
+        duration?: number;
+    }): void;
+    /**
+     * Displays a warning notification for blocked URLs.
+     *
+     * @param blockedUrls - Object containing arrays of blocked image and link URLs.
+     */
+    showBlockedUrlsWarning(blockedUrls: {
+        images: string[];
+        links: string[];
+    }): void;
+    /**
+     * Escapes HTML special characters to prevent XSS.
+     */
+    private escapeHtml;
     /**
      * Hides the error tooltip element from the document.
      */

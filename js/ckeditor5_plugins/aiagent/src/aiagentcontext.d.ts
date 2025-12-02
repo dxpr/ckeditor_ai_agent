@@ -9,6 +9,7 @@ export declare class AiAgentContext {
     private constructor();
     static getInstance(): AiAgentContext;
     set uiComponent(component: any);
+    get uiComponent(): any;
     showError(message: string): void;
     showLoader(editor: Editor): void;
     hideLoader(editor: Editor): void;

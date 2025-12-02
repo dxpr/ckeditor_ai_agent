@@ -2,6 +2,7 @@ import { MenuBarMenuView, MenuBarMenuListView, MenuBarMenuListItemView, MenuBarM
 import aiAgentToneIcon from '../../theme/icons/ai-agent-tone.svg';
 import checkIcon from '../../theme/icons/check.svg';
 import { getDefaultAiAgentToneDropdownMenu } from './translations.js';
+import { STORAGE_PREFIX } from '../const.js';
 export function addAiAgentToneButton(editor) {
     const t = editor.t;
     const config = editor.config.get('aiAgent');
@@ -25,7 +26,7 @@ export function addAiAgentToneButton(editor) {
         });
         const menuView = new MenuBarMenuView(locale);
         const listView = new MenuBarMenuListView(locale);
-        const checkIcons = [];
+        const toneItems = [];
         // Add group title for Tone
         const titleView = new MenuBarMenuListItemView(locale, menuView);
         const titleButton = new MenuBarMenuListItemButtonView(locale);
@@ -43,10 +44,8 @@ export function addAiAgentToneButton(editor) {
             checkIconView.set({
                 content: checkIcon
             });
-            const toneCommand = editor.commands.get('aiAgentTone');
-            const currentToneValue = toneCommand?.value || '';
-            checkIconView.isVisible = item.tone === currentToneValue;
-            checkIcons.push(checkIconView);
+            checkIconView.isVisible = false;
+            toneItems.push({ tone: item.tone, checkIcon: checkIconView });
             const spanView = new View(locale);
             spanView.setTemplate({
                 tag: 'span',
@@ -65,8 +64,8 @@ export function addAiAgentToneButton(editor) {
             listItemView.children.add(buttonView);
             listView.items.add(listItemView);
             buttonView.on('execute', () => {
-                checkIcons.forEach(iconView => {
-                    iconView.isVisible = false;
+                toneItems.forEach(toneItem => {
+                    toneItem.checkIcon.isVisible = false;
                 });
                 checkIconView.isVisible = true;
                 editor.execute('aiAgentTone', {
@@ -76,6 +75,17 @@ export function addAiAgentToneButton(editor) {
             });
         }
         dropdownView.panelView.children.add(listView);
+        // Update checkmarks from localStorage when dropdown opens
+        dropdownView.on('change:isOpen', () => {
+            if (dropdownView.isOpen) {
+                const storedToneKey = localStorage.getItem(`${STORAGE_PREFIX}:tone`);
+                const matchingTone = tonesDropdown.find(item => item.key === storedToneKey);
+                const currentToneValue = matchingTone?.tone || '';
+                toneItems.forEach(item => {
+                    item.checkIcon.isVisible = item.tone === currentToneValue;
+                });
+            }
+        });
         return dropdownView;
     });
 }

@@ -34,6 +34,18 @@ export interface AiAgentConfig {
     moderationKey?: string;
     moderationEnable?: boolean;
     moderationDisableFlags?: Array<ModerationFlagsTypes>;
+    aiOutputSecurity?: {
+        /**
+         * Allowed domains for images. Supports wildcards (*.example.com).
+         * Default: ['promptahuman.com']. Use [] to block all, ['*'] to allow all.
+         */
+        allowedImageDomains?: string[];
+        /**
+         * Allowed domains for links. Supports wildcards (*.example.com).
+         * Default: [] (blocks all). Use ['*'] to allow all external links.
+         */
+        allowedLinkDomains?: string[];
+    };
     commandsDropdown?: Array<{
         title: string;
         items: Array<{

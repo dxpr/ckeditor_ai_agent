@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@ckeditor/ckeditor5-utils": "^45.0.0",
-    "@dxpr/ckeditor5-ai-agent": "^1.0.0-beta66",
+    "@dxpr/ckeditor5-ai-agent": "^1.1.1",
     "sbd": "^1.0.19"
   }
 }

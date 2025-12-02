@@ -42,10 +42,20 @@ export default class AiAgentService {
      */
     constructor(editor) {
         this.editor = editor;
+        const config = editor.config.get('aiAgent');
         this.promptHelper = new PromptHelper(editor);
         this.htmlParser = new HtmlParser(editor);
-        this.processContentHelper = new ProcessContentHelper(editor);
-        const config = editor.config.get('aiAgent');
+        // Wire up blocked URL notifications to the UI component
+        const filterConfig = {
+            ...config.aiOutputSecurity,
+            onUrlBlocked: (blockedUrls) => {
+                const uiComponent = aiAgentContext.uiComponent;
+                if (uiComponent?.showBlockedUrlsWarning) {
+                    uiComponent.showBlockedUrlsWarning(blockedUrls);
+                }
+            }
+        };
+        this.processContentHelper = new ProcessContentHelper(editor, filterConfig);
         this.aiModel = config.model;
         this.apiKey = config.apiKey;
         this.aiEngine = config.engine;
@@ -109,10 +119,37 @@ export default class AiAgentService {
         if (command) {
             const selection = model.document.selection;
             const selectedContentFragment = model.getSelectedContent(selection);
-            const viewFragment = editor.data.toView(selectedContentFragment);
-            const html = editor.data.processor.toData(viewFragment);
+            const firstPos = selection.getFirstPosition();
+            const lastPos = selection.getLastPosition();
+            const blocks = Array.from(selection.getSelectedBlocks());
+            const block = blocks[0];
+            let pathsEqual = false;
+            if (block) {
+                const range = model.createRangeIn(block);
+                const startLine = range.start.path;
+                const endLine = range.end.path;
+                const firstPosPath = firstPos?.path;
+                const lastPosPath = lastPos?.path;
+                pathsEqual = Boolean(firstPosPath && lastPosPath &&
+                    firstPosPath.length === startLine.length &&
+                    lastPosPath.length === endLine.length &&
+                    firstPosPath.every((val, i) => val === startLine[i]) &&
+                    lastPosPath.every((val, i) => val === endLine[i]));
+            }
+            if (pathsEqual && block) {
+                const fragHtml = editor.model.change(writer => {
+                    const rangeOnBlock = writer.createRangeOn(block);
+                    const frag = model.getSelectedContent(model.createSelection(rangeOnBlock));
+                    const viewFrag = editor.data.toView(frag);
+                    return editor.data.processor.toData(viewFrag);
+                });
+                selectedContent = fragHtml;
+            }
+            else {
+                const viewFragment = editor.data.toView(selectedContentFragment);
+                selectedContent = editor.data.processor.toData(viewFragment);
+            }
             content = command;
-            selectedContent = html;
         }
         if (this.moderationEnable) {
             const moderateContentData = await moderateContent({
@@ -176,7 +213,6 @@ export default class AiAgentService {
                     content: contentMatch[1]
                 };
             }
-            const x = false;
             if (AI_ENGINE.includes(this.aiEngine)) {
                 const config = {
                     apiKey: this.apiKey

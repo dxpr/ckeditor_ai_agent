@@ -1,9 +1,11 @@
 import type { Editor } from 'ckeditor5/src/core.js';
 import type { ModelElement as Element } from 'ckeditor5/src/engine.js';
+import { type AiFilterConfig } from './ai-output-filter.js';
 export declare class ProcessContentHelper {
     private editor;
+    private filterConfig;
     private readonly FILTERED_STRINGS;
-    constructor(editor: Editor);
+    constructor(editor: Editor, filterConfig?: AiFilterConfig);
     /**
      * Updates the content of an AI-generated block in the editor.
      *

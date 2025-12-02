@@ -1,8 +1,11 @@
+import { filterAiImages } from './ai-output-filter.js';
 export class ProcessContentHelper {
     editor;
+    filterConfig;
     FILTERED_STRINGS = /```html|```|html\n|@@@cursor@@@/g;
-    constructor(editor) {
+    constructor(editor, filterConfig) {
         this.editor = editor;
+        this.filterConfig = filterConfig;
     }
     /**
      * Updates the content of an AI-generated block in the editor.
@@ -14,8 +17,9 @@ export class ProcessContentHelper {
      */
     async updateContent(newHtml, blockID) {
         const editor = this.editor;
+        const filteredHtml = filterAiImages(newHtml, this.filterConfig);
         const tempParagraph = document.createElement('div');
-        tempParagraph.innerHTML = newHtml;
+        tempParagraph.innerHTML = filteredHtml;
         let textContent = '';
         const root = editor.model.document.getRoot();
         if (root) {
@@ -125,13 +129,19 @@ export class ProcessContentHelper {
         const editorData = editor.getData();
         let editorContent = editorData.replace(new RegExp(`<ai-tag id="${blockID}-inline">&nbsp;</ai-tag>`, 'g'), '');
         editorContent = editorContent.replace(new RegExp(`<ai-tag id="${blockID}">&nbsp;</ai-tag>`, 'g'), '');
-        editorContent = editorContent.replace(/<\/ai-tag>\s*<[^>]+>\s*&nbsp;\s*<\/[^>]+>/g, '');
+        editorContent = editorContent.replace(`</ai-tag>`, '');
         editorContent = editorContent.replace(`<ai-tag id="${blockID}-inline">`, '');
         editorContent = editorContent.replace(`<ai-tag id="${blockID}">`, '');
-        editor.execute('selectAll');
-        const viewFragment = editor.data.processor.toView(editorContent);
-        const modelFragment = editor.data.toModel(viewFragment);
-        editor.model.insertContent(modelFragment);
+        editorContent = filterAiImages(editorContent, this.filterConfig);
+        editor.model.change(writer => {
+            const root = editor.model.document.getRoot();
+            if (root) {
+                writer.remove(editor.model.createRangeIn(root));
+                const viewFragment = editor.data.processor.toView(editorContent);
+                const modelFragment = editor.data.toModel(viewFragment);
+                writer.insert(modelFragment, root, 0);
+            }
+        });
     }
     /**
      * Handles the undo and redo commands for the editor.

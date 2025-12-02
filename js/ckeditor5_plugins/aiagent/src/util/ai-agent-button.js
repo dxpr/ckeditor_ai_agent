@@ -1,7 +1,7 @@
 import { MenuBarMenuView, MenuBarMenuListView, MenuBarMenuListItemView, MenuBarMenuListItemButtonView, createDropdown, SplitButtonView, LabeledFieldView, ListSeparatorView, ButtonView, TextareaView } from 'ckeditor5/src/ui.js';
+import { env } from 'ckeditor5/src/utils.js';
 import AiAgentService from '../aiagentservice.js';
 import aiAgentIcon from '../../theme/icons/ai-agent.svg';
-import arrowIcon from '../../theme/icons/arrow.svg';
 import { getDefaultAiAgentDropdownMenu } from './translations.js';
 export function addAiAgentButton(editor) {
     const t = editor.t;
@@ -76,11 +76,12 @@ export function addAiAgentButton(editor) {
         const listView = new MenuBarMenuListView(locale);
         const searchContainer = new MenuBarMenuListItemView(locale, menuView);
         const button = new ButtonView(locale);
+        const shortcutText = env.isMac ? '⌘↵' : 'Ctrl+Enter';
         button.set({
             label: t('Submit'),
-            icon: arrowIcon,
-            tooltip: true,
-            class: 'ck-ask-ai-to-edit-button',
+            withText: true,
+            tooltip: shortcutText,
+            class: 'ck-button-action ck-ask-ai-to-edit-button',
             isEnabled: false
         });
         const labeledFieldView = new LabeledFieldView(locale, (labeledFieldView, viewUid, statusUid) => {
@@ -96,12 +97,16 @@ export function addAiAgentButton(editor) {
             textareaView.on('input', () => {
                 button.isEnabled = !!textareaView.element?.value;
             });
-            textareaView.on('keydown', (evt, data) => {
-                if (data.keyCode === 13 && !data.shiftKey && button.isEnabled) {
-                    data.preventDefault();
-                    const command = textareaView.element?.value || '';
-                    insertEmptySpace(editor);
-                    executeAiAgentCommand(command, labeledFieldView, listView);
+            // Use CKEditor's render event to attach native keyboard listener
+            textareaView.on('render', () => {
+                if (textareaView.element) {
+                    textareaView.element.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && button.isEnabled) {
+                            event.preventDefault();
+                            const command = textareaView.element?.value || '';
+                            executeAiAgentCommand(command, labeledFieldView, listView);
+                        }
+                    });
                 }
             });
             return textareaView;
@@ -110,7 +115,6 @@ export function addAiAgentButton(editor) {
         // Execute a command when the button is clicked
         button.on('execute', () => {
             const command = labeledFieldView.fieldView.element?.value || '';
-            insertEmptySpace(editor);
             executeAiAgentCommand(command, labeledFieldView, listView);
         });
         searchContainer.children.add(labeledFieldView);
@@ -139,7 +143,6 @@ export function addAiAgentButton(editor) {
                 });
                 buttonView.delegate('execute').to(menuView);
                 buttonView.on('execute', () => {
-                    insertEmptySpace(editor);
                     executeAiAgentCommand(item.command, labeledFieldView, listView);
                 });
                 listItemView.children.add(buttonView);
@@ -161,14 +164,6 @@ export function addAiAgentButton(editor) {
     editor.editing.view.document.on('keydown', (event, data) => {
         if ((data.ctrlKey || data.metaKey) && data.keyCode === 191) {
             executeCommand();
-        }
-    });
-}
-function insertEmptySpace(editor) {
-    editor.model.change(writer => {
-        const insertPosition = editor.model.document.selection.getFirstPosition();
-        if (insertPosition) {
-            writer.insertText('\u00A0', insertPosition);
         }
     });
 }

@@ -15,6 +15,9 @@ export class AiAgentContext {
     set uiComponent(component) {
         this._uiComponent = component;
     }
+    get uiComponent() {
+        return this._uiComponent;
+    }
     showError(message) {
         if (this._uiComponent) {
             console.log('Showing error message...', message);
