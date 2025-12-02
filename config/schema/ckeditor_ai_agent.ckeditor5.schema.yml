@@ -63,6 +63,20 @@ ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
         moderationKey:
           type: string
           label: 'Moderation Key'
+        aiOutputSecurity:
+          type: mapping
+          label: 'AI Output Security'
+          mapping:
+            allowedImageDomains:
+              type: sequence
+              label: 'Allowed Image Domains'
+              sequence:
+                type: string
+            allowedLinkDomains:
+              type: sequence
+              label: 'Allowed Link Domains'
+              sequence:
+                type: string
         toneOfVoiceVocabulary:
           type: string
           label: 'Tone of Voice Vocabulary'

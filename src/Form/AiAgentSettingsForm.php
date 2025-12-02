@@ -258,6 +258,15 @@ class AiAgentSettingsForm extends ConfigFormBase {
       }
     }
 
+    // Handle AI output security settings.
+    if (isset($values['security_settings'])) {
+      $security_settings = $values['security_settings'];
+      $config->set('aiOutputSecurity', [
+        'allowedImageDomains' => $this->parseDomainsFromTextarea($security_settings['allowedImageDomains'] ?? ''),
+        'allowedLinkDomains' => $this->parseDomainsFromTextarea($security_settings['allowedLinkDomains'] ?? ''),
+      ]);
+    }
+
     $config->save();
     parent::submitForm($form, $form_state);
   }

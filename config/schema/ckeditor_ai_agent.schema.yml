@@ -79,6 +79,22 @@ ckeditor_ai_agent.settings:
       type: string
       label: 'Moderation Key'
 
+    # AI Output Security Settings
+    aiOutputSecurity:
+      type: mapping
+      label: 'AI Output Security'
+      mapping:
+        allowedImageDomains:
+          type: sequence
+          label: 'Allowed Image Domains'
+          sequence:
+            type: string
+        allowedLinkDomains:
+          type: sequence
+          label: 'Allowed Link Domains'
+          sequence:
+            type: string
+
     # Prompt Settings
     promptSettings:
       type: mapping
