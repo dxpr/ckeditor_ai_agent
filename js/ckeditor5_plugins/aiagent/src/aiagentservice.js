@@ -47,7 +47,7 @@ export default class AiAgentService {
         this.htmlParser = new HtmlParser(editor);
         // Wire up blocked URL notifications to the UI component
         const filterConfig = {
-            ...config.aiOutputSecurity,
+            allowedDomains: config.aiOutputSecurity?.allowedDomains,
             onUrlBlocked: (blockedUrls) => {
                 const uiComponent = aiAgentContext.uiComponent;
                 if (uiComponent?.showBlockedUrlsWarning) {

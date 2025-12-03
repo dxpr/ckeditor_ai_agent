@@ -219,8 +219,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
           'additions' => [],
         ],
         'aiOutputSecurity' => [
-          'allowedImageDomains' => ['promptahuman.com'],
-          'allowedLinkDomains' => [],
+          'allowedDomains' => ['promptahuman.com'],
         ],
       ],
     ];
@@ -448,8 +447,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     else {
       // Set defaults if not configured.
       $result['aiAgent']['aiOutputSecurity'] = [
-        'allowedImageDomains' => ['promptahuman.com'],
-        'allowedLinkDomains' => [],
+        'allowedDomains' => ['promptahuman.com'],
       ];
     }
 

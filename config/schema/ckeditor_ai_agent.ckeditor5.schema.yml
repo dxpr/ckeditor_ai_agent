@@ -67,14 +67,9 @@ ckeditor5.plugin.ckeditor_ai_agent_ai_agent:
           type: mapping
           label: 'AI Output Security'
           mapping:
-            allowedImageDomains:
+            allowedDomains:
               type: sequence
-              label: 'Allowed Image Domains'
-              sequence:
-                type: string
-            allowedLinkDomains:
-              type: sequence
-              label: 'Allowed Link Domains'
+              label: 'Allowed Domains'
               sequence:
                 type: string
         toneOfVoiceVocabulary:
