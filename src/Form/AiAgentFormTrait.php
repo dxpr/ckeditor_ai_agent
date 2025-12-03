@@ -513,20 +513,11 @@ trait AiAgentFormTrait {
       '#description' => $this->t('Mitigate prompt injection attacks (CVE-2025-32711) that attempt to exfiltrate data via malicious URLs in AI-generated content.'),
     ];
 
-    $elements['security_settings']['allowedImageDomains'] = [
+    $elements['security_settings']['allowedDomains'] = [
       '#type' => 'textarea',
-      '#title' => $this->t('Allowed Image Domains'),
-      '#description' => $this->t('List of domains allowed for external images in AI output (one per line). Supports wildcards (e.g., *.example.com). Default: promptahuman.com. Use * to allow all domains (not recommended).'),
-      '#default_value' => $this->formatDomainsForTextarea($getConfigValue('aiOutputSecurity.allowedImageDomains') ?? ['promptahuman.com']),
-      '#rows' => 4,
-      '#ajax' => FALSE,
-    ];
-
-    $elements['security_settings']['allowedLinkDomains'] = [
-      '#type' => 'textarea',
-      '#title' => $this->t('Allowed Link Domains'),
-      '#description' => $this->t('List of domains allowed for external links in AI output (one per line). Supports wildcards (e.g., *.example.com). Default: none (all external links blocked). Use * to allow all domains.'),
-      '#default_value' => $this->formatDomainsForTextarea($getConfigValue('aiOutputSecurity.allowedLinkDomains') ?? []),
+      '#title' => $this->t('Allowed Domains'),
+      '#description' => $this->t('List of domains allowed for external URLs (images and links) in AI output (one per line). Supports wildcards (e.g., *.example.com). Default: promptahuman.com. Use * to allow all domains (not recommended).'),
+      '#default_value' => $this->formatDomainsForTextarea($getConfigValue('aiOutputSecurity.allowedDomains') ?? ['promptahuman.com']),
       '#rows' => 4,
       '#ajax' => FALSE,
     ];

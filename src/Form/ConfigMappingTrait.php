@@ -72,10 +72,7 @@ trait ConfigMappingTrait {
       'commands.commandsVocabulary' => [
         'type' => 'string',
       ],
-      'security_settings.allowedImageDomains' => [
-        'type' => 'array',
-      ],
-      'security_settings.allowedLinkDomains' => [
+      'security_settings.allowedDomains' => [
         'type' => 'array',
       ],
     ];
@@ -142,8 +139,7 @@ trait ConfigMappingTrait {
       'toneOfVoiceVocabulary' => 'toneOfVoiceVocabulary',
       'commandsVocabulary' => 'commandsVocabulary',
       'defaultToneOfVoice' => 'defaultToneOfVoice',
-      'allowedImageDomains' => 'aiOutputSecurity.allowedImageDomains',
-      'allowedLinkDomains' => 'aiOutputSecurity.allowedLinkDomains',
+      'allowedDomains' => 'aiOutputSecurity.allowedDomains',
     ];
   }
 

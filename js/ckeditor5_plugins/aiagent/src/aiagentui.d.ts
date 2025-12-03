@@ -84,12 +84,9 @@ export default class AiAgentUI extends Plugin {
     /**
      * Displays a warning notification for blocked URLs.
      *
-     * @param blockedUrls - Object containing arrays of blocked image and link URLs.
+     * @param blockedUrls - Array of blocked URL strings.
      */
-    showBlockedUrlsWarning(blockedUrls: {
-        images: string[];
-        links: string[];
-    }): void;
+    showBlockedUrlsWarning(blockedUrls: string[]): void;
     /**
      * Escapes HTML special characters to prevent XSS.
      */
