@@ -11,7 +11,7 @@ permissions:
 jobs:
   commitlint:
     name: Lint Commit Messages
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-4
     steps:
       - uses: actions/checkout@v3
         with:
@@ -22,7 +22,7 @@ jobs:
           helpURL: https://github.com/dxpr/ckeditor_ai_agent/blob/1.0.x/CONTRIBUTING.md
 
   drupal-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-4
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
         docker compose --profile lint run drupal-lint
 
   drupal-check:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-4
     steps:
     - uses: actions/checkout@v4
     - name: Drupal Deprecations and Analysis Check
