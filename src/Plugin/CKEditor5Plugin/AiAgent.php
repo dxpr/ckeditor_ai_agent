@@ -13,6 +13,7 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Routing\UrlGeneratorInterface;
@@ -78,6 +79,13 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   protected UrlGeneratorInterface $urlGenerator;
 
   /**
+   * The module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected ModuleHandlerInterface $moduleHandler;
+
+  /**
    * The messenger.
    *
    * @var \Drupal\Core\Messenger\MessengerInterface
@@ -107,6 +115,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    *   The URL generator.
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
    */
   public function __construct(
     array $configuration,
@@ -119,6 +129,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     ExtensionPathResolver $extension_path_resolver,
     UrlGeneratorInterface $url_generator,
     MessengerInterface $messenger,
+    ModuleHandlerInterface $module_handler,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->configFactory = $config_factory;
@@ -128,6 +139,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     $this->extensionPathResolver = $extension_path_resolver;
     $this->urlGenerator = $url_generator;
     $this->messenger = $messenger;
+    $this->moduleHandler = $module_handler;
   }
 
   /**
@@ -145,7 +157,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       $container->get('ckeditor_ai_agent.key_service'),
       $container->get('extension.path.resolver'),
       $container->get('url_generator'),
-      $container->get('messenger')
+      $container->get('messenger'),
+      $container->get('module_handler')
     );
   }
 
@@ -265,11 +278,18 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     // Build configuration with proper fallback handling.
     $result = ['aiAgent' => []];
 
+    // Check if the ai module is available for proxied requests.
+    $useAiModule = $this->moduleHandler->moduleExists('ai');
+
     // Basic settings.
     $settings_map = $this->getSettingsMap();
     foreach ($settings_map as $js_key => $drupal_key) {
-      // Handle apiKey separately to use key service.
+      // Handle apiKey separately.
       if ($js_key === 'apiKey') {
+        if ($useAiModule) {
+          // When ai module is available, don't expose API key to browser.
+          continue;
+        }
         // First check for editor-specific key provider.
         if (isset($editor_config['key_provider']) && $editor_config['key_provider'] !== '') {
           $result['aiAgent'][$js_key] = $this->keyService->getKeyValue($editor_config['key_provider']);
@@ -290,23 +310,36 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       }
     }
 
-    // Handle engine/model.
-    $model = $result['aiAgent']['model'] ?? 'openai:gpt-4o';
-    if (str_contains($model, ':')) {
-      [$engine, $model_name] = explode(':', $model, 2);
-      $result['aiAgent']['engine'] = $engine;
-      if ($engine === 'ollama') {
-        // For Ollama, use the ollamaModel value.
-        $result['aiAgent']['model'] = $result['aiAgent']['ollamaModel'] ?? $config->get('ollamaModel') ?? '';
-      }
-      else {
+    if ($useAiModule) {
+      // Route requests through the Drupal proxy controller.
+      $result['aiAgent']['endpointUrl'] = $this->urlGenerator->generateFromRoute('ckeditor_ai_agent.ai_chat', [], ['absolute' => TRUE]);
+      $result['aiAgent']['engine'] = 'dxai';
+      // Pass model through for the proxy to use.
+      $model = $result['aiAgent']['model'] ?? 'openai:gpt-4o';
+      if (str_contains($model, ':')) {
+        [, $model_name] = explode(':', $model, 2);
         $result['aiAgent']['model'] = $model_name;
       }
     }
     else {
-      // Fallback for legacy configurations.
-      $result['aiAgent']['engine'] = 'openai';
-      $result['aiAgent']['model'] = $model ?: 'gpt-4o';
+      // Handle engine/model for direct API access.
+      $model = $result['aiAgent']['model'] ?? 'openai:gpt-4o';
+      if (str_contains($model, ':')) {
+        [$engine, $model_name] = explode(':', $model, 2);
+        $result['aiAgent']['engine'] = $engine;
+        if ($engine === 'ollama') {
+          // For Ollama, use the ollamaModel value.
+          $result['aiAgent']['model'] = $result['aiAgent']['ollamaModel'] ?? $config->get('ollamaModel') ?? '';
+        }
+        else {
+          $result['aiAgent']['model'] = $model_name;
+        }
+      }
+      else {
+        // Fallback for legacy configurations.
+        $result['aiAgent']['engine'] = 'openai';
+        $result['aiAgent']['model'] = $model ?: 'gpt-4o';
+      }
     }
 
     // Add taxonomy-based tones of voice if configured.

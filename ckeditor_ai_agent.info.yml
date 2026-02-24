@@ -7,4 +7,6 @@ dependencies:
   - drupal:ckeditor5
   - key:key
   - markdownify:markdownify
+  - ai:ai
+  - ai_provider_dxpr:ai_provider_dxpr
 configure: ckeditor_ai_agent.settings

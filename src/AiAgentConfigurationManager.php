@@ -4,7 +4,9 @@ namespace Drupal\ckeditor_ai_agent;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
+use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\editor\Entity\Editor;
 use Drupal\ckeditor_ai_agent\Service\AiAgentKeyService;
 
@@ -42,6 +44,20 @@ class AiAgentConfigurationManager {
   protected $logger;
 
   /**
+   * The module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected ModuleHandlerInterface $moduleHandler;
+
+  /**
+   * The URL generator.
+   *
+   * @var \Drupal\Core\Routing\UrlGeneratorInterface
+   */
+  protected UrlGeneratorInterface $urlGenerator;
+
+  /**
    * Constructs a new AiAgentConfigurationManager.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -52,17 +68,25 @@ class AiAgentConfigurationManager {
    *   The entity type manager.
    * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
    *   The logger channel.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
+   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
+   *   The URL generator.
    */
   public function __construct(
     ConfigFactoryInterface $config_factory,
     AiAgentKeyService $key_service,
     EntityTypeManagerInterface $entity_type_manager,
     LoggerChannelInterface $logger,
+    ModuleHandlerInterface $module_handler,
+    UrlGeneratorInterface $url_generator,
   ) {
     $this->configFactory = $config_factory;
     $this->keyService = $key_service;
     $this->entityTypeManager = $entity_type_manager;
     $this->logger = $logger;
+    $this->moduleHandler = $module_handler;
+    $this->urlGenerator = $url_generator;
   }
 
   /**
@@ -129,13 +153,14 @@ class AiAgentConfigurationManager {
   public function getCkEditorConfig(?Editor $editor = NULL): array {
     $global_config = $this->configFactory->get('ckeditor_ai_agent.settings');
 
+    // Check if the ai module is available for proxied requests.
+    $useAiModule = $this->moduleHandler->moduleExists('ai');
+
     // Structure the config to match the aiAgent JS configuration.
     $config = [
       'aiAgent' => [
-        'apiKey' => $editor ? $this->keyService->getApiKey($editor->id()) : $this->keyService->getApiKey(),
         'model' => $global_config->get('model'),
         'ollamaModel' => $global_config->get('ollamaModel'),
-        'endpointUrl' => $global_config->get('endpointUrl'),
         'contentScope' => $global_config->get('contentScope'),
         'temperature' => $global_config->get('temperature'),
         'maxOutputTokens' => $global_config->get('maxOutputTokens'),
@@ -154,6 +179,23 @@ class AiAgentConfigurationManager {
         ],
       ],
     ];
+
+    if ($useAiModule) {
+      // Route requests through the Drupal proxy controller.
+      $config['aiAgent']['endpointUrl'] = $this->urlGenerator->generateFromRoute('ckeditor_ai_agent.ai_chat', [], ['absolute' => TRUE]);
+      $config['aiAgent']['engine'] = 'dxai';
+      // Parse model name from engine:model format.
+      $model = $global_config->get('model');
+      if ($model && str_contains($model, ':')) {
+        [, $model_name] = explode(':', $model, 2);
+        $config['aiAgent']['model'] = $model_name;
+      }
+    }
+    else {
+      // Direct API access — pass API key and endpoint URL to browser.
+      $config['aiAgent']['apiKey'] = $editor ? $this->keyService->getApiKey($editor->id()) : $this->keyService->getApiKey();
+      $config['aiAgent']['endpointUrl'] = $global_config->get('endpointUrl');
+    }
 
     // Properly populate prompt settings from configuration.
     foreach (['overrides', 'additions'] as $type) {

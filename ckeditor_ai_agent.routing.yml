@@ -5,3 +5,11 @@ ckeditor_ai_agent.settings:
     _title: 'CKEditor AI Agent Settings'
   requirements:
     _permission: 'administer ckeditor ai agent'
+
+ckeditor_ai_agent.ai_chat:
+  path: '/api/ckeditor-ai-agent/ai/chat'
+  methods: [POST]
+  defaults:
+    _controller: '\Drupal\ckeditor_ai_agent\Controller\AiChatController::chat'
+  requirements:
+    _permission: 'access content'
