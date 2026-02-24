@@ -1,4 +1,4 @@
-# CKEditor AI Agent for Drupal
+# CKEditor AI Agent for Drupal :)
 
 ## Overview
 
