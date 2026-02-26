@@ -279,14 +279,14 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     $result = ['aiAgent' => []];
 
     // Check if the ai module is available for proxied requests.
-    $useAiModule = $this->moduleHandler->moduleExists('ai');
+    $use_ai_module = $this->moduleHandler->moduleExists('ai');
 
     // Basic settings.
     $settings_map = $this->getSettingsMap();
     foreach ($settings_map as $js_key => $drupal_key) {
       // Handle apiKey separately.
       if ($js_key === 'apiKey') {
-        if ($useAiModule) {
+        if ($use_ai_module) {
           // When ai module is available, don't expose API key to browser.
           continue;
         }
@@ -310,7 +310,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       }
     }
 
-    if ($useAiModule) {
+    if ($use_ai_module) {
       // Route requests through the Drupal proxy controller.
       $result['aiAgent']['endpointUrl'] = $this->urlGenerator->generateFromRoute('ckeditor_ai_agent.ai_chat', [], ['absolute' => TRUE]);
       $result['aiAgent']['engine'] = 'dxai';

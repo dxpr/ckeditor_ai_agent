@@ -23,6 +23,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class AiChatController extends ControllerBase {
 
   /**
+   * Allowed roles for chat messages.
+   */
+  private const ALLOWED_ROLES = ['system', 'user', 'assistant'];
+
+  /**
    * The logger service.
    *
    * @var \Drupal\Core\Logger\LoggerChannelInterface
@@ -39,17 +44,17 @@ class AiChatController extends ControllerBase {
   /**
    * Constructs the controller.
    *
-   * @param \Drupal\ai\AiProviderPluginManager $aiProviderManager
+   * @param \Drupal\ai\AiProviderPluginManager $ai_provider_manager
    *   AI Provider manager.
-   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $loggerFactory
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   Logger factory.
    */
   public function __construct(
-    AiProviderPluginManager $aiProviderManager,
-    LoggerChannelFactoryInterface $loggerFactory,
+    AiProviderPluginManager $ai_provider_manager,
+    LoggerChannelFactoryInterface $logger_factory,
   ) {
-    $this->aiProviderManager = $aiProviderManager;
-    $this->logger = $loggerFactory->get('ckeditor_ai_agent');
+    $this->aiProviderManager = $ai_provider_manager;
+    $this->logger = $logger_factory->get('ckeditor_ai_agent');
   }
 
   /**
@@ -74,7 +79,7 @@ class AiChatController extends ControllerBase {
   public function chat(Request $request): StreamedResponse|Response {
     $data = json_decode($request->getContent());
 
-    if (!$data || empty($data->messages)) {
+    if (!$data || empty($data->messages) || !is_array($data->messages)) {
       return new Response('Invalid request: messages required', Response::HTTP_BAD_REQUEST);
     }
 
@@ -82,42 +87,52 @@ class AiChatController extends ControllerBase {
       // Load the DXPR provider.
       $provider = $this->aiProviderManager->createInstance('dxpr');
 
-      // Build chat messages from request.
-      $chatMessages = [];
+      // Build and validate chat messages from request.
+      $chat_messages = [];
       foreach ($data->messages as $message) {
-        $chatMessages[] = new ChatMessage($message->role, $message->content);
+        if (!isset($message->role, $message->content)
+          || !is_string($message->role)
+          || !is_string($message->content)
+          || !in_array($message->role, self::ALLOWED_ROLES, TRUE)) {
+          return new Response('Invalid request: invalid message format', Response::HTTP_BAD_REQUEST);
+        }
+        $chat_messages[] = new ChatMessage($message->role, $message->content);
       }
 
-      $input = new ChatInput($chatMessages);
-      $isStreamed = $data->stream ?? TRUE;
-      $input->setStreamedOutput($isStreamed);
+      $input = new ChatInput($chat_messages);
+      $is_streamed = !empty($data->stream) || !isset($data->stream);
+      $input->setStreamedOutput($is_streamed);
 
-      // Get model from request or use default.
-      $model = $data->model ?? 'kavya-m1';
+      // Get model from request, validate it's a simple string.
+      $model = 'kavya-m1';
+      if (isset($data->model) && is_string($data->model) && preg_match('/^[a-zA-Z0-9._-]+$/', $data->model)) {
+        $model = $data->model;
+      }
 
       // Build configuration with DXPR-specific fields.
       $config = [];
 
-      // Disable JSON-RPC messages for OpenAI client library compatibility.
+      // Disable JSON-RPC agent/status messages — they are not compatible with
+      // the openai-php/client library used by the JS plugin.
       $config['jsonrpc'] = FALSE;
 
-      // Pass through optional DXPR-specific fields.
-      if (isset($data->prediction)) {
+      // Pass through optional DXPR-specific fields with type validation.
+      if (isset($data->prediction) && is_object($data->prediction)) {
         $config['prediction'] = (array) $data->prediction;
       }
-      if (isset($data->providers)) {
-        $config['providers'] = $data->providers;
+      if (isset($data->providers) && is_array($data->providers)) {
+        $config['providers'] = array_filter($data->providers, 'is_string');
       }
-      if (isset($data->allowed_html_tags)) {
+      if (isset($data->allowed_html_tags) && is_string($data->allowed_html_tags)) {
         $config['allowed_html_tags'] = $data->allowed_html_tags;
       }
-      if (isset($data->allowed_html_classes)) {
+      if (isset($data->allowed_html_classes) && is_string($data->allowed_html_classes)) {
         $config['allowed_html_classes'] = $data->allowed_html_classes;
       }
       if (isset($data->web_search) && $data->web_search === FALSE) {
         $config['web_search'] = FALSE;
       }
-      if (isset($data->response_format)) {
+      if (isset($data->response_format) && is_object($data->response_format)) {
         $config['response_format'] = (array) $data->response_format;
       }
 
@@ -127,7 +142,7 @@ class AiChatController extends ControllerBase {
       $output = $provider->chat($input, $model, ['ckeditor_ai_agent']);
       $response = $output->getNormalized();
 
-      if ($isStreamed && $response instanceof StreamedChatMessageIteratorInterface) {
+      if ($is_streamed && $response instanceof StreamedChatMessageIteratorInterface) {
         return new StreamedResponse(function () use ($response) {
           foreach ($response as $message) {
             // Pass through the full raw response from metadata if available.
@@ -148,11 +163,15 @@ class AiChatController extends ControllerBase {
             }
 
             echo 'data: ' . json_encode($chunk) . "\n\n";
-            ob_flush();
+            if (ob_get_level() > 0) {
+              ob_flush();
+            }
             flush();
           }
           echo "data: [DONE]\n\n";
-          ob_flush();
+          if (ob_get_level() > 0) {
+            ob_flush();
+          }
           flush();
         }, 200, [
           'Cache-Control' => 'no-cache, must-revalidate',

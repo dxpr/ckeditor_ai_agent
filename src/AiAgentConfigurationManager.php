@@ -154,7 +154,7 @@ class AiAgentConfigurationManager {
     $global_config = $this->configFactory->get('ckeditor_ai_agent.settings');
 
     // Check if the ai module is available for proxied requests.
-    $useAiModule = $this->moduleHandler->moduleExists('ai');
+    $use_ai_module = $this->moduleHandler->moduleExists('ai');
 
     // Structure the config to match the aiAgent JS configuration.
     $config = [
@@ -180,7 +180,7 @@ class AiAgentConfigurationManager {
       ],
     ];
 
-    if ($useAiModule) {
+    if ($use_ai_module) {
       // Route requests through the Drupal proxy controller.
       $config['aiAgent']['endpointUrl'] = $this->urlGenerator->generateFromRoute('ckeditor_ai_agent.ai_chat', [], ['absolute' => TRUE]);
       $config['aiAgent']['engine'] = 'dxai';
