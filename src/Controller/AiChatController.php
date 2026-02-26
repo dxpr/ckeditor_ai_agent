@@ -84,8 +84,19 @@ class AiChatController extends ControllerBase {
     }
 
     try {
-      // Load the DXPR provider.
-      $provider = $this->aiProviderManager->createInstance('dxpr');
+      // Resolve the AI provider: use the default chat provider configured in
+      // the ai module (/admin/config/ai/settings), which can be any provider
+      // (DXPR, OpenAI, Anthropic, Ollama, etc.).
+      $default = $this->aiProviderManager->getDefaultProviderForOperationType('chat');
+      if (empty($default['provider_id'])) {
+        $this->logger->error('No default AI chat provider configured.');
+        return new Response(
+          json_encode(['error' => ['message' => 'No AI provider configured. Visit /admin/config/ai/settings to set a default chat provider.']]),
+          Response::HTTP_SERVICE_UNAVAILABLE,
+          ['Content-Type' => 'application/json']
+        );
+      }
+      $provider = $this->aiProviderManager->createInstance($default['provider_id']);
 
       // Build and validate chat messages from request.
       $chat_messages = [];
@@ -103,20 +114,22 @@ class AiChatController extends ControllerBase {
       $is_streamed = !empty($data->stream) || !isset($data->stream);
       $input->setStreamedOutput($is_streamed);
 
-      // Get model from request, validate it's a simple string.
-      $model = 'kavya-m1';
-      if (isset($data->model) && is_string($data->model) && preg_match('/^[a-zA-Z0-9._-]+$/', $data->model)) {
+      // Use model from request if valid, otherwise fall back to the default
+      // model configured for the chat operation type.
+      $model = $default['model_id'];
+      if (isset($data->model) && is_string($data->model) && preg_match('/^[a-zA-Z0-9._:/-]+$/', $data->model)) {
         $model = $data->model;
       }
 
-      // Build configuration with DXPR-specific fields.
+      // Build provider configuration.
       $config = [];
 
       // Disable JSON-RPC agent/status messages — they are not compatible with
       // the openai-php/client library used by the JS plugin.
       $config['jsonrpc'] = FALSE;
 
-      // Pass through optional DXPR-specific fields with type validation.
+      // Pass through optional fields with type validation. These are used by
+      // the DXPR provider but safely ignored by other providers.
       if (isset($data->prediction) && is_object($data->prediction)) {
         $config['prediction'] = (array) $data->prediction;
       }
