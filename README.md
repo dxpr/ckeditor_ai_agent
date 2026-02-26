@@ -13,7 +13,8 @@ generating, modifying, and enhancing content directly within your editor.
 - PHP 8.1 or higher
 - Key module (for secure API key storage)
 - Markdownify module (provides markdown versions of Drupal content for AI to access when URLs are included in prompts)
-- OpenAI API key
+- [AI module](https://www.drupal.org/project/ai) (recommended) — routes AI requests through Drupal server-side, keeping API keys out of the browser. Works with any AI provider plugin (DXPR, OpenAI, Anthropic, Ollama, and more).
+- An AI provider module (e.g. [DXPR AI Provider](https://www.drupal.org/project/ai_provider_dxpr), [OpenAI](https://www.drupal.org/project/ai_provider_openai), etc.) or a direct API key
 
 ## Installation
 
@@ -23,14 +24,33 @@ generating, modifying, and enhancing content directly within your editor.
    drush en ckeditor_ai_agent
    ```
 
-2. **Configure API Key Storage**
+2. **Set Up an AI Provider (recommended)**
+
+   Install the AI module and a provider plugin to route requests server-side
+   (API keys stay on the server, never sent to the browser):
+   ```bash
+   composer require drupal/ai drupal/ai_provider_dxpr
+   drush en ai ai_provider_dxpr
+   ```
+   Then configure a default Chat provider at **Administration > Configuration >
+   AI > Settings** (`/admin/config/ai/settings`).
+
+   Any AI provider supported by the AI module will work (DXPR, OpenAI,
+   Anthropic, Ollama, etc.).
+
+   Alternatively, you can use the module without the AI module by configuring
+   an API key directly (see step 3).
+
+3. **Configure API Key Storage (without AI module)**
+
+   If not using the AI module, configure direct API access:
    - Go to **Administration > Configuration > System > Keys**
      (`admin/config/system/keys`)
-   - Add a new key for your OpenAI API credentials
+   - Add a new key for your AI provider API credentials
    - Select "Authentication" as the key type
-   - Enter your OpenAI API key value
+   - Enter your API key value
 
-3. **Configure CKEditor Integration**
+4. **Configure CKEditor Integration**
    - Go to **Administration > Configuration > Content authoring > Text formats
    and editors** (`admin/config/content/formats`)
    - Edit your desired text format (typically Full HTML)
@@ -87,9 +107,9 @@ settings.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | **Basic Settings** ||||
-| `key_provider` | `string` | - | Select the key that contains your OpenAI API credentials |
-| `model` | `string` | `'gpt-4o'` | Select AI model: GPT-4o (Most capable), GPT-4o Mini (Balanced), or GPT-3.5 Turbo (Fastest) |
-| `endpointUrl` | `string` | - | OpenAI API endpoint URL. Only change if using a custom endpoint or proxy |
+| `key_provider` | `string` | - | Select the key that contains your AI provider API credentials. Not needed when using the AI module (keys are managed server-side). |
+| `model` | `string` | `'gpt-4o'` | AI model to use. When the AI module is installed, the default provider's model is used automatically. |
+| `endpointUrl` | `string` | - | API endpoint URL. Automatically set when using the AI module. Only change if using a custom endpoint or direct API access. |
 | **Advanced Settings** ||||
 | `temperature` | `number` | `0.7` | Controls the creativity of AI responses. Low values (0.0-0.5) produce consistent, deterministic responses ideal for factual content. Medium values (0.6-1.0) offer balanced creativity. High values (1.1-2.0) generate more diverse and unexpected responses |
 | `maxOutputTokens` | `number` | Model's max limit | Maximum number of tokens for AI response. If not set, uses model's maximum limit |
@@ -111,6 +131,8 @@ settings.
 
 - **Slash Command Integration**: Type "/" to trigger AI commands
 - **Real-time Content Generation**: See AI-generated content as it's created
+- **Secure Server-Side Proxy**: AI requests route through Drupal via the AI module — API keys never reach the browser
+- **400+ AI Models**: Works with any provider supported by the Drupal AI module (DXPR, OpenAI, Anthropic, Ollama, and more)
 - **Context-Aware Responses**: AI considers surrounding content
 - **Content Moderation**: Optional content filtering
 - **Multiple Language Support**: Works with CKEditor's language settings
@@ -143,8 +165,8 @@ settings.
 
 ## Permissions
 
-To manage access to CKEditor AI Agent settings, grant the following permission:
-- "Administer CKEditor AI Agent"
+- **"Administer CKEditor AI Agent"** — Access to global settings at `/admin/config/content/ckeditor-ai-agent`
+- **"Use CKEditor AI Agent"** — Required for sending AI requests through the server-side proxy endpoint. Grant this to roles that should have AI access in the editor.
 
 ## Troubleshooting
 

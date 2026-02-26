@@ -18,7 +18,8 @@
   <li><strong>Web content integration:</strong> Includes content from user-provided URLs directly into generated text</li>
   <li><strong>Context-aware writing:</strong> Automatically uses surrounding editor content to enhance response accuracy</li>
   <li><strong>Selection-based edits:</strong> Select text to quickly revise with AI</li>
-  <li><strong>400+ AI models support:</strong> Works with commercial and open source AI vendors</li>
+  <li><strong>400+ AI models support:</strong> Works with commercial and open source AI vendors via the <a href="https://www.drupal.org/project/ai">Drupal AI module</a></li>
+  <li><strong>Secure server-side proxy:</strong> AI requests are routed through Drupal — API keys are never exposed to the browser</li>
   <li><strong>Smart formatting:</strong> Automatically ensures generated HTML matches your editor's allowed content</li>
   <li><strong>Multilingual support:</strong> Fully supports Drupal's multilingual content features</li>
   <li><strong>Simple menu options:</strong> Easily edit, review, fix errors, and adjust tone from dropdown menus</li>
@@ -36,9 +37,10 @@
 
 <h3 id="module-project--post-installation">Post-installation</h3>
 <ol>
-  <li>Configure AI provider settings at /admin/config/ai/providers</li>
-  <li>Configure global AI settings at /admin/config/content/ckeditor-ai-agent</li>
-  <li>Configure permissions at /admin/people/permissions</li>
+  <li>Install and enable the <a href="https://www.drupal.org/project/ai">AI module</a> and an AI provider module (e.g. <a href="https://www.drupal.org/project/ai_provider_dxpr">DXPR AI Provider</a>, <a href="https://www.drupal.org/project/ai_provider_openai">OpenAI</a>, or any other supported provider)</li>
+  <li>Configure a default Chat provider at /admin/config/ai/settings</li>
+  <li>Configure global AI Agent settings at /admin/config/content/ckeditor-ai-agent</li>
+  <li>Grant the "Use CKEditor AI Agent" permission to roles that should have AI access</li>
   <li>Set up text formats at /admin/config/content/formats</li>
   <li>Add the AI Agent button to your CKEditor toolbars</li>
   <li>Start using slash commands or the toolbar button for AI assistance</li>
@@ -76,5 +78,6 @@
 <h3>Dependencies</h3>
 <ul>
   <li><strong><a href="https://www.drupal.org/project/markdownify">Markdownify module</a></strong> (<code>drupal/markdownify</code>) - Provides markdown versions of Drupal content that the AI can access when URLs are included in prompts. Essential for referencing draft articles, internal documentation, or any unpublished content while respecting user permissions. For example, enables workflows like generating social posts for draft articles.</li>
+  <li><strong><a href="https://www.drupal.org/project/ai">AI module</a></strong> (<code>drupal/ai</code>) - Recommended. Routes AI requests through Drupal server-side, keeping API keys secure. Works with any AI provider plugin (DXPR, OpenAI, Anthropic, Ollama, and more).</li>
 </ul>
 
