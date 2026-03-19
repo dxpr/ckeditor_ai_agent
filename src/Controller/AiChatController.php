@@ -2,10 +2,10 @@
 
 namespace Drupal\ckeditor_ai_agent\Controller;
 
-use Drupal\ai\AiProviderPluginManager;
 use Drupal\ai\OperationType\Chat\ChatInput;
 use Drupal\ai\OperationType\Chat\ChatMessage;
 use Drupal\ai\OperationType\Chat\StreamedChatMessageIteratorInterface;
+use Drupal\ckeditor_ai_agent\Service\AiChatProviderGateway;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
@@ -37,25 +37,25 @@ class AiChatController extends ControllerBase {
   protected LoggerChannelInterface $logger;
 
   /**
-   * The AI provider manager.
+   * The AI chat provider gateway.
    *
-   * @var \Drupal\ai\AiProviderPluginManager
+   * @var \Drupal\ckeditor_ai_agent\Service\AiChatProviderGateway
    */
-  protected AiProviderPluginManager $aiProviderManager;
+  protected AiChatProviderGateway $aiChatProviderGateway;
 
   /**
    * Constructs the controller.
    *
-   * @param \Drupal\ai\AiProviderPluginManager $ai_provider_manager
-   *   AI Provider manager.
+   * @param \Drupal\ckeditor_ai_agent\Service\AiChatProviderGateway $ai_chat_provider_gateway
+   *   AI chat provider gateway.
    * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   Logger factory.
    */
   public function __construct(
-    AiProviderPluginManager $ai_provider_manager,
+    AiChatProviderGateway $ai_chat_provider_gateway,
     LoggerChannelFactoryInterface $logger_factory,
   ) {
-    $this->aiProviderManager = $ai_provider_manager;
+    $this->aiChatProviderGateway = $ai_chat_provider_gateway;
     $this->logger = $logger_factory->get('ckeditor_ai_agent');
   }
 
@@ -64,7 +64,7 @@ class AiChatController extends ControllerBase {
    */
   public static function create(ContainerInterface $container): static {
     return new static(
-      $container->get('ai.provider'),
+      $container->get('ckeditor_ai_agent.ai_chat_provider_gateway'),
       $container->get('logger.factory'),
     );
   }
@@ -89,8 +89,8 @@ class AiChatController extends ControllerBase {
       // Resolve the AI provider: use the default chat provider configured in
       // the ai module (/admin/config/ai/settings), which can be any provider
       // (DXPR, OpenAI, Anthropic, Ollama, etc.).
-      $default = $this->aiProviderManager->getDefaultProviderForOperationType('chat');
-      if (empty($default['provider_id'])) {
+      $provider = $this->aiChatProviderGateway->getDefaultChatProvider();
+      if ($provider === NULL) {
         $this->logger->error('No default AI chat provider configured.');
         return new Response(
           json_encode(['error' => ['message' => 'No AI provider configured. Visit /admin/config/ai/settings to set a default chat provider.']]),
@@ -98,7 +98,6 @@ class AiChatController extends ControllerBase {
           ['Content-Type' => 'application/json']
         );
       }
-      $provider = $this->aiProviderManager->createInstance($default['provider_id']);
 
       // Build and validate chat messages from request.
       $chat_messages = [];
@@ -118,7 +117,7 @@ class AiChatController extends ControllerBase {
 
       // Use model from request if valid, otherwise fall back to the default
       // model configured for the chat operation type.
-      $model = $default['model_id'];
+      $model = $provider->getDefaultModelId();
       if (isset($data->model) && is_string($data->model) && preg_match('~^[a-zA-Z0-9._:/-]+$~', $data->model)) {
         $model = $data->model;
       }

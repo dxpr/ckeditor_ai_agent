@@ -8,3 +8,6 @@ services:
   ckeditor_ai_agent.key_service:
     class: Drupal\ckeditor_ai_agent\Service\AiAgentKeyService
     arguments: ['@config.factory', '@module_handler', '@entity_type.manager', '@?key.repository']
+  ckeditor_ai_agent.ai_chat_provider_gateway:
+    class: Drupal\ckeditor_ai_agent\Service\AiChatProviderGateway
+    arguments: ['@ai.provider']
