@@ -30,6 +30,9 @@ parameters:
         - web/modules/contrib/ckeditor_ai_agent/node_modules (?)
     # Set the analysis level (0-9)
     level: 5
+    ignoreErrors:
+        # ProviderProxy delegates provider methods via __call.
+        - '#Call to an undefined method Drupal\\\\ai\\\\Plugin\\\\ProviderProxy::#'
 EOF
 
 mkdir -p web/modules/contrib/
