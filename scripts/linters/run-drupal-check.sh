@@ -24,6 +24,8 @@ cat <<EOF > phpstan.neon
 parameters:
     paths:
         - web/modules/contrib/ckeditor_ai_agent
+    scanDirectories:
+        - web/modules/contrib/ai
     excludePaths:
         - web/modules/contrib/ckeditor_ai_agent/node_modules (?)
     # Set the analysis level (0-9)
@@ -43,6 +45,9 @@ composer require drupal/key
 if ! composer require drupal/markdownify; then
   echo "Warning: Could not install drupal/markdownify (optional dependency)"
 fi
+
+# Install AI module classes used by this module's proxy controller.
+composer require 'drupal/ai:^1.2' --no-interaction
 
 # Install PHPStan extensions for Drupal 11 and Drush for command analysis
 composer require --dev phpstan/phpstan mglaman/phpstan-drupal phpstan/phpstan-deprecation-rules drush/drush --with-all-dependencies --no-interaction

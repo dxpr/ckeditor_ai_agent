@@ -19,6 +19,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *
  * Proxies AI requests from the CKEditor frontend through the Drupal ai module,
  * eliminating the need to expose API keys to the browser.
+ *
+ * @phpstan-consistent-constructor
  */
 class AiChatController extends ControllerBase {
 
@@ -117,7 +119,7 @@ class AiChatController extends ControllerBase {
       // Use model from request if valid, otherwise fall back to the default
       // model configured for the chat operation type.
       $model = $default['model_id'];
-      if (isset($data->model) && is_string($data->model) && preg_match('/^[a-zA-Z0-9._:/-]+$/', $data->model)) {
+      if (isset($data->model) && is_string($data->model) && preg_match('~^[a-zA-Z0-9._:/-]+$~', $data->model)) {
         $model = $data->model;
       }
 

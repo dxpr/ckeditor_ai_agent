@@ -14,6 +14,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Configure CKEditor AI Agent settings.
+ *
+ * @phpstan-consistent-constructor
  */
 class AiAgentSettingsForm extends ConfigFormBase {
   use AiAgentFormTrait;
@@ -71,8 +73,8 @@ class AiAgentSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container): self {
-    return new self(
+  public static function create(ContainerInterface $container): static {
+    return new static(
       $container->get('config.factory'),
       $container->get('config.typed'),
       $container->get('extension.path.resolver'),

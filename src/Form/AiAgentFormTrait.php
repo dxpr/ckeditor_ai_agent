@@ -614,11 +614,11 @@ trait AiAgentFormTrait {
             // Add the category as a header-like row.
             $rows[] = [
               'data' => [
-              [
-                'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
-                'colspan' => 2,
-                'class' => ['command-category-header'],
-              ],
+                [
+                  'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
+                  'colspan' => 2,
+                  'class' => ['command-category-header'],
+                ],
               ],
               'class' => ['command-category-row'],
             ];
@@ -634,19 +634,19 @@ trait AiAgentFormTrait {
                 // Strip HTML and truncate for display.
                 $description = strip_tags($description);
                 $short_description = strlen($description) > 100
-                ? substr($description, 0, 100) . '...'
-                : ($description ?: $this->t('- No instruction defined -'));
+                  ? substr($description, 0, 100) . '...'
+                  : ($description ?: $this->t('- No instruction defined -'));
 
                 $rows[] = [
                   'data' => [
-                  [
-                    'data' => $command_term->label(),
-                    'class' => ['command-name'],
-                  ],
-                  [
-                    'data' => $short_description,
-                    'class' => ['command-description'],
-                  ],
+                    [
+                      'data' => $command_term->label(),
+                      'class' => ['command-name'],
+                    ],
+                    [
+                      'data' => $short_description,
+                      'class' => ['command-description'],
+                    ],
                   ],
                   'class' => ['command-row'],
                 ];
@@ -655,11 +655,11 @@ trait AiAgentFormTrait {
             else {
               $rows[] = [
                 'data' => [
-                [
-                  'data' => $this->t('No commands found in this category'),
-                  'colspan' => 2,
-                  'class' => ['empty-category'],
-                ],
+                  [
+                    'data' => $this->t('No commands found in this category'),
+                    'colspan' => 2,
+                    'class' => ['empty-category'],
+                  ],
                 ],
               ];
             }
@@ -1074,11 +1074,11 @@ trait AiAgentFormTrait {
             // Add the category as a header-like row.
             $rows[] = [
               'data' => [
-              [
-                'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
-                'colspan' => 2,
-                'class' => ['command-category-header'],
-              ],
+                [
+                  'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
+                  'colspan' => 2,
+                  'class' => ['command-category-header'],
+                ],
               ],
               'class' => ['command-category-row'],
             ];
@@ -1094,19 +1094,19 @@ trait AiAgentFormTrait {
                 // Strip HTML and truncate for display.
                 $description = strip_tags($description);
                 $short_description = strlen($description) > 100
-                ? substr($description, 0, 100) . '...'
-                : ($description ?: $this->t('- No instruction defined -'));
+                  ? substr($description, 0, 100) . '...'
+                  : ($description ?: $this->t('- No instruction defined -'));
 
                 $rows[] = [
                   'data' => [
-                  [
-                    'data' => $command_term->label(),
-                    'class' => ['command-name'],
-                  ],
-                  [
-                    'data' => $short_description,
-                    'class' => ['command-description'],
-                  ],
+                    [
+                      'data' => $command_term->label(),
+                      'class' => ['command-name'],
+                    ],
+                    [
+                      'data' => $short_description,
+                      'class' => ['command-description'],
+                    ],
                   ],
                   'class' => ['command-row'],
                 ];
@@ -1115,11 +1115,11 @@ trait AiAgentFormTrait {
             else {
               $rows[] = [
                 'data' => [
-                [
-                  'data' => $this->t('No commands found in this category'),
-                  'colspan' => 2,
-                  'class' => ['empty-category'],
-                ],
+                  [
+                    'data' => $this->t('No commands found in this category'),
+                    'colspan' => 2,
+                    'class' => ['empty-category'],
+                  ],
                 ],
               ];
             }
