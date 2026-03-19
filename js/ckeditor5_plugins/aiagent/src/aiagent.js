@@ -10,8 +10,8 @@ export default class AiAgent extends Plugin {
     constructor(editor) {
         super(editor);
         const config = editor.config.get('aiAgent') || {};
-        // Check if plugin is enabled based on presence of API key
-        this.isEnabled = Boolean(config.apiKey);
+        // Enable when either direct API auth or a proxy endpoint is configured.
+        this.isEnabled = Boolean(config.apiKey || config.endpointUrl);
         // Set default values and merge with provided config
         const defaultConfig = {
             engine: this.DEFAULT_GPT_ENGINE, // Default AI model

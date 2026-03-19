@@ -13,4 +13,4 @@ ckeditor_ai_agent.ai_chat:
     _controller: '\Drupal\ckeditor_ai_agent\Controller\AiChatController::chat'
   requirements:
     _permission: 'use ckeditor ai agent'
-    _csrf_request_header_token: 'TRUE'
+    _csrf_token: 'TRUE'

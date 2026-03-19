@@ -2,11 +2,12 @@
 
 namespace Drupal\ckeditor_ai_agent;
 
+use Drupal\Core\Access\CsrfTokenGenerator;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
-use Drupal\Core\Routing\UrlGeneratorInterface;
+use Drupal\Core\Url;
 use Drupal\editor\Entity\Editor;
 use Drupal\ckeditor_ai_agent\Service\AiAgentKeyService;
 
@@ -51,11 +52,11 @@ class AiAgentConfigurationManager {
   protected ModuleHandlerInterface $moduleHandler;
 
   /**
-   * The URL generator.
+   * The CSRF token generator.
    *
-   * @var \Drupal\Core\Routing\UrlGeneratorInterface
+   * @var \Drupal\Core\Access\CsrfTokenGenerator
    */
-  protected UrlGeneratorInterface $urlGenerator;
+  protected CsrfTokenGenerator $csrfToken;
 
   /**
    * Constructs a new AiAgentConfigurationManager.
@@ -70,8 +71,8 @@ class AiAgentConfigurationManager {
    *   The logger channel.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
-   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
-   *   The URL generator.
+   * @param \Drupal\Core\Access\CsrfTokenGenerator $csrf_token
+   *   The CSRF token generator.
    */
   public function __construct(
     ConfigFactoryInterface $config_factory,
@@ -79,14 +80,14 @@ class AiAgentConfigurationManager {
     EntityTypeManagerInterface $entity_type_manager,
     LoggerChannelInterface $logger,
     ModuleHandlerInterface $module_handler,
-    UrlGeneratorInterface $url_generator,
+    CsrfTokenGenerator $csrf_token,
   ) {
     $this->configFactory = $config_factory;
     $this->keyService = $key_service;
     $this->entityTypeManager = $entity_type_manager;
     $this->logger = $logger;
     $this->moduleHandler = $module_handler;
-    $this->urlGenerator = $url_generator;
+    $this->csrfToken = $csrf_token;
   }
 
   /**
@@ -182,7 +183,7 @@ class AiAgentConfigurationManager {
 
     if ($use_ai_module) {
       // Route requests through the Drupal proxy controller.
-      $config['aiAgent']['endpointUrl'] = $this->urlGenerator->generateFromRoute('ckeditor_ai_agent.ai_chat', [], ['absolute' => TRUE]);
+      $config['aiAgent']['endpointUrl'] = $this->getTokenizedProxyEndpointUrl();
       $config['aiAgent']['engine'] = 'dxai';
       // Parse model name from engine:model format.
       $model = $global_config->get('model');
@@ -341,6 +342,22 @@ class AiAgentConfigurationManager {
     }
 
     return $config;
+  }
+
+  /**
+   * Builds the tokenized endpoint URL for the AI proxy route.
+   *
+   * @return string
+   *   The absolute tokenized endpoint URL.
+   */
+  protected function getTokenizedProxyEndpointUrl(): string {
+    $url = Url::fromRoute('ckeditor_ai_agent.ai_chat');
+    $token = $this->csrfToken->get($url->getInternalPath());
+    $url->setOptions([
+      'absolute' => TRUE,
+      'query' => ['token' => $token],
+    ]);
+    return $url->toString();
   }
 
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\ckeditor_ai_agent\Plugin\CKEditor5Plugin;
 
+use Drupal\Core\Access\CsrfTokenGenerator;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\ckeditor5\Plugin\CKEditor5PluginConfigurableInterface;
 use Drupal\ckeditor5\Plugin\CKEditor5PluginConfigurableTrait;
@@ -17,6 +18,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Routing\UrlGeneratorInterface;
+use Drupal\Core\Url;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\editor\EditorInterface;
 use Drupal\ckeditor_ai_agent\Form\AiAgentFormTrait;
@@ -86,6 +88,13 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   protected ModuleHandlerInterface $moduleHandler;
 
   /**
+   * The CSRF token generator.
+   *
+   * @var \Drupal\Core\Access\CsrfTokenGenerator
+   */
+  protected CsrfTokenGenerator $csrfToken;
+
+  /**
    * The messenger.
    *
    * @var \Drupal\Core\Messenger\MessengerInterface
@@ -117,6 +126,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    *   The messenger.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
+   * @param \Drupal\Core\Access\CsrfTokenGenerator $csrf_token
+   *   The CSRF token generator.
    */
   public function __construct(
     array $configuration,
@@ -130,6 +141,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     UrlGeneratorInterface $url_generator,
     MessengerInterface $messenger,
     ModuleHandlerInterface $module_handler,
+    CsrfTokenGenerator $csrf_token,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->configFactory = $config_factory;
@@ -140,6 +152,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     $this->urlGenerator = $url_generator;
     $this->messenger = $messenger;
     $this->moduleHandler = $module_handler;
+    $this->csrfToken = $csrf_token;
   }
 
   /**
@@ -158,7 +171,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       $container->get('extension.path.resolver'),
       $container->get('url_generator'),
       $container->get('messenger'),
-      $container->get('module_handler')
+      $container->get('module_handler'),
+      $container->get('csrf_token')
     );
   }
 
@@ -312,7 +326,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
     if ($use_ai_module) {
       // Route requests through the Drupal proxy controller.
-      $result['aiAgent']['endpointUrl'] = $this->urlGenerator->generateFromRoute('ckeditor_ai_agent.ai_chat', [], ['absolute' => TRUE]);
+      $result['aiAgent']['endpointUrl'] = $this->getTokenizedProxyEndpointUrl();
       $result['aiAgent']['engine'] = 'dxai';
       // Pass model through for the proxy to use.
       $model = $result['aiAgent']['model'] ?? 'openai:gpt-4o';
@@ -515,6 +529,22 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     }
 
     return $result;
+  }
+
+  /**
+   * Builds the tokenized endpoint URL for the AI proxy route.
+   *
+   * @return string
+   *   The absolute tokenized endpoint URL.
+   */
+  protected function getTokenizedProxyEndpointUrl(): string {
+    $url = Url::fromRoute('ckeditor_ai_agent.ai_chat');
+    $token = $this->csrfToken->get($url->getInternalPath());
+    $url->setOptions([
+      'absolute' => TRUE,
+      'query' => ['token' => $token],
+    ]);
+    return $url->toString();
   }
 
   /**
