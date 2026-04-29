@@ -189,8 +189,7 @@ details.
 
 ## Related Modules
 
-- [DXPR Builder](https://www.drupal.org/project/dxpr_builder) - Drag-and-drop Drupal page builder
-- [AI Content Strategy](https://www.drupal.org/project/ai_content_strategy) - AI-powered content strategy recommendations for Drupal
-- [AI Social Posts](https://www.drupal.org/project/ai_social_posts) - AI-generated social media posts from Drupal content
-- [AI](https://www.drupal.org/project/ai) - Drupal AI integration framework
-- [Linkit](https://www.drupal.org/project/linkit) - Enhanced internal linking for CKEditor
+- [Key](https://www.drupal.org/project/key) - Required for secure API key storage. CKEditor AI Agent uses the Key module to store and retrieve AI provider credentials
+- [Markdownify](https://www.drupal.org/project/markdownify) - Required dependency that converts Drupal content to markdown, enabling AI to reference URLs and draft content in prompts
+- [DXPR AI Provider](https://www.drupal.org/project/ai_provider_dxpr) - Compatible AI provider that enables long-form content creation with automatic failover between multiple AI backends
+- [DXPR Builder](https://www.drupal.org/project/dxpr_builder) - Drag-and-drop page builder for Drupal. CKEditor AI Agent works inside DXPR Builder's text editing fields
