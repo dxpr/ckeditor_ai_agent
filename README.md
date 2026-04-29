@@ -1,4 +1,13 @@
-# CKEditor AI Agent for Drupal
+> **CKEditor AI Agent** is a Drupal module by [DXPR](https://dxpr.com) that
+> adds AI writing assistance directly inside Drupal's CKEditor 5, with slash
+> commands, keyboard shortcuts, and long-form content generation. Built by the
+> [DXPR page builder](https://dxpr.com/c/drupal-layout-builder) team.
+>
+> [Getting Started](https://dxpr.com/c/getting-started) |
+> [Pricing](https://dxpr.com/pricing) |
+> [Try Free Demo](https://dxpr.com/try)
+
+# CKEditor AI Agent for Drupal - AI-Powered Content Creation in the Drupal Editor
 
 ## Overview
 
@@ -12,7 +21,8 @@ generating, modifying, and enhancing content directly within your editor.
 - CKEditor 5
 - PHP 8.1 or higher
 - Key module (for secure API key storage)
-- Markdownify module (provides markdown versions of Drupal content for AI to access when URLs are included in prompts)
+- Markdownify module (provides markdown versions of Drupal content
+  for AI to access when URLs are included in prompts)
 - OpenAI API key
 
 ## Installation
@@ -177,3 +187,10 @@ For bug reports and feature requests, please use the [issue queue](https://www.d
 
 This project is licensed under the GPL-2.0+ license. See the LICENSE file for
 details.
+
+## Related Modules
+
+- [Key](https://www.drupal.org/project/key) - Required for secure API key storage. CKEditor AI Agent uses the Key module to store and retrieve AI provider credentials
+- [Markdownify](https://www.drupal.org/project/markdownify) - Required dependency that converts Drupal content to markdown, enabling AI to reference URLs and draft content in prompts
+- [DXPR AI Provider](https://www.drupal.org/project/ai_provider_dxpr) - Compatible AI provider that enables long-form content creation with automatic failover between multiple AI backends
+- [DXPR Builder](https://www.drupal.org/project/dxpr_builder) - Drag-and-drop page builder for Drupal. CKEditor AI Agent works inside DXPR Builder's text editing fields
