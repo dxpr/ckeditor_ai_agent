@@ -1,4 +1,8 @@
-# CKEditor AI Agent for Drupal
+> Part of [DXPR Page Builder](https://dxpr.com/c/drupal-layout-builder) -- The AI-Powered Drupal CMS
+>
+> [Documentation](https://dxpr.com/docs) | [Try Free](https://dxpr.com/try) | [dxpr.com](https://dxpr.com)
+
+# CKEditor AI Agent for Drupal -- AI-Powered Content Creation in the Drupal Editor
 
 ## Overview
 
@@ -177,3 +181,9 @@ For bug reports and feature requests, please use the [issue queue](https://www.d
 
 This project is licensed under the GPL-2.0+ license. See the LICENSE file for
 details.
+
+## Related DXPR Modules
+
+- [DXPR Builder](https://www.drupal.org/project/dxpr_builder) -- Drag-and-drop Drupal page builder
+- [AI Content Strategy](https://www.drupal.org/project/ai_content_strategy) -- AI-powered content strategy recommendations for Drupal
+- [AI Social Posts](https://www.drupal.org/project/ai_social_posts) -- AI-generated social media posts from Drupal content
