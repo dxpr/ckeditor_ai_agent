@@ -3,9 +3,9 @@
 > commands, keyboard shortcuts, and long-form content generation. Built by the
 > [DXPR page builder](https://dxpr.com/c/drupal-layout-builder) team.
 >
-> [Getting Started](https://dxpr.com/c/getting-started) |
+> [Getting Started](https://dxpr.com/c/marketing-cms) |
 > [Pricing](https://dxpr.com/pricing) |
-> [Try Free Demo](https://dxpr.com/try)
+> [Try Free Demo](https://try.dxpr.com)
 
 # CKEditor AI Agent for Drupal - AI-Powered Content Creation in the Drupal Editor
 
