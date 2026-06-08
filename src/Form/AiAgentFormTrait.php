@@ -116,8 +116,9 @@ trait AiAgentFormTrait {
       '#open' => TRUE,
     ];
 
-    \Drupal::moduleHandler()->loadInclude('ckeditor_ai_agent', 'install');
-    $check = _ckeditor_ai_agent_check_ai_provider();
+    /** @var \Drupal\ckeditor_ai_agent\AiAgentConfigurationManager $config_manager */
+    $config_manager = \Drupal::service('ckeditor_ai_agent.configuration_manager');
+    $check = $config_manager->checkAiProvider();
     if ($check['severity'] === REQUIREMENT_OK) {
       $elements['ai_provider_status']['status'] = [
         '#type' => 'html_tag',

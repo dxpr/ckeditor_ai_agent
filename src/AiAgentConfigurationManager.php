@@ -2,10 +2,12 @@
 
 namespace Drupal\ckeditor_ai_agent;
 
+use Drupal\ai\AiProviderPluginManager;
 use Drupal\Core\Access\CsrfTokenGenerator;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
 use Drupal\editor\Entity\Editor;
 
@@ -14,12 +16,22 @@ use Drupal\editor\Entity\Editor;
  */
 class AiAgentConfigurationManager {
 
+  use ProxyEndpointUrlTrait;
+  use StringTranslationTrait;
+
   /**
    * The config factory.
    *
    * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
   protected $configFactory;
+
+  /**
+   * The AI provider plugin manager.
+   *
+   * @var \Drupal\ai\AiProviderPluginManager
+   */
+  protected AiProviderPluginManager $aiProviderManager;
 
   /**
    * The entity type manager.
@@ -47,6 +59,8 @@ class AiAgentConfigurationManager {
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
+   * @param \Drupal\ai\AiProviderPluginManager $ai_provider_manager
+   *   The AI provider plugin manager.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
@@ -56,11 +70,13 @@ class AiAgentConfigurationManager {
    */
   public function __construct(
     ConfigFactoryInterface $config_factory,
+    AiProviderPluginManager $ai_provider_manager,
     EntityTypeManagerInterface $entity_type_manager,
     LoggerChannelInterface $logger,
     CsrfTokenGenerator $csrf_token,
   ) {
     $this->configFactory = $config_factory;
+    $this->aiProviderManager = $ai_provider_manager;
     $this->entityTypeManager = $entity_type_manager;
     $this->logger = $logger;
     $this->csrfToken = $csrf_token;
@@ -279,19 +295,69 @@ class AiAgentConfigurationManager {
   }
 
   /**
-   * Builds the tokenized endpoint URL for the AI proxy route.
+   * Checks the AI provider setup and returns a requirements entry.
    *
-   * @return string
-   *   The absolute tokenized endpoint URL.
+   * @return array
+   *   A requirements array entry with 'title', 'severity', and optionally
+   *   'description' and 'value' keys.
    */
-  protected function getTokenizedProxyEndpointUrl(): string {
-    $url = Url::fromRoute('ckeditor_ai_agent.ai_chat');
-    $token = $this->csrfToken->get($url->getInternalPath());
-    $url->setOptions([
-      'absolute' => TRUE,
-      'query' => ['token' => $token],
-    ]);
-    return $url->toString();
+  public function checkAiProvider(): array {
+    $settings_url = Url::fromRoute('ai.settings_form')->toString();
+
+    $definitions = $this->aiProviderManager->getDefinitions();
+    if (empty($definitions)) {
+      return [
+        'title' => $this->t('CKEditor AI Agent'),
+        'description' => $this->t('No AI provider modules are installed. Install at least one provider (e.g. <a href="@dxpr">DXPR AI Provider</a>, <a href="@openai">OpenAI</a>, <a href="@anthropic">Anthropic</a>, or <a href="@ollama">Ollama</a>) so the AI module can route requests.', [
+          '@dxpr' => 'https://www.drupal.org/project/ai_provider_dxpr',
+          '@openai' => 'https://www.drupal.org/project/ai_provider_openai',
+          '@anthropic' => 'https://www.drupal.org/project/ai_provider_anthropic',
+          '@ollama' => 'https://www.drupal.org/project/ai_provider_ollama',
+        ]),
+        'severity' => REQUIREMENT_ERROR,
+      ];
+    }
+
+    $usable = $this->aiProviderManager->getProvidersForOperationType('chat', TRUE);
+    if (empty($usable)) {
+      $installed_names = array_map(fn($d) => $d['label'] ?? $d['id'], $definitions);
+      return [
+        'title' => $this->t('CKEditor AI Agent'),
+        'description' => $this->t('Provider modules are installed (@providers) but none are ready for chat. This usually means an API key or authentication is missing. Configure your provider at <a href="@settings">AI settings</a>.', [
+          '@providers' => implode(', ', $installed_names),
+          '@settings' => $settings_url,
+        ]),
+        'severity' => REQUIREMENT_ERROR,
+      ];
+    }
+
+    $default = $this->aiProviderManager->getDefaultProviderForOperationType('chat');
+    if (empty($default['provider_id'])) {
+      $usable_names = array_map(fn($d) => $d['label'] ?? $d['id'], $usable);
+      return [
+        'title' => $this->t('CKEditor AI Agent'),
+        'description' => $this->t('@count chat-capable provider(s) available (@providers) but no default is selected. Choose a default chat provider at <a href="@settings">AI settings</a>.', [
+          '@count' => count($usable),
+          '@providers' => implode(', ', $usable_names),
+          '@settings' => $settings_url,
+        ]),
+        'severity' => REQUIREMENT_WARNING,
+      ];
+    }
+
+    $provider_label = $default['provider_id'];
+    $model_label = $default['model_id'] ?? '';
+    if (isset($definitions[$default['provider_id']]['label'])) {
+      $provider_label = $definitions[$default['provider_id']]['label'];
+    }
+    return [
+      'title' => $this->t('CKEditor AI Agent'),
+      'value' => $provider_label . ($model_label ? ' / ' . $model_label : ''),
+      'description' => $this->t('Requests are routed server-side through the AI module. Change the provider at <a href="@settings">AI settings</a>.', [
+        '@settings' => $settings_url,
+      ]),
+      'severity' => REQUIREMENT_OK,
+    ];
   }
 
 }

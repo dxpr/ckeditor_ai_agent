@@ -17,13 +17,13 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Routing\UrlGeneratorInterface;
-use Drupal\Core\Url;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\editor\EditorInterface;
 use Drupal\ckeditor_ai_agent\Form\AiAgentFormTrait;
 use Drupal\ckeditor_ai_agent\Form\ConfigSetterTrait;
 use Drupal\ckeditor_ai_agent\Form\ConfigMappingTrait;
+use Drupal\ckeditor_ai_agent\ProxyEndpointUrlTrait;
 
 /**
  * CKEditor 5 AI Agent plugin.
@@ -36,6 +36,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   use AiAgentFormTrait;
   use ConfigSetterTrait;
   use ConfigMappingTrait;
+  use ProxyEndpointUrlTrait;
 
   /**
    * The configuration factory.
@@ -472,22 +473,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     }
 
     return $result;
-  }
-
-  /**
-   * Builds the tokenized endpoint URL for the AI proxy route.
-   *
-   * @return string
-   *   The absolute tokenized endpoint URL.
-   */
-  protected function getTokenizedProxyEndpointUrl(): string {
-    $url = Url::fromRoute('ckeditor_ai_agent.ai_chat');
-    $token = $this->csrfToken->get($url->getInternalPath());
-    $url->setOptions([
-      'absolute' => TRUE,
-      'query' => ['token' => $token],
-    ]);
-    return $url->toString();
   }
 
   /**

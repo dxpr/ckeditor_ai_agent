@@ -105,7 +105,7 @@ class AiChatController extends ControllerBase {
       }
 
       $input = new ChatInput($chat_messages);
-      $is_streamed = !empty($data->stream) || !isset($data->stream);
+      $is_streamed = !isset($data->stream) || !empty($data->stream);
       $input->setStreamedOutput($is_streamed);
 
       $model = (!empty($default['model_id']) && is_string($default['model_id']))
