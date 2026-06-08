@@ -1978,10 +1978,10 @@
   resolved "https://registry.npmjs.org/@dual-bundle/import-meta-resolve/-/import-meta-resolve-4.1.0.tgz"
   integrity sha512-+nxncfwHM5SgAtrVzgpzJOI1ol0PkumhVo469KCf9lUi21IGcY90G98VuHm9VRrUypmAzawAHO9bs6hqeADaVg==
 
-"@dxpr/ckeditor5-ai-agent@^1.2.3":
-  version "1.2.3"
-  resolved "https://registry.npmjs.org/@dxpr/ckeditor5-ai-agent/-/ckeditor5-ai-agent-1.2.3.tgz"
-  integrity sha512-/FIxyvPiFDuBC+OFUGr4hBObuvU1gIVlUoTr8XzpigFNiblT8U/JnHbs3Zzq6Hjb4wjxu973Lo4NNdoAQo6qtQ==
+"@dxpr/ckeditor5-ai-agent@^1.3.1":
+  version "1.3.1"
+  resolved "https://registry.npmjs.org/@dxpr/ckeditor5-ai-agent/-/ckeditor5-ai-agent-1.3.1.tgz"
+  integrity sha512-DH82eoxgBhJ2PsYX+Ae4OvHeo4D15HRRLBjVqVS3EgRVkrpuLBrRmWw59HUbpSvO2p6CupvFPjpcs3bzxAW/Xw==
   dependencies:
     "@ckeditor/ckeditor5-core" "^46.0.0"
     "@ckeditor/ckeditor5-utils" "^46.0.0"

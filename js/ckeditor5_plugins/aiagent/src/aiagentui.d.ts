@@ -1,13 +1,24 @@
 import { Plugin, type Editor } from 'ckeditor5/src/core.js';
 import { Widget } from 'ckeditor5/src/widget.js';
 export default class AiAgentUI extends Plugin {
-    PLACEHOLDER_TEXT_ID: string;
-    GPT_RESPONSE_LOADER_ID: string;
-    GPT_RESPONSE_ERROR_ID: string;
+    readonly PLACEHOLDER_TEXT_ID = "slash-placeholder";
+    readonly GPT_RESPONSE_LOADER_ID = "gpt-response-loader";
+    readonly GPT_RESPONSE_ERROR_ID = "gpt-error";
     private showErrorDuration;
+    private readonly abortController;
+    private readonly pendingTimeouts;
+    private errorTooltipElement;
     constructor(editor: Editor);
     static get pluginName(): "AiAgentUI";
     static get requires(): readonly [typeof Widget];
+    /**
+     * Creates a tracked timeout that will be automatically cleared on destroy.
+     */
+    private setTimeout;
+    /**
+     * Clears all pending timeouts.
+     */
+    private clearAllTimeouts;
     /**
      * Initializes the AI Agent UI plugin, setting up UI components and event listeners.
      * This method is called when the plugin is loaded.
@@ -27,6 +38,10 @@ export default class AiAgentUI extends Plugin {
      */
     private attachListener;
     /**
+     * Removes empty inline-slash elements from the document.
+     */
+    private removeEmptyInlineSlashElements;
+    /**
      * Applies the placeholder to the current line in the editor if it is empty.
      * Hides the placeholder if the line is not empty.
      */
@@ -35,7 +50,7 @@ export default class AiAgentUI extends Plugin {
      * Retrieves the DOM rectangle of a given model element.
      *
      * @param element - The model element for which to get the DOM rectangle.
-     * @returns A promise that resolves to the DOMRect of the element, or null if not found.
+     * @returns The position of the element relative to the editor container, or null if not found.
      */
     private getRectDomOfGivenModelElement;
     /**
@@ -57,9 +72,9 @@ export default class AiAgentUI extends Plugin {
      */
     private addLoader;
     /**
-     * Shows the loader at the specified position.
+     * Shows the loader at the current cursor position.
      *
-     * @param rect - The DOMRect object defining the position to show the loader.
+     * @param editor - The editor instance.
      */
     showLoader(editor: Editor): void;
     /**
@@ -95,4 +110,9 @@ export default class AiAgentUI extends Plugin {
      * Hides the error tooltip element from the document.
      */
     private hideGptErrorToolTip;
+    /**
+     * Cleans up resources when the plugin is destroyed.
+     * Removes event listeners, clears timeouts, and removes created DOM elements.
+     */
+    destroy(): void;
 }

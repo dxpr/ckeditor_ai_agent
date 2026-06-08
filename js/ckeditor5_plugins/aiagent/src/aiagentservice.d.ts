@@ -15,6 +15,7 @@ export default class AiAgentService {
     private promptHelper;
     private htmlParser;
     private providers?;
+    private creditsUrl?;
     private isInlineInsertion;
     private abortGeneration;
     private moderationKey;
@@ -24,6 +25,7 @@ export default class AiAgentService {
     private writesPerSecond;
     private processContentHelper;
     private readonly FILTERED_STRINGS;
+    private getOutputMetrics;
     /**
      * Initializes the AiAgentService with the provided editor and configuration settings.
      *
@@ -68,4 +70,6 @@ export default class AiAgentService {
      * @throws Will throw an error if the streaming process fails or if the model is invalid.
      */
     private generate;
+    private escapeHtml;
+    private getErrorNotification;
 }

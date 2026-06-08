@@ -10,7 +10,11 @@ export declare class AiAgentContext {
     static getInstance(): AiAgentContext;
     set uiComponent(component: any);
     get uiComponent(): any;
-    showError(message: string): void;
+    showError(message: string, options?: {
+        type?: 'error' | 'warning';
+        html?: boolean;
+        duration?: number;
+    }): void;
     showLoader(editor: Editor): void;
     hideLoader(editor: Editor): void;
 }
