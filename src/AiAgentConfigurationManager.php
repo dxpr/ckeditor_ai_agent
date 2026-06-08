@@ -298,6 +298,7 @@ class AiAgentConfigurationManager {
    *   'description' and 'value' keys.
    */
   public function checkAiProvider(): array {
+    include_once DRUPAL_ROOT . '/core/includes/install.inc';
     $settings_url = Url::fromRoute('ai.settings_form')->toString();
 
     $definitions = $this->aiProviderManager->getDefinitions();
