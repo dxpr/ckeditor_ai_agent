@@ -7,9 +7,7 @@
     "minimum-stability": "dev",
     "require": {
         "drupal/ai": "^1.2",
-        "drupal/core": "^10.3 || ^11",
-        "drupal/key": "^1.16",
-        "drupal/markdownify": "^1"
+        "drupal/core": "^10.3 || ^11"
     },
     "suggest": {
         "drupal/ai_provider_dxpr": "^1.0@alpha - DXPR AI provider for the ai module"

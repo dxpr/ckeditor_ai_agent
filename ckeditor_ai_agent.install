@@ -46,6 +46,51 @@ function ckeditor_ai_agent_update_9004(): void {
 }
 
 /**
+ * Remove legacy direct-API config values superseded by the AI module.
+ *
+ * The module now routes all requests through the Drupal AI module, so
+ * key_provider, apiKey, model, ollamaModel, and endpointUrl are no longer
+ * used. This hook cleans them from global settings and per-editor config.
+ */
+function ckeditor_ai_agent_update_9005(): void {
+  $stale_keys = ['key_provider', 'apiKey', 'model', 'ollamaModel', 'endpointUrl'];
+
+  // Clean global settings.
+  $config = \Drupal::configFactory()->getEditable('ckeditor_ai_agent.settings');
+  $changed = FALSE;
+  foreach ($stale_keys as $key) {
+    if ($config->get($key) !== NULL) {
+      $config->clear($key);
+      $changed = TRUE;
+    }
+  }
+  if ($changed) {
+    $config->save();
+  }
+
+  // Clean per-editor CKEditor5 plugin config.
+  $editor_storage = \Drupal::entityTypeManager()->getStorage('editor');
+  foreach ($editor_storage->loadMultiple() as $editor) {
+    $settings = $editor->getSettings();
+    $plugin_key = 'ckeditor_ai_agent_ai_agent';
+    if (!isset($settings['plugins'][$plugin_key]['aiAgent'])) {
+      continue;
+    }
+    $editor_changed = FALSE;
+    foreach ($stale_keys as $key) {
+      if (array_key_exists($key, $settings['plugins'][$plugin_key]['aiAgent'])) {
+        unset($settings['plugins'][$plugin_key]['aiAgent'][$key]);
+        $editor_changed = TRUE;
+      }
+    }
+    if ($editor_changed) {
+      $editor->setSettings($settings);
+      $editor->save();
+    }
+  }
+}
+
+/**
  * Helper function to create the command vocabulary and default terms.
  */
 function _ckeditor_ai_agent_create_command_vocabulary() {

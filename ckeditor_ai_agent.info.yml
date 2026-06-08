@@ -6,6 +6,4 @@ core_version_requirement: ^10.3 || ^11
 dependencies:
   - ai:ai
   - drupal:ckeditor5
-  - key:key
-  - markdownify:markdownify
 configure: ckeditor_ai_agent.settings
