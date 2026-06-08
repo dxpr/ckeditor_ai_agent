@@ -14,6 +14,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Configure CKEditor AI Agent settings.
+ *
+ * @phpstan-consistent-constructor
  */
 class AiAgentSettingsForm extends ConfigFormBase {
   use AiAgentFormTrait;
@@ -71,8 +73,8 @@ class AiAgentSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container): self {
-    return new self(
+  public static function create(ContainerInterface $container): static {
+    return new static(
       $container->get('config.factory'),
       $container->get('config.typed'),
       $container->get('extension.path.resolver'),
@@ -145,10 +147,6 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $form = $this->getCommonFormElements(FALSE, $config);
 
     // Set default values from config.
-    $form['basic_settings']['apiKey']['#default_value'] = $config->get('apiKey');
-    $form['basic_settings']['model']['#default_value'] = $config->get('model');
-    $form['basic_settings']['ollamaModel']['#default_value'] = $config->get('ollamaModel');
-    $form['basic_settings']['endpointUrl']['#default_value'] = $config->get('endpointUrl');
     $form['advanced_settings']['context']['contentScope']['#default_value'] = $config->get('contentScope');
 
     $form['advanced_settings']['temperature']['#default_value'] = $config->get('temperature');
@@ -163,9 +161,6 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $form['behavior_settings']['debugMode']['#default_value'] = $config->get('debugMode') ? '1' : '0';
     $form['behavior_settings']['streamContent']['#default_value'] = $config->get('streamContent') ? '1' : '0';
     $form['behavior_settings']['showErrorDuration']['#default_value'] = $config->get('showErrorDuration') ?: 5000;
-
-    $form['moderation_settings']['moderationEnable']['#default_value'] = $config->get('moderationEnable');
-    $form['moderation_settings']['moderationKey']['#default_value'] = $config->get('moderationKey');
 
     return parent::buildForm($form, $form_state);
   }

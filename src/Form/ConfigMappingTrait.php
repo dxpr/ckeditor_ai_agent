@@ -18,16 +18,7 @@ trait ConfigMappingTrait {
    */
   protected function getConfigMapping(bool $is_plugin = FALSE): array {
     $base_mapping = [
-      'basic_settings.apiKey' => [
-        'type' => 'string',
-      ],
-      'basic_settings.model' => [
-        'type' => 'string',
-      ],
-      'basic_settings.endpointUrl' => [
-        'type' => 'string',
-      ],
-      'basic_settings.contentScope' => [
+      'advanced_settings.context.contentScope' => [
         'type' => 'string',
       ],
       'advanced_settings.temperature' => [
@@ -59,12 +50,6 @@ trait ConfigMappingTrait {
       ],
       'behavior_settings.showErrorDuration' => [
         'type' => 'int',
-      ],
-      'moderation_settings.moderationEnable' => [
-        'type' => 'bool',
-      ],
-      'moderation_settings.moderationKey' => [
-        'type' => 'string',
       ],
       'tone_of_voice.toneOfVoiceVocabulary' => [
         'type' => 'string',
@@ -119,10 +104,6 @@ trait ConfigMappingTrait {
    */
   protected function getSettingsMap(): array {
     return [
-      'apiKey' => 'key_provider',
-      'model' => 'model',
-      'ollamaModel' => 'ollamaModel',
-      'endpointUrl' => 'endpointUrl',
       'contentScope' => 'contentScope',
       'temperature' => 'temperature',
       'maxOutputTokens' => 'maxOutputTokens',
@@ -134,8 +115,6 @@ trait ConfigMappingTrait {
       'debugMode' => 'debugMode',
       'streamContent' => 'streamContent',
       'showErrorDuration' => 'showErrorDuration',
-      'moderationEnable' => 'moderationEnable',
-      'moderationKey' => 'moderationKey',
       'toneOfVoiceVocabulary' => 'toneOfVoiceVocabulary',
       'commandsVocabulary' => 'commandsVocabulary',
       'defaultToneOfVoice' => 'defaultToneOfVoice',

@@ -2,3 +2,7 @@ administer ckeditor ai agent:
   title: 'Administer CKEditor AI Agent'
   description: 'Configure CKEditor AI Agent settings.'
   restrict access: true
+
+use ckeditor ai agent:
+  title: 'Use CKEditor AI Agent'
+  description: 'Send AI requests through the CKEditor AI Agent proxy endpoint.'

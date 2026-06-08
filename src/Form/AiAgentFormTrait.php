@@ -109,103 +109,40 @@ trait AiAgentFormTrait {
     // Helper function for formatting field names as titles.
     $formatMachineNameAsTitle = fn($title) => str_replace('_', ' ', ucfirst($title));
 
-    // Basic Settings.
-    $elements['basic_settings'] = [
+    // AI Provider status panel.
+    $elements['ai_provider_status'] = [
       '#type' => 'details',
-      '#title' => $this->t('Connection & Model Settings'),
+      '#title' => $this->t('AI Provider'),
       '#open' => TRUE,
-      '#ajax' => FALSE,
     ];
 
-    // Get available keys.
-    $key_options = [];
-    $key_storage = $this->getEntityTypeManager()->getStorage('key');
-    $keys = $key_storage->loadMultiple();
-    foreach ($keys as $key) {
-      $key_options[$key->id()] = $key->label();
-    }
-
-    $elements['basic_settings']['key_provider'] = [
-      '#type' => 'select',
-      '#title' => $this->t('API Key'),
-      '#description' => $is_plugin
-        ? $this->t('Select the key that contains your API credentials or use the <a href="@url">global settings</a>. <a href="@keys_url">Manage keys</a>', [
-          '@url' => $this->getUrlGenerator()->generateFromRoute('ckeditor_ai_agent.settings'),
-          '@keys_url' => '/admin/config/system/keys',
-        ])
-        : $this->t('Select the key that contains your API credentials. <a href="@url">Manage keys</a>', [
-          '@url' => '/admin/config/system/keys',
+    /** @var \Drupal\ckeditor_ai_agent\AiAgentConfigurationManager $config_manager */
+    $config_manager = \Drupal::service('ckeditor_ai_agent.configuration_manager');
+    $check = $config_manager->checkAiProvider();
+    if ($check['severity'] === REQUIREMENT_OK) {
+      $elements['ai_provider_status']['status'] = [
+        '#type' => 'html_tag',
+        '#tag' => 'div',
+        '#value' => $this->t('Active provider: <strong>@provider</strong>. Change the provider at <a href="@settings">AI settings</a>.', [
+          '@provider' => $check['value'],
+          '@settings' => '/admin/config/ai/settings',
         ]),
-      '#options' => $is_plugin ? $getSelectOptions($key_options) : $key_options,
-      '#default_value' => $getConfigValue('key_provider'),
-      '#required' => !$is_plugin,
-      '#ajax' => FALSE,
-    ];
-
-    // Load supported models from JSON file.
-    $supported_models = [];
-    $json_path = $this->getExtensionPathResolver()->getPath('module', 'ckeditor_ai_agent') . '/js/ckeditor5_plugins/aiagent/src/SUPPORTED_MODELS.json';
-    if (file_exists($json_path)) {
-      $supported_models = json_decode(file_get_contents($json_path), TRUE) ?: [];
+        '#attributes' => ['class' => ['messages', 'messages--status']],
+      ];
     }
-
-    // Create model options grouped by engine.
-    $model_options = [];
-    foreach ($supported_models as $engine => $models) {
-      $model_options[$engine] = [];
-      foreach ($models as $model) {
-        $model_options[$engine][$engine . ':' . $model] = $model;
-      }
-    }
-
-    // Add ollama as a special case.
-    $model_options['ollama'] = ['ollama:custom' => $this->t('Custom Model')];
-
-    // Add DXAI as a new engine.
-    $model_options['dxai'] = [
-      'dxai:kavya-m1' => 'Kavya M1',
-      'dxai:kavya-m1-eu' => 'Kavya M1 European Union',
-    ];
-
-    ksort($model_options);
-
-    $elements['basic_settings']['model'] = [
-      '#type' => 'select',
-      '#title' => $this->t('AI Engine/Model'),
-      '#options' => $getSelectOptions($model_options),
-      '#description' => $this->t('@description', [
-        '@description' => 'Select AI engine and model' . ($is_plugin ? ' or use global settings.' : '.'),
-      ]),
-      '#default_value' => $getConfigValue('model'),
-      '#ajax' => FALSE,
-    ];
-
-    $elements['basic_settings']['ollamaModel'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Ollama Model Name'),
-      '#description' => $this->t('Enter the model name when using Ollama (e.g., llama2, mistral, codellama).'),
-      '#default_value' => $getConfigValue('ollamaModel'),
-      '#ajax' => FALSE,
-      '#states' => [
-        'visible' => [
-          ':input[name="editor[settings][plugins][ckeditor_ai_agent_ai_agent][aiAgent][model]"]' => ['value' => 'ollama:custom'],
+    else {
+      $elements['ai_provider_status']['status'] = [
+        '#type' => 'html_tag',
+        '#tag' => 'div',
+        '#value' => $check['description'],
+        '#attributes' => [
+          'class' => [
+            'messages',
+            $check['severity'] === REQUIREMENT_ERROR ? 'messages--error' : 'messages--warning',
+          ],
         ],
-      ],
-    ];
-
-    // For plugin context, ensure ollamaModel is saved under aiAgent.
-    if ($is_plugin) {
-      $elements['basic_settings']['ollamaModel']['#description'] = $this->t('Not available in plugin context due to ckeditor5 module limitations.');
-      $elements['basic_settings']['ollamaModel']['#disabled'] = TRUE;
+      ];
     }
-
-    $elements['basic_settings']['endpointUrl'] = [
-      '#type' => 'url',
-      '#title' => $this->t('API Endpoint URL'),
-      '#description' => $this->t('API endpoint URL. Only change if using a custom endpoint or proxy.'),
-      '#default_value' => $getConfigValue('endpointUrl'),
-      '#ajax' => FALSE,
-    ];
 
     // Add prompt settings.
     $this->addPromptSettings($elements, $getConfigValue);
@@ -463,46 +400,6 @@ trait AiAgentFormTrait {
       ];
     }
 
-    // Moderation Settings.
-    $elements['moderation_settings'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Moderation'),
-      '#open' => FALSE,
-      '#ajax' => FALSE,
-    // After Debug & Error Settings.
-      '#weight' => 30,
-    ];
-
-    $elements['moderation_settings']['moderationEnable'] = $is_plugin
-        ? [
-          '#type' => 'select',
-          '#title' => $this->t('Content Moderation'),
-          '#options' => $getSelectOptions($boolean_options),
-          '#description' => $this->t('Enable content safety filtering.'),
-          '#default_value' => $getConfigValue('moderationEnable'),
-          '#ajax' => FALSE,
-        ]
-        : [
-          '#type' => 'checkbox',
-          '#title' => $this->t('Enable Content Moderation'),
-          '#description' => $this->t('Filter inappropriate or unsafe content. Recommended for public-facing implementations.'),
-          '#default_value' => $getConfigValue('moderationEnable'),
-          '#ajax' => FALSE,
-        ];
-
-    $elements['moderation_settings']['moderationKey'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Moderation API Key'),
-      '#description' => $this->t('Separate API key for content moderation service. Required if using a different service than the main AI.'),
-      '#default_value' => $getConfigValue('moderationKey'),
-      '#states' => [
-        'visible' => [
-          ':input[name="moderationEnable"]' => ['checked' => TRUE],
-        ],
-      ],
-      '#ajax' => FALSE,
-    ];
-
     // AI Output Security Settings.
     $elements['security_settings'] = [
       '#type' => 'details',
@@ -614,11 +511,11 @@ trait AiAgentFormTrait {
             // Add the category as a header-like row.
             $rows[] = [
               'data' => [
-              [
-                'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
-                'colspan' => 2,
-                'class' => ['command-category-header'],
-              ],
+                [
+                  'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
+                  'colspan' => 2,
+                  'class' => ['command-category-header'],
+                ],
               ],
               'class' => ['command-category-row'],
             ];
@@ -634,19 +531,19 @@ trait AiAgentFormTrait {
                 // Strip HTML and truncate for display.
                 $description = strip_tags($description);
                 $short_description = strlen($description) > 100
-                ? substr($description, 0, 100) . '...'
-                : ($description ?: $this->t('- No instruction defined -'));
+                  ? substr($description, 0, 100) . '...'
+                  : ($description ?: $this->t('- No instruction defined -'));
 
                 $rows[] = [
                   'data' => [
-                  [
-                    'data' => $command_term->label(),
-                    'class' => ['command-name'],
-                  ],
-                  [
-                    'data' => $short_description,
-                    'class' => ['command-description'],
-                  ],
+                    [
+                      'data' => $command_term->label(),
+                      'class' => ['command-name'],
+                    ],
+                    [
+                      'data' => $short_description,
+                      'class' => ['command-description'],
+                    ],
                   ],
                   'class' => ['command-row'],
                 ];
@@ -655,11 +552,11 @@ trait AiAgentFormTrait {
             else {
               $rows[] = [
                 'data' => [
-                [
-                  'data' => $this->t('No commands found in this category'),
-                  'colspan' => 2,
-                  'class' => ['empty-category'],
-                ],
+                  [
+                    'data' => $this->t('No commands found in this category'),
+                    'colspan' => 2,
+                    'class' => ['empty-category'],
+                  ],
                 ],
               ];
             }
@@ -1074,11 +971,11 @@ trait AiAgentFormTrait {
             // Add the category as a header-like row.
             $rows[] = [
               'data' => [
-              [
-                'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
-                'colspan' => 2,
-                'class' => ['command-category-header'],
-              ],
+                [
+                  'data' => $this->t('@category (Category)', ['@category' => $category_data['term']->name]),
+                  'colspan' => 2,
+                  'class' => ['command-category-header'],
+                ],
               ],
               'class' => ['command-category-row'],
             ];
@@ -1094,19 +991,19 @@ trait AiAgentFormTrait {
                 // Strip HTML and truncate for display.
                 $description = strip_tags($description);
                 $short_description = strlen($description) > 100
-                ? substr($description, 0, 100) . '...'
-                : ($description ?: $this->t('- No instruction defined -'));
+                  ? substr($description, 0, 100) . '...'
+                  : ($description ?: $this->t('- No instruction defined -'));
 
                 $rows[] = [
                   'data' => [
-                  [
-                    'data' => $command_term->label(),
-                    'class' => ['command-name'],
-                  ],
-                  [
-                    'data' => $short_description,
-                    'class' => ['command-description'],
-                  ],
+                    [
+                      'data' => $command_term->label(),
+                      'class' => ['command-name'],
+                    ],
+                    [
+                      'data' => $short_description,
+                      'class' => ['command-description'],
+                    ],
                   ],
                   'class' => ['command-row'],
                 ];
@@ -1115,11 +1012,11 @@ trait AiAgentFormTrait {
             else {
               $rows[] = [
                 'data' => [
-                [
-                  'data' => $this->t('No commands found in this category'),
-                  'colspan' => 2,
-                  'class' => ['empty-category'],
-                ],
+                  [
+                    'data' => $this->t('No commands found in this category'),
+                    'colspan' => 2,
+                    'class' => ['empty-category'],
+                  ],
                 ],
               ];
             }

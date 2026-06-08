@@ -2,22 +2,6 @@ ckeditor_ai_agent.settings:
   type: config_object
   label: 'CKEditor AI Agent Settings'
   mapping:
-    # Basic Settings
-    key_provider:
-      type: string
-      label: 'API Key Provider'
-    apiKey:
-      type: string
-      label: 'API Key'
-    model:
-      type: string
-      label: 'AI Model'
-    ollamaModel:
-      type: string
-      label: 'Ollama Model'
-    endpointUrl:
-      type: string
-      label: 'Endpoint URL'
     contentScope:
       type: string
       label: 'Content Scope'
@@ -70,14 +54,6 @@ ckeditor_ai_agent.settings:
     showErrorDuration:
       type: integer
       label: 'Show Error Duration'
-
-    # Moderation Settings
-    moderationEnable:
-      type: boolean
-      label: 'Enable Moderation'
-    moderationKey:
-      type: string
-      label: 'Moderation Key'
 
     # AI Output Security Settings
     aiOutputSecurity:

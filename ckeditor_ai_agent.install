@@ -5,7 +5,6 @@
  * Install, update and uninstall functions for the CKEditor AI Agent module.
  */
 
-use Drupal\Core\Url;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\taxonomy\Entity\Term;
 
@@ -16,6 +15,13 @@ function ckeditor_ai_agent_install() {
   _ckeditor_ai_agent_create_command_vocabulary();
   _ckeditor_ai_agent_create_tone_vocabulary();
   _ckeditor_ai_agent_update_editor_toolbars();
+
+  /** @var \Drupal\ckeditor_ai_agent\AiAgentConfigurationManager $config_manager */
+  $config_manager = \Drupal::service('ckeditor_ai_agent.configuration_manager');
+  $check = $config_manager->checkAiProvider();
+  if ($check['severity'] !== REQUIREMENT_OK) {
+    \Drupal::messenger()->addWarning($check['description']);
+  }
 }
 
 /**
@@ -37,6 +43,52 @@ function ckeditor_ai_agent_update_9003(): void {
  */
 function ckeditor_ai_agent_update_9004(): void {
   _ckeditor_ai_agent_update_editor_toolbars();
+}
+
+/**
+ * Remove legacy direct-API config values superseded by the AI module.
+ *
+ * The module now routes all requests through the Drupal AI module, so
+ * key_provider, apiKey, model, ollamaModel, endpointUrl, moderationEnable,
+ * and moderationKey are no longer used. This hook cleans them from global
+ * settings and per-editor config.
+ */
+function ckeditor_ai_agent_update_9005(): void {
+  $stale_keys = ['key_provider', 'apiKey', 'model', 'ollamaModel', 'endpointUrl', 'moderationEnable', 'moderationKey'];
+
+  // Clean global settings.
+  $config = \Drupal::configFactory()->getEditable('ckeditor_ai_agent.settings');
+  $changed = FALSE;
+  foreach ($stale_keys as $key) {
+    if ($config->get($key) !== NULL) {
+      $config->clear($key);
+      $changed = TRUE;
+    }
+  }
+  if ($changed) {
+    $config->save();
+  }
+
+  // Clean per-editor CKEditor5 plugin config.
+  $editor_storage = \Drupal::entityTypeManager()->getStorage('editor');
+  foreach ($editor_storage->loadMultiple() as $editor) {
+    $settings = $editor->getSettings();
+    $plugin_key = 'ckeditor_ai_agent_ai_agent';
+    if (!isset($settings['plugins'][$plugin_key]['aiAgent'])) {
+      continue;
+    }
+    $editor_changed = FALSE;
+    foreach ($stale_keys as $key) {
+      if (array_key_exists($key, $settings['plugins'][$plugin_key]['aiAgent'])) {
+        unset($settings['plugins'][$plugin_key]['aiAgent'][$key]);
+        $editor_changed = TRUE;
+      }
+    }
+    if ($editor_changed) {
+      $editor->setSettings($settings);
+      $editor->save();
+    }
+  }
 }
 
 /**
@@ -274,34 +326,9 @@ function ckeditor_ai_agent_requirements($phase) {
   $requirements = [];
 
   if ($phase === 'runtime') {
-    $key_exists = \Drupal::moduleHandler()->moduleExists('key');
-    $key_service = \Drupal::service('ckeditor_ai_agent.key_service');
-
-    if (!$key_exists) {
-      $requirements['ckeditor_ai_agent_key'] = [
-        'title' => t('CKEditor AI Agent'),
-        'description' => t('The Key module is required but not installed. Please install and enable the <a href="@url">Key module</a>.', [
-          '@url' => 'https://www.drupal.org/project/key',
-        ]),
-        'severity' => REQUIREMENT_ERROR,
-      ];
-    }
-    elseif (!$key_service->getApiKey()) {
-      $requirements['ckeditor_ai_agent_key'] = [
-        'title' => t('CKEditor AI Agent'),
-        'description' => t('No API key has been configured. Please configure an API key in the <a href="@url">module settings</a>.', [
-          '@url' => Url::fromRoute('ckeditor_ai_agent.settings')->toString(),
-        ]),
-        'severity' => REQUIREMENT_ERROR,
-      ];
-    }
-    else {
-      $requirements['ckeditor_ai_agent_key'] = [
-        'title' => t('CKEditor AI Agent'),
-        'description' => t('API key is configured and stored securely.'),
-        'severity' => REQUIREMENT_OK,
-      ];
-    }
+    /** @var \Drupal\ckeditor_ai_agent\AiAgentConfigurationManager $config_manager */
+    $config_manager = \Drupal::service('ckeditor_ai_agent.configuration_manager');
+    $requirements['ckeditor_ai_agent_provider'] = $config_manager->checkAiProvider();
   }
 
   return $requirements;

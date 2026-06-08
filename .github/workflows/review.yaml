@@ -51,4 +51,4 @@ jobs:
       run: |
         docker compose --profile lint run drupal-check
       env:
-        TARGET_DRUPAL_CORE_VERSION: 11
+        DRUPAL_RECOMMENDED_PROJECT: 11.0.0

@@ -1,4 +1,4 @@
-<p>This module is included in <a href="https://www.drupal.org/project/dxpr_cms">DXPR CMS</a>.</p>
+<p>This module is part of the <a href="https://www.drupal.org/project/ai">AI module</a> ecosystem and included in <a href="https://www.drupal.org/project/dxpr_cms">DXPR CMS</a>.</p>
 
 <blockquote>Transform CKEditor 5 into an AI-powered content creation platform with slash commands, real-time streaming, and support for 400+ AI models. Like ChatGPT but faster, and better at creating HTML content. Built on <a href="https://github.com/dxpr/ckeditor5-ai-agent">DXPR's CKEditor 5 AI plugin</a>.</blockquote>
 
@@ -18,7 +18,8 @@
   <li><strong>Web content integration:</strong> Includes content from user-provided URLs directly into generated text</li>
   <li><strong>Context-aware writing:</strong> Automatically uses surrounding editor content to enhance response accuracy</li>
   <li><strong>Selection-based edits:</strong> Select text to quickly revise with AI</li>
-  <li><strong>400+ AI models support:</strong> Works with commercial and open source AI vendors</li>
+  <li><strong>400+ AI models support:</strong> Works with commercial and open source AI vendors via the <a href="https://www.drupal.org/project/ai">Drupal AI module</a></li>
+  <li><strong>Secure server-side proxy:</strong> AI requests are routed through Drupal; API keys are never exposed to the browser</li>
   <li><strong>Smart formatting:</strong> Automatically ensures generated HTML matches your editor's allowed content</li>
   <li><strong>Multilingual support:</strong> Fully supports Drupal's multilingual content features</li>
   <li><strong>Simple menu options:</strong> Easily edit, review, fix errors, and adjust tone from dropdown menus</li>
@@ -36,9 +37,10 @@
 
 <h3 id="module-project--post-installation">Post-installation</h3>
 <ol>
-  <li>Configure AI provider settings at /admin/config/ai/providers</li>
-  <li>Configure global AI settings at /admin/config/content/ckeditor-ai-agent</li>
-  <li>Configure permissions at /admin/people/permissions</li>
+  <li>Install and enable the <a href="https://www.drupal.org/project/ai">AI module</a> and an AI provider module (e.g. <a href="https://www.drupal.org/project/ai_provider_dxpr">DXPR AI Provider</a>, <a href="https://www.drupal.org/project/ai_provider_openai">OpenAI</a>, or any other supported provider)</li>
+  <li>Configure a default Chat provider at /admin/config/ai/settings</li>
+  <li>Configure global AI Agent settings at /admin/config/content/ckeditor-ai-agent</li>
+  <li>Grant the "Use CKEditor AI Agent" permission to roles that should have AI access</li>
   <li>Set up text formats at /admin/config/content/formats</li>
   <li>Add the AI Agent button to your CKEditor toolbars</li>
   <li>Start using slash commands or the toolbar button for AI assistance</li>
@@ -49,15 +51,6 @@
   <p>Spin up <strong>DXPR CMS</strong> - Drupal pre-configured with DXPR Builder, DXPR Theme, CKEditor AI Agent module, and security best practices.</p>
   <p><a href="https://www.drupal.org/project/dxpr_cms" title="DXPR CMS platform">Get DXPR CMS »</a></p>
 </div>
-
-<h3 id="module-project--keyboard-shortcuts">Keyboard Shortcuts</h3>
-<ul>
-  <li><code>/</code> - Open AI Command Menu in empty field</li>
-  <li><code>Cmd/Ctrl + /</code> - Force insert slash command within text</li>
-  <li><code>Cmd/Ctrl + Backspace</code> - Cancel AI generation</li>
-  <li><code>Enter</code> - Execute command</li>
-  <li><code>Shift + Enter</code> - Add new line in command</li>
-</ul>
 
 <div class="note-tip">
   <h4>Extended Content Capabilities</h4>
@@ -75,13 +68,12 @@
 
 <h3>Dependencies</h3>
 <ul>
-  <li><strong><a href="https://www.drupal.org/project/markdownify">Markdownify module</a></strong> (<code>drupal/markdownify</code>) - Provides markdown versions of Drupal content that the AI can access when URLs are included in prompts. Essential for referencing draft articles, internal documentation, or any unpublished content while respecting user permissions. For example, enables workflows like generating social posts for draft articles.</li>
+  <li><strong><a href="https://www.drupal.org/project/ai">AI module</a></strong> (<code>drupal/ai</code>) - Required. Routes AI requests through Drupal server-side, keeping API keys secure. Works with any AI provider plugin (DXPR, OpenAI, Anthropic, Ollama, and more).</li>
 </ul>
 
 <h3>Related Modules</h3>
 <ul>
-<li><a href="https://www.drupal.org/project/key">Key</a> - Required for secure API key storage. CKEditor AI Agent uses Key to manage AI provider credentials</li>
-<li><a href="https://www.drupal.org/project/markdownify">Markdownify</a> - Required dependency that converts Drupal content to markdown, enabling AI to reference URLs and draft content in prompts</li>
+<li><a href="https://www.drupal.org/project/ai">AI module</a> - Required. Routes all AI requests server-side through Drupal; API keys never reach the browser</li>
 <li><a href="https://www.drupal.org/project/ai_provider_dxpr">DXPR AI Provider</a> - Compatible AI provider that enables long-form content creation with automatic failover between AI backends</li>
 <li><a href="https://www.drupal.org/project/dxpr_builder">DXPR Builder</a> - Drag-and-drop <a href="https://dxpr.com/c/drupal-layout-builder?ref=50701">Drupal page builder</a>. CKEditor AI Agent works inside DXPR Builder's text editing fields</li>
 </ul>
