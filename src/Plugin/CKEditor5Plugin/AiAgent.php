@@ -24,7 +24,6 @@ use Drupal\editor\EditorInterface;
 use Drupal\ckeditor_ai_agent\Form\AiAgentFormTrait;
 use Drupal\ckeditor_ai_agent\Form\ConfigSetterTrait;
 use Drupal\ckeditor_ai_agent\Form\ConfigMappingTrait;
-use Drupal\ckeditor_ai_agent\Service\AiAgentKeyService;
 
 /**
  * CKEditor 5 AI Agent plugin.
@@ -58,13 +57,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
    */
   protected LoggerChannelFactoryInterface $loggerFactory;
-
-  /**
-   * The AI Agent key service.
-   *
-   * @var \Drupal\ckeditor_ai_agent\Service\AiAgentKeyService
-   */
-  protected AiAgentKeyService $keyService;
 
   /**
    * The extension path resolver.
@@ -116,8 +108,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    *   The entity type manager.
    * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   The logger factory.
-   * @param \Drupal\ckeditor_ai_agent\Service\AiAgentKeyService $key_service
-   *   The AI Agent key service.
    * @param \Drupal\Core\Extension\ExtensionPathResolver $extension_path_resolver
    *   The extension path resolver.
    * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
@@ -136,7 +126,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     ConfigFactoryInterface $config_factory,
     EntityTypeManagerInterface $entity_type_manager,
     LoggerChannelFactoryInterface $logger_factory,
-    AiAgentKeyService $key_service,
     ExtensionPathResolver $extension_path_resolver,
     UrlGeneratorInterface $url_generator,
     MessengerInterface $messenger,
@@ -147,7 +136,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     $this->configFactory = $config_factory;
     $this->entityTypeManager = $entity_type_manager;
     $this->loggerFactory = $logger_factory;
-    $this->keyService = $key_service;
     $this->extensionPathResolver = $extension_path_resolver;
     $this->urlGenerator = $url_generator;
     $this->messenger = $messenger;
@@ -167,7 +155,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       $container->get('config.factory'),
       $container->get('entity_type.manager'),
       $container->get('logger.factory'),
-      $container->get('ckeditor_ai_agent.key_service'),
       $container->get('extension.path.resolver'),
       $container->get('url_generator'),
       $container->get('messenger'),

@@ -8,7 +8,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\Url;
 use Drupal\editor\Entity\Editor;
-use Drupal\ckeditor_ai_agent\Service\AiAgentKeyService;
 
 /**
  * Manages configuration for the CKEditor AI Agent plugin.
@@ -21,13 +20,6 @@ class AiAgentConfigurationManager {
    * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
   protected $configFactory;
-
-  /**
-   * The key service.
-   *
-   * @var \Drupal\ckeditor_ai_agent\Service\AiAgentKeyService
-   */
-  protected $keyService;
 
   /**
    * The entity type manager.
@@ -55,8 +47,6 @@ class AiAgentConfigurationManager {
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
-   * @param \Drupal\ckeditor_ai_agent\Service\AiAgentKeyService $key_service
-   *   The key service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
@@ -66,13 +56,11 @@ class AiAgentConfigurationManager {
    */
   public function __construct(
     ConfigFactoryInterface $config_factory,
-    AiAgentKeyService $key_service,
     EntityTypeManagerInterface $entity_type_manager,
     LoggerChannelInterface $logger,
     CsrfTokenGenerator $csrf_token,
   ) {
     $this->configFactory = $config_factory;
-    $this->keyService = $key_service;
     $this->entityTypeManager = $entity_type_manager;
     $this->logger = $logger;
     $this->csrfToken = $csrf_token;
