@@ -400,46 +400,6 @@ trait AiAgentFormTrait {
       ];
     }
 
-    // Moderation Settings.
-    $elements['moderation_settings'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Moderation'),
-      '#open' => FALSE,
-      '#ajax' => FALSE,
-    // After Debug & Error Settings.
-      '#weight' => 30,
-    ];
-
-    $elements['moderation_settings']['moderationEnable'] = $is_plugin
-        ? [
-          '#type' => 'select',
-          '#title' => $this->t('Content Moderation'),
-          '#options' => $getSelectOptions($boolean_options),
-          '#description' => $this->t('Enable content safety filtering.'),
-          '#default_value' => $getConfigValue('moderationEnable'),
-          '#ajax' => FALSE,
-        ]
-        : [
-          '#type' => 'checkbox',
-          '#title' => $this->t('Enable Content Moderation'),
-          '#description' => $this->t('Filter inappropriate or unsafe content. Recommended for public-facing implementations.'),
-          '#default_value' => $getConfigValue('moderationEnable'),
-          '#ajax' => FALSE,
-        ];
-
-    $elements['moderation_settings']['moderationKey'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Moderation API Key'),
-      '#description' => $this->t('Separate API key for content moderation service. Required if using a different service than the main AI.'),
-      '#default_value' => $getConfigValue('moderationKey'),
-      '#states' => [
-        'visible' => [
-          ':input[name="moderationEnable"]' => ['checked' => TRUE],
-        ],
-      ],
-      '#ajax' => FALSE,
-    ];
-
     // AI Output Security Settings.
     $elements['security_settings'] = [
       '#type' => 'details',

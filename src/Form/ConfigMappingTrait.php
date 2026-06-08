@@ -51,12 +51,6 @@ trait ConfigMappingTrait {
       'behavior_settings.showErrorDuration' => [
         'type' => 'int',
       ],
-      'moderation_settings.moderationEnable' => [
-        'type' => 'bool',
-      ],
-      'moderation_settings.moderationKey' => [
-        'type' => 'string',
-      ],
       'tone_of_voice.toneOfVoiceVocabulary' => [
         'type' => 'string',
       ],
@@ -121,8 +115,6 @@ trait ConfigMappingTrait {
       'debugMode' => 'debugMode',
       'streamContent' => 'streamContent',
       'showErrorDuration' => 'showErrorDuration',
-      'moderationEnable' => 'moderationEnable',
-      'moderationKey' => 'moderationKey',
       'toneOfVoiceVocabulary' => 'toneOfVoiceVocabulary',
       'commandsVocabulary' => 'commandsVocabulary',
       'defaultToneOfVoice' => 'defaultToneOfVoice',

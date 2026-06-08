@@ -162,9 +162,6 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $form['behavior_settings']['streamContent']['#default_value'] = $config->get('streamContent') ? '1' : '0';
     $form['behavior_settings']['showErrorDuration']['#default_value'] = $config->get('showErrorDuration') ?: 5000;
 
-    $form['moderation_settings']['moderationEnable']['#default_value'] = $config->get('moderationEnable');
-    $form['moderation_settings']['moderationKey']['#default_value'] = $config->get('moderationKey');
-
     return parent::buildForm($form, $form_state);
   }
 

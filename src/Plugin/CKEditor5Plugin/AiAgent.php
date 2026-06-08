@@ -218,8 +218,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
         'debugMode' => NULL,
         'streamContent' => NULL,
         'showErrorDuration' => NULL,
-        'moderationEnable' => NULL,
-        'moderationKey' => NULL,
         'toneOfVoiceVocabulary' => NULL,
         'commandsVocabulary' => NULL,
         'defaultToneOfVoice' => NULL,

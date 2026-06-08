@@ -49,11 +49,12 @@ function ckeditor_ai_agent_update_9004(): void {
  * Remove legacy direct-API config values superseded by the AI module.
  *
  * The module now routes all requests through the Drupal AI module, so
- * key_provider, apiKey, model, ollamaModel, and endpointUrl are no longer
- * used. This hook cleans them from global settings and per-editor config.
+ * key_provider, apiKey, model, ollamaModel, endpointUrl, moderationEnable,
+ * and moderationKey are no longer used. This hook cleans them from global
+ * settings and per-editor config.
  */
 function ckeditor_ai_agent_update_9005(): void {
-  $stale_keys = ['key_provider', 'apiKey', 'model', 'ollamaModel', 'endpointUrl'];
+  $stale_keys = ['key_provider', 'apiKey', 'model', 'ollamaModel', 'endpointUrl', 'moderationEnable', 'moderationKey'];
 
   // Clean global settings.
   $config = \Drupal::configFactory()->getEditable('ckeditor_ai_agent.settings');

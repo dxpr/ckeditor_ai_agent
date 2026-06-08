@@ -103,8 +103,6 @@ class AiAgentConfigurationManager {
     $result['debugMode'] = $config->get('debugMode');
     $result['streamContent'] = $config->get('streamContent');
     $result['showErrorDuration'] = $config->get('showErrorDuration');
-    $result['moderationEnable'] = $config->get('moderationEnable');
-    $result['moderationKey'] = $config->get('moderationKey');
     $result['promptSettings'] = $config->get('promptSettings') ?: [];
 
     return $result;
@@ -135,8 +133,6 @@ class AiAgentConfigurationManager {
         'retryAttempts' => $global_config->get('retryAttempts'),
         'debugMode' => $global_config->get('debugMode'),
         'showErrorDuration' => $global_config->get('showErrorDuration'),
-        'moderationEnable' => $global_config->get('moderationEnable'),
-        'moderationKey' => $global_config->get('moderationKey'),
         'promptSettings' => [
           'overrides' => [],
           'additions' => [],

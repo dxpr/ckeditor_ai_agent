@@ -55,14 +55,6 @@ ckeditor_ai_agent.settings:
       type: integer
       label: 'Show Error Duration'
 
-    # Moderation Settings
-    moderationEnable:
-      type: boolean
-      label: 'Enable Moderation'
-    moderationKey:
-      type: string
-      label: 'Moderation Key'
-
     # AI Output Security Settings
     aiOutputSecurity:
       type: mapping
