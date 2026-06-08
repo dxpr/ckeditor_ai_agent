@@ -17,17 +17,10 @@ function ckeditor_ai_agent_install() {
   _ckeditor_ai_agent_create_tone_vocabulary();
   _ckeditor_ai_agent_update_editor_toolbars();
 
-  // Guide the site builder to complete setup if no AI provider is configured.
-  /** @var \Drupal\ai\AiProviderPluginManager $ai_provider */
-  $ai_provider = \Drupal::service('ai.provider');
-  $default = $ai_provider->getDefaultProviderForOperationType('chat');
-
-  if (empty($default['provider_id'])) {
-    \Drupal::messenger()->addWarning(t('CKEditor AI Agent requires an AI provider. Install a provider module (e.g. <a href="@dxpr">DXPR AI Provider</a> or <a href="@openai">OpenAI</a>) and select a default chat provider at <a href="@settings">Administration > Configuration > AI > Settings</a>.', [
-      '@dxpr' => 'https://www.drupal.org/project/ai_provider_dxpr',
-      '@openai' => 'https://www.drupal.org/project/ai_provider_openai',
-      '@settings' => Url::fromRoute('ai.settings_form')->toString(),
-    ]));
+  // Reuse the requirements check to guide the site builder.
+  $check = _ckeditor_ai_agent_check_ai_provider();
+  if ($check['severity'] !== REQUIREMENT_OK) {
+    \Drupal::messenger()->addWarning($check['description']);
   }
 }
 
@@ -287,31 +280,85 @@ function ckeditor_ai_agent_requirements($phase) {
   $requirements = [];
 
   if ($phase === 'runtime') {
-    // The ai module is a hard dependency (info.yml), so it is always present
-    // at runtime. Check whether a default chat provider has been configured.
-    /** @var \Drupal\ai\AiProviderPluginManager $ai_provider */
-    $ai_provider = \Drupal::service('ai.provider');
-    $default = $ai_provider->getDefaultProviderForOperationType('chat');
-
-    if (empty($default['provider_id'])) {
-      $requirements['ckeditor_ai_agent_provider'] = [
-        'title' => t('CKEditor AI Agent'),
-        'description' => t('No default AI chat provider is configured. Install an AI provider module (e.g. <a href="@dxpr">DXPR AI Provider</a> or <a href="@openai">OpenAI</a>) and select a default chat provider at <a href="@settings">AI settings</a>.', [
-          '@dxpr' => 'https://www.drupal.org/project/ai_provider_dxpr',
-          '@openai' => 'https://www.drupal.org/project/ai_provider_openai',
-          '@settings' => Url::fromRoute('ai.settings_form')->toString(),
-        ]),
-        'severity' => REQUIREMENT_ERROR,
-      ];
-    }
-    else {
-      $requirements['ckeditor_ai_agent_provider'] = [
-        'title' => t('CKEditor AI Agent'),
-        'description' => t('AI provider is configured. Requests are routed server-side through the AI module.'),
-        'severity' => REQUIREMENT_OK,
-      ];
-    }
+    $requirements['ckeditor_ai_agent_provider'] = _ckeditor_ai_agent_check_ai_provider();
   }
 
   return $requirements;
+}
+
+/**
+ * Checks the AI provider setup and returns a requirements entry.
+ *
+ * Three levels of diagnostics:
+ * 1. No provider modules installed at all.
+ * 2. Provider modules present but none usable for chat (missing API key
+ *    or other authentication).
+ * 3. Usable providers exist but no default chat provider selected.
+ *
+ * @return array
+ *   A requirements array entry.
+ */
+function _ckeditor_ai_agent_check_ai_provider(): array {
+  /** @var \Drupal\ai\AiProviderPluginManager $manager */
+  $manager = \Drupal::service('ai.provider');
+  $settings_url = Url::fromRoute('ai.settings_form')->toString();
+
+  // Check 1: are any provider plugins registered?
+  $definitions = $manager->getDefinitions();
+  if (empty($definitions)) {
+    return [
+      'title' => t('CKEditor AI Agent'),
+      'description' => t('No AI provider modules are installed. Install at least one provider (e.g. <a href="@dxpr">DXPR AI Provider</a>, <a href="@openai">OpenAI</a>, <a href="@anthropic">Anthropic</a>, or <a href="@ollama">Ollama</a>) so the AI module can route requests.', [
+        '@dxpr' => 'https://www.drupal.org/project/ai_provider_dxpr',
+        '@openai' => 'https://www.drupal.org/project/ai_provider_openai',
+        '@anthropic' => 'https://www.drupal.org/project/ai_provider_anthropic',
+        '@ollama' => 'https://www.drupal.org/project/ai_provider_ollama',
+      ]),
+      'severity' => REQUIREMENT_ERROR,
+    ];
+  }
+
+  // Check 2: are any of them usable for chat (authenticated + supports chat)?
+  $usable = $manager->getProvidersForOperationType('chat', TRUE);
+  if (empty($usable)) {
+    $installed_names = array_map(fn($d) => $d['label'] ?? $d['id'], $definitions);
+    return [
+      'title' => t('CKEditor AI Agent'),
+      'description' => t('Provider modules are installed (@providers) but none are ready for chat. This usually means an API key or authentication is missing. Configure your provider at <a href="@settings">AI settings</a>.', [
+        '@providers' => implode(', ', $installed_names),
+        '@settings' => $settings_url,
+      ]),
+      'severity' => REQUIREMENT_ERROR,
+    ];
+  }
+
+  // Check 3: is a default chat provider selected?
+  $default = $manager->getDefaultProviderForOperationType('chat');
+  if (empty($default['provider_id'])) {
+    $usable_names = array_map(fn($d) => $d['label'] ?? $d['id'], $usable);
+    return [
+      'title' => t('CKEditor AI Agent'),
+      'description' => t('@count chat-capable provider(s) available (@providers) but no default is selected. Choose a default chat provider at <a href="@settings">AI settings</a>.', [
+        '@count' => count($usable),
+        '@providers' => implode(', ', $usable_names),
+        '@settings' => $settings_url,
+      ]),
+      'severity' => REQUIREMENT_WARNING,
+    ];
+  }
+
+  // Everything looks good.
+  $provider_label = $default['provider_id'];
+  $model_label = $default['model_id'] ?? '';
+  if (isset($definitions[$default['provider_id']]['label'])) {
+    $provider_label = $definitions[$default['provider_id']]['label'];
+  }
+  return [
+    'title' => t('CKEditor AI Agent'),
+    'value' => $provider_label . ($model_label ? ' / ' . $model_label : ''),
+    'description' => t('Requests are routed server-side through the AI module. Change the provider at <a href="@settings">AI settings</a>.', [
+      '@settings' => $settings_url,
+    ]),
+    'severity' => REQUIREMENT_OK,
+  ];
 }
