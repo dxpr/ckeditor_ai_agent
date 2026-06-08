@@ -270,9 +270,9 @@ export class PromptHelper {
         }
         // Context-Specific Instructions
         if (!isEditorEmpty && !selectedContent) {
-            corpus.push('\n<CONTEXT_REQUIREMENTS>');
+            corpus.push('\n<GENERATION_CONSTRAINTS>');
             corpus.push(this.getComponentContent('contextRequirements'));
-            corpus.push('</CONTEXT_REQUIREMENTS>');
+            corpus.push('</GENERATION_CONSTRAINTS>');
         }
         // Add language instructions back
         corpus.push('\n<INSTRUCTIONS>');

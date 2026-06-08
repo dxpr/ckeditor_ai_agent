@@ -8,6 +8,7 @@ import { getErrorMessages } from './util/translations.js';
 import { moderateContent } from './util/moderate-content.js';
 import { AIApi } from './util/ai-api.js';
 import { checkModel } from './util/check-model.js';
+import { setContextDomains, clearContextDomains } from './util/ai-output-filter.js';
 import { aiAgentContext } from './aiagentcontext.js';
 import { AI_ENGINE } from './const.js';
 export default class AiAgentService {
@@ -26,6 +27,7 @@ export default class AiAgentService {
     promptHelper;
     htmlParser;
     providers;
+    creditsUrl;
     isInlineInsertion = false;
     abortGeneration = false;
     moderationKey;
@@ -35,6 +37,15 @@ export default class AiAgentService {
     writesPerSecond;
     processContentHelper;
     FILTERED_STRINGS = /```html|```|html\n|@@@cursor@@@/g;
+    getOutputMetrics(content) {
+        const safeContent = content || '';
+        const outputLength = safeContent.length;
+        const tempElement = document.createElement('div');
+        tempElement.innerHTML = safeContent;
+        const plainText = (tempElement.textContent || tempElement.innerText || '').trim();
+        const outputWordCount = plainText ? plainText.split(/\s+/).length : 0;
+        return { outputLength, outputWordCount };
+    }
     /**
      * Initializes the AiAgentService with the provided editor and configuration settings.
      *
@@ -71,6 +82,7 @@ export default class AiAgentService {
         this.disableFlags = config.moderationDisableFlags ?? [];
         this.writesPerSecond = config.writesPerSecond ?? 10;
         this.providers = config.providers;
+        this.creditsUrl = config.creditsUrl;
     }
     /**
      * Handles the slash command input from the user, processes it, and interacts with the AI model.
@@ -167,6 +179,8 @@ export default class AiAgentService {
             aiAgentContext.showLoader(editor);
             const prompt = await this.promptHelper.generateGptPromptBasedOnUserPrompt(content, parentEquivalentHTML?.innerHTML, selectedContent);
             if (parent && prompt) {
+                // Set context domains for URL filtering - preserve URLs from user's prompt and existing content
+                setContextDomains(`${content || ''} ${selectedContent || ''} ${parentEquivalentHTML?.innerHTML || ''}`);
                 await this.fetchAndProcessGptResponse(!!command, prompt, parent);
             }
         }
@@ -177,6 +191,7 @@ export default class AiAgentService {
         finally {
             this.isInlineInsertion = false;
             aiAgentContext.hideLoader(editor);
+            clearContextDomains();
         }
     }
     /**
@@ -191,6 +206,7 @@ export default class AiAgentService {
         const editor = this.editor;
         const t = editor.t;
         const controller = new AbortController();
+        this.abortGeneration = false;
         // Create a timeout that can be reset
         let timeoutId;
         const resetTimeout = () => {
@@ -202,9 +218,14 @@ export default class AiAgentService {
         // Set initial timeout
         resetTimeout();
         const blockID = `ai-${new Date().getTime()}`;
+        const generationStartTime = performance.now();
         try {
             let llm;
             let response;
+            let outputMetrics = {
+                outputLength: 0,
+                outputWordCount: 0
+            };
             const contentMatch = prompt.match(/<CONTEXT>([\s\S]*?)<\/CONTEXT>/);
             let prediction;
             if (contentMatch && contentMatch[1]) {
@@ -239,7 +260,7 @@ export default class AiAgentService {
                 if (this.streamContent) {
                     // Streaming path
                     const stream = this.generate(llm, this.aiModel, messages, completionOpts);
-                    await this.handleStreamingResponse(stream, blockID, parent, command, controller, llm, resetTimeout);
+                    outputMetrics = await this.handleStreamingResponse(stream, blockID, parent, command, controller, llm, resetTimeout);
                 }
                 else {
                     // Non-streaming path
@@ -247,7 +268,7 @@ export default class AiAgentService {
                     if (!result.content) {
                         throw new Error(t('Empty response from AI model'));
                     }
-                    await this.handleNonStreamingResponse(result.content, blockID, parent, command);
+                    outputMetrics = await this.handleNonStreamingResponse(result.content, blockID, parent, command);
                 }
             }
             else {
@@ -272,22 +293,40 @@ export default class AiAgentService {
                     stop: this.stopSequences,
                     ...(prediction !== undefined && { prediction })
                 }, controller, retries);
-                await this.handleStreamingResponse(response, blockID, parent, command, controller, llm, resetTimeout);
+                outputMetrics = await this.handleStreamingResponse(response, blockID, parent, command, controller, llm, resetTimeout);
             }
+            // Dispatch success event for external analytics integration
+            if (this.abortGeneration) {
+                return;
+            }
+            document.dispatchEvent(new CustomEvent('dxpr:ai:generation:success', {
+                detail: {
+                    model: this.aiModel,
+                    responseModel: this.aiModel,
+                    promptLength: prompt?.length || 0,
+                    generationDurationMs: Math.round(performance.now() - generationStartTime),
+                    outputLength: outputMetrics.outputLength,
+                    outputWordCount: outputMetrics.outputWordCount
+                }
+            }));
         }
         catch (error) {
             if (this.abortGeneration) {
                 return;
             }
             console.error('Error in fetchAndProcessGptResponse:', error);
-            let errorMessage = t('We couldn\'t connect to the AI. Please check your internet');
-            if (error?.status) {
-                errorMessage = getErrorMessages(error.status, t);
-            }
-            else {
-                errorMessage = error?.message?.trim();
-            }
-            aiAgentContext.showError(errorMessage);
+            const { message: errorMessage, options: toastOptions } = this.getErrorNotification(error, t);
+            // Dispatch failure event for external analytics integration
+            document.dispatchEvent(new CustomEvent('dxpr:ai:generation:failure', {
+                detail: {
+                    model: this.aiModel,
+                    promptLength: prompt?.length || 0,
+                    generationDurationMs: Math.round(performance.now() - generationStartTime),
+                    errorType: error?.name || 'Error',
+                    errorCode: error?.status || error?.code || ''
+                }
+            }));
+            aiAgentContext.showError(errorMessage, toastOptions);
             this.processContentHelper.processCompleted(blockID);
         }
         finally {
@@ -300,6 +339,7 @@ export default class AiAgentService {
     async handleStreamingResponse(stream, blockID, parent, command, controller, llm, resetTimeout) {
         let isFirstChunk = true;
         let contentBuffer = '';
+        let generatedContent = '';
         const updateInterval = 1000 / this.writesPerSecond; // Calculate interval in ms
         const updateContent = async () => {
             if (contentBuffer) {
@@ -335,9 +375,9 @@ export default class AiAgentService {
             clearInterval(updateContentTimer);
             await updateContent();
             this.processContentHelper.processCompleted(blockID);
-            contentBuffer = '';
+            generatedContent = contentBuffer;
         }
-        this.processContentHelper.processCompleted(blockID);
+        return this.getOutputMetrics(generatedContent);
     }
     async handleNonStreamingResponse(content, blockID, parent, command) {
         aiAgentContext.hideLoader(this.editor);
@@ -350,6 +390,7 @@ export default class AiAgentService {
             await this.htmlParser.insertSimpleHtml(filteredContent);
         }
         this.processContentHelper.processCompleted(blockID);
+        return this.getOutputMetrics(filteredContent);
     }
     /**
      * Creates and configures a cancel generation button with keyboard shortcut support.
@@ -443,5 +484,57 @@ export default class AiAgentService {
                 break;
             this.stream = stream2;
         }
+    }
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    getErrorNotification(error, t) {
+        const status = error?.status;
+        if (status === 402) {
+            if (this.creditsUrl) {
+                const safeUrl = this.escapeHtml(this.creditsUrl);
+                return {
+                    message: `${t('AI credit limit reached.')} <a href="${safeUrl}" target="_blank" rel="noopener">${t('Top up your credits')} &rarr;</a>`,
+                    options: { type: 'error', html: true }
+                };
+            }
+            return {
+                message: t('AI credit limit reached.'),
+                options: { type: 'error' }
+            };
+        }
+        if (status === 401) {
+            return {
+                message: t('Authentication error. Please check your API credentials.'),
+                options: { type: 'error' }
+            };
+        }
+        if (status === 429) {
+            return {
+                message: t('Too many requests. Please wait a moment and try again.'),
+                options: { type: 'warning' }
+            };
+        }
+        if (status >= 500) {
+            return {
+                message: t('AI service is currently unavailable. Please try again later.'),
+                options: { type: 'warning' }
+            };
+        }
+        if (!status && error?.name === 'AbortError') {
+            return {
+                message: t('Request timed out. Please try again later.'),
+                options: { type: 'warning' }
+            };
+        }
+        if (status) {
+            return { message: getErrorMessages(status, t) };
+        }
+        return {
+            message: t('AI operation failed. Please try again.'),
+            options: { type: 'warning' }
+        };
     }
 }

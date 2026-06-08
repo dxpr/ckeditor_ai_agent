@@ -34,6 +34,7 @@ export interface AiAgentConfig {
     moderationKey?: string;
     moderationEnable?: boolean;
     moderationDisableFlags?: Array<ModerationFlagsTypes>;
+    creditsUrl?: string;
     aiOutputSecurity?: {
         /**
          * Allowed domains for external URLs (images and links).

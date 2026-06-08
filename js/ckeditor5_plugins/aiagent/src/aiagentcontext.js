@@ -18,10 +18,10 @@ export class AiAgentContext {
     get uiComponent() {
         return this._uiComponent;
     }
-    showError(message) {
+    showError(message, options) {
         if (this._uiComponent) {
             console.log('Showing error message...', message);
-            this._uiComponent.showGptErrorToolTip(message);
+            this._uiComponent.showGptErrorToolTip(message, options);
         }
     }
     showLoader(editor) {
