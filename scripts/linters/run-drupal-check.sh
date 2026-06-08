@@ -34,6 +34,7 @@ parameters:
         - web/modules/contrib/ai
     excludePaths:
         - web/modules/contrib/ckeditor_ai_agent/node_modules (?)
+        - web/modules/contrib/ckeditor_ai_agent/tests (?)
     level: 5
     treatPhpDocTypesAsCertain: false
     ignoreErrors:
