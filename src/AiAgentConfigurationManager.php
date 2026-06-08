@@ -5,7 +5,6 @@ namespace Drupal\ckeditor_ai_agent;
 use Drupal\Core\Access\CsrfTokenGenerator;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\Url;
 use Drupal\editor\Entity\Editor;
@@ -45,13 +44,6 @@ class AiAgentConfigurationManager {
   protected $logger;
 
   /**
-   * The module handler.
-   *
-   * @var \Drupal\Core\Extension\ModuleHandlerInterface
-   */
-  protected ModuleHandlerInterface $moduleHandler;
-
-  /**
    * The CSRF token generator.
    *
    * @var \Drupal\Core\Access\CsrfTokenGenerator
@@ -69,8 +61,6 @@ class AiAgentConfigurationManager {
    *   The entity type manager.
    * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
    *   The logger channel.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
-   *   The module handler.
    * @param \Drupal\Core\Access\CsrfTokenGenerator $csrf_token
    *   The CSRF token generator.
    */
@@ -79,14 +69,12 @@ class AiAgentConfigurationManager {
     AiAgentKeyService $key_service,
     EntityTypeManagerInterface $entity_type_manager,
     LoggerChannelInterface $logger,
-    ModuleHandlerInterface $module_handler,
     CsrfTokenGenerator $csrf_token,
   ) {
     $this->configFactory = $config_factory;
     $this->keyService = $key_service;
     $this->entityTypeManager = $entity_type_manager;
     $this->logger = $logger;
-    $this->moduleHandler = $module_handler;
     $this->csrfToken = $csrf_token;
   }
 
@@ -154,9 +142,6 @@ class AiAgentConfigurationManager {
   public function getCkEditorConfig(?Editor $editor = NULL): array {
     $global_config = $this->configFactory->get('ckeditor_ai_agent.settings');
 
-    // Check if the ai module is available for proxied requests.
-    $use_ai_module = $this->moduleHandler->moduleExists('ai');
-
     // Structure the config to match the aiAgent JS configuration.
     $config = [
       'aiAgent' => [
@@ -181,21 +166,13 @@ class AiAgentConfigurationManager {
       ],
     ];
 
-    if ($use_ai_module) {
-      // Route requests through the Drupal proxy controller.
-      $config['aiAgent']['endpointUrl'] = $this->getTokenizedProxyEndpointUrl();
-      $config['aiAgent']['engine'] = 'dxai';
-      // Parse model name from engine:model format.
-      $model = $global_config->get('model');
-      if ($model && str_contains($model, ':')) {
-        [, $model_name] = explode(':', $model, 2);
-        $config['aiAgent']['model'] = $model_name;
-      }
-    }
-    else {
-      // Direct API access — pass API key and endpoint URL to browser.
-      $config['aiAgent']['apiKey'] = $editor ? $this->keyService->getApiKey($editor->id()) : $this->keyService->getApiKey();
-      $config['aiAgent']['endpointUrl'] = $global_config->get('endpointUrl');
+    // Route requests through the Drupal proxy controller.
+    $config['aiAgent']['endpointUrl'] = $this->getTokenizedProxyEndpointUrl();
+    $config['aiAgent']['engine'] = 'dxai';
+    $model = $global_config->get('model');
+    if ($model && str_contains($model, ':')) {
+      [, $model_name] = explode(':', $model, 2);
+      $config['aiAgent']['model'] = $model_name;
     }
 
     // Properly populate prompt settings from configuration.

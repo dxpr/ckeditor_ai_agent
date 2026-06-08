@@ -1,4 +1,13 @@
-# CKEditor AI Agent for Drupal
+> **CKEditor AI Agent** is a Drupal module by [DXPR](https://dxpr.com) that
+> adds AI writing assistance directly inside Drupal's CKEditor 5, with slash
+> commands, keyboard shortcuts, and long-form content generation. Built by the
+> [DXPR page builder](https://dxpr.com/c/drupal-layout-builder) team.
+>
+> [Getting Started](https://dxpr.com/c/marketing-cms) |
+> [Pricing](https://dxpr.com/pricing) |
+> [Try Free Demo](https://try.dxpr.com)
+
+# CKEditor AI Agent for Drupal - AI-Powered Content Creation in the Drupal Editor
 
 ## Overview
 
@@ -13,8 +22,8 @@ generating, modifying, and enhancing content directly within your editor.
 - PHP 8.1 or higher
 - Key module (for secure API key storage)
 - Markdownify module (provides markdown versions of Drupal content for AI to access when URLs are included in prompts)
-- [AI module](https://www.drupal.org/project/ai) (recommended) — routes AI requests through Drupal server-side, keeping API keys out of the browser. Works with any AI provider plugin (DXPR, OpenAI, Anthropic, Ollama, and more).
-- An AI provider module (e.g. [DXPR AI Provider](https://www.drupal.org/project/ai_provider_dxpr), [OpenAI](https://www.drupal.org/project/ai_provider_openai), etc.) or a direct API key
+- [AI module](https://www.drupal.org/project/ai): routes AI requests through Drupal server-side, keeping API keys out of the browser. Works with any AI provider plugin (DXPR, OpenAI, Anthropic, Ollama, and more).
+- An AI provider module (e.g. [DXPR AI Provider](https://www.drupal.org/project/ai_provider_dxpr), [OpenAI](https://www.drupal.org/project/ai_provider_openai), etc.)
 
 ## Installation
 
@@ -24,40 +33,28 @@ generating, modifying, and enhancing content directly within your editor.
    drush en ckeditor_ai_agent
    ```
 
-2. **Set Up an AI Provider (recommended)**
+2. **Set Up an AI Provider**
 
-   Install the AI module and a provider plugin to route requests server-side
-   (API keys stay on the server, never sent to the browser):
+   Install an AI provider plugin so the module knows which AI service to use:
    ```bash
-   composer require drupal/ai drupal/ai_provider_dxpr
-   drush en ai ai_provider_dxpr
+   composer require drupal/ai_provider_dxpr
+   drush en ai_provider_dxpr
    ```
    Then configure a default Chat provider at **Administration > Configuration >
    AI > Settings** (`/admin/config/ai/settings`).
 
    Any AI provider supported by the AI module will work (DXPR, OpenAI,
-   Anthropic, Ollama, etc.).
+   Anthropic, Ollama, etc.). All requests are routed server-side; API keys
+   never reach the browser.
 
-   Alternatively, you can use the module without the AI module by configuring
-   an API key directly (see step 3).
-
-3. **Configure API Key Storage (without AI module)**
-
-   If not using the AI module, configure direct API access:
-   - Go to **Administration > Configuration > System > Keys**
-     (`admin/config/system/keys`)
-   - Add a new key for your AI provider API credentials
-   - Select "Authentication" as the key type
-   - Enter your API key value
-
-4. **Configure CKEditor Integration**
+3. **Configure CKEditor Integration**
    - Go to **Administration > Configuration > Content authoring > Text formats
    and editors** (`admin/config/content/formats`)
    - Edit your desired text format (typically Full HTML)
    - Drag and drop the "AI Agent" button into the CKEditor toolbar to make it
    available for content editors
 
-4. **Development**
+   **Development**
 
    - **Code Quality Checks**
 
@@ -107,9 +104,7 @@ settings.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | **Basic Settings** ||||
-| `key_provider` | `string` | - | Select the key that contains your AI provider API credentials. Not needed when using the AI module (keys are managed server-side). |
-| `model` | `string` | `'gpt-4o'` | AI model to use. When the AI module is installed, the default provider's model is used automatically. |
-| `endpointUrl` | `string` | - | API endpoint URL. Automatically set when using the AI module. Only change if using a custom endpoint or direct API access. |
+| `model` | `string` | `'gpt-4o'` | AI model to use. The default provider's model from the AI module settings is used automatically. |
 | **Advanced Settings** ||||
 | `temperature` | `number` | `0.7` | Controls the creativity of AI responses. Low values (0.0-0.5) produce consistent, deterministic responses ideal for factual content. Medium values (0.6-1.0) offer balanced creativity. High values (1.1-2.0) generate more diverse and unexpected responses |
 | `maxOutputTokens` | `number` | Model's max limit | Maximum number of tokens for AI response. If not set, uses model's maximum limit |
@@ -131,7 +126,7 @@ settings.
 
 - **Slash Command Integration**: Type "/" to trigger AI commands
 - **Real-time Content Generation**: See AI-generated content as it's created
-- **Secure Server-Side Proxy**: AI requests route through Drupal via the AI module — API keys never reach the browser
+- **Secure Server-Side Proxy**: AI requests route through Drupal via the AI module: API keys never reach the browser
 - **400+ AI Models**: Works with any provider supported by the Drupal AI module (DXPR, OpenAI, Anthropic, Ollama, and more)
 - **Context-Aware Responses**: AI considers surrounding content
 - **Content Moderation**: Optional content filtering
@@ -165,8 +160,8 @@ settings.
 
 ## Permissions
 
-- **"Administer CKEditor AI Agent"** — Access to global settings at `/admin/config/content/ckeditor-ai-agent`
-- **"Use CKEditor AI Agent"** — Required for sending AI requests through the server-side proxy endpoint. Grant this to roles that should have AI access in the editor.
+- **"Administer CKEditor AI Agent"**: Access to global settings at `/admin/config/content/ckeditor-ai-agent`
+- **"Use CKEditor AI Agent"**: Required for sending AI requests through the server-side proxy endpoint. Grant this to roles that should have AI access in the editor.
 
 ## Troubleshooting
 
@@ -199,3 +194,10 @@ For bug reports and feature requests, please use the [issue queue](https://www.d
 
 This project is licensed under the GPL-2.0+ license. See the LICENSE file for
 details.
+
+## Related Modules
+
+- [Key](https://www.drupal.org/project/key) - Required for secure API key storage. CKEditor AI Agent uses the Key module to store and retrieve AI provider credentials
+- [Markdownify](https://www.drupal.org/project/markdownify) - Required dependency that converts Drupal content to markdown, enabling AI to reference URLs and draft content in prompts
+- [DXPR AI Provider](https://www.drupal.org/project/ai_provider_dxpr) - Compatible AI provider that enables long-form content creation with automatic failover between multiple AI backends
+- [DXPR Builder](https://www.drupal.org/project/dxpr_builder) - Drag-and-drop page builder for Drupal. CKEditor AI Agent works inside DXPR Builder's text editing fields

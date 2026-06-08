@@ -92,7 +92,7 @@ export function getDefaultAiAgentDropdownMenu(editor) {
                 },
                 {
                     title: t('Improve Tone of Voice'),
-                    command: `Rewrite the content to match the TONE while preserving the key message and meaning.
+                    command: `Rewrite the content to match the PAGE_TONE while preserving the key message and meaning.
 						Ensure the writing style is consistent.\nYou must keep the text formatting.`
                 },
                 {

@@ -2,10 +2,10 @@
 
 namespace Drupal\ckeditor_ai_agent\Controller;
 
+use Drupal\ai\AiProviderPluginManager;
 use Drupal\ai\OperationType\Chat\ChatInput;
 use Drupal\ai\OperationType\Chat\ChatMessage;
 use Drupal\ai\OperationType\Chat\StreamedChatMessageIteratorInterface;
-use Drupal\ckeditor_ai_agent\Service\AiChatProviderGateway;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
@@ -15,18 +15,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Controller for CKEditor AI Agent chat requests.
- *
- * Proxies AI requests from the CKEditor frontend through the Drupal ai module,
- * eliminating the need to expose API keys to the browser.
+ * Proxies CKEditor AI Agent requests through the Drupal ai module.
  *
  * @phpstan-consistent-constructor
  */
 class AiChatController extends ControllerBase {
 
-  /**
-   * Allowed roles for chat messages.
-   */
   private const ALLOWED_ROLES = ['system', 'user', 'assistant'];
 
   /**
@@ -37,25 +31,25 @@ class AiChatController extends ControllerBase {
   protected LoggerChannelInterface $logger;
 
   /**
-   * The AI chat provider gateway.
+   * The AI provider manager.
    *
-   * @var \Drupal\ckeditor_ai_agent\Service\AiChatProviderGateway
+   * @var \Drupal\ai\AiProviderPluginManager
    */
-  protected AiChatProviderGateway $aiChatProviderGateway;
+  protected AiProviderPluginManager $aiProviderManager;
 
   /**
    * Constructs the controller.
    *
-   * @param \Drupal\ckeditor_ai_agent\Service\AiChatProviderGateway $ai_chat_provider_gateway
-   *   AI chat provider gateway.
+   * @param \Drupal\ai\AiProviderPluginManager $ai_provider_manager
+   *   AI Provider manager.
    * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   Logger factory.
    */
   public function __construct(
-    AiChatProviderGateway $ai_chat_provider_gateway,
+    AiProviderPluginManager $ai_provider_manager,
     LoggerChannelFactoryInterface $logger_factory,
   ) {
-    $this->aiChatProviderGateway = $ai_chat_provider_gateway;
+    $this->aiProviderManager = $ai_provider_manager;
     $this->logger = $logger_factory->get('ckeditor_ai_agent');
   }
 
@@ -64,7 +58,7 @@ class AiChatController extends ControllerBase {
    */
   public static function create(ContainerInterface $container): static {
     return new static(
-      $container->get('ckeditor_ai_agent.ai_chat_provider_gateway'),
+      $container->get('ai.provider'),
       $container->get('logger.factory'),
     );
   }
@@ -86,11 +80,8 @@ class AiChatController extends ControllerBase {
     }
 
     try {
-      // Resolve the AI provider: use the default chat provider configured in
-      // the ai module (/admin/config/ai/settings), which can be any provider
-      // (DXPR, OpenAI, Anthropic, Ollama, etc.).
-      $provider = $this->aiChatProviderGateway->getDefaultChatProvider();
-      if ($provider === NULL) {
+      $default = $this->aiProviderManager->getDefaultProviderForOperationType('chat');
+      if (empty($default['provider_id']) || !is_string($default['provider_id'])) {
         $this->logger->error('No default AI chat provider configured.');
         return new Response(
           json_encode(['error' => ['message' => 'No AI provider configured. Visit /admin/config/ai/settings to set a default chat provider.']]),
@@ -98,6 +89,8 @@ class AiChatController extends ControllerBase {
           ['Content-Type' => 'application/json']
         );
       }
+
+      $provider = $this->aiProviderManager->createInstance($default['provider_id']);
 
       // Build and validate chat messages from request.
       $chat_messages = [];
@@ -115,22 +108,16 @@ class AiChatController extends ControllerBase {
       $is_streamed = !empty($data->stream) || !isset($data->stream);
       $input->setStreamedOutput($is_streamed);
 
-      // Use model from request if valid, otherwise fall back to the default
-      // model configured for the chat operation type.
-      $model = $provider->getDefaultModelId();
+      $model = (!empty($default['model_id']) && is_string($default['model_id']))
+        ? $default['model_id']
+        : '';
       if (isset($data->model) && is_string($data->model) && preg_match('~^[a-zA-Z0-9._:/-]+$~', $data->model)) {
         $model = $data->model;
       }
 
-      // Build provider configuration.
       $config = [];
-
-      // Disable JSON-RPC agent/status messages — they are not compatible with
-      // the openai-php/client library used by the JS plugin.
       $config['jsonrpc'] = FALSE;
 
-      // Pass through optional fields with type validation. These are used by
-      // the DXPR provider but safely ignored by other providers.
       if (isset($data->prediction) && is_object($data->prediction)) {
         $config['prediction'] = (array) $data->prediction;
       }
@@ -150,7 +137,6 @@ class AiChatController extends ControllerBase {
         $config['response_format'] = (array) $data->response_format;
       }
 
-      // Set the configuration on the provider.
       $provider->setConfiguration($config);
 
       $output = $provider->chat($input, $model, ['ckeditor_ai_agent']);
@@ -159,7 +145,6 @@ class AiChatController extends ControllerBase {
       if ($is_streamed && $response instanceof StreamedChatMessageIteratorInterface) {
         return new StreamedResponse(function () use ($response) {
           foreach ($response as $message) {
-            // Pass through the full raw response from metadata if available.
             $metadata = $message->getMetadata();
             if (!empty($metadata['choices'])) {
               $chunk = $metadata;
@@ -194,7 +179,6 @@ class AiChatController extends ControllerBase {
         ]);
       }
       else {
-        // Non-streamed response.
         $content = $response->getText();
         return new Response(json_encode([
           'choices' => [

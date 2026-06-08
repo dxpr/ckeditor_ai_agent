@@ -16,6 +16,19 @@ function ckeditor_ai_agent_install() {
   _ckeditor_ai_agent_create_command_vocabulary();
   _ckeditor_ai_agent_create_tone_vocabulary();
   _ckeditor_ai_agent_update_editor_toolbars();
+
+  // Guide the site builder to complete setup if no AI provider is configured.
+  /** @var \Drupal\ai\AiProviderPluginManager $ai_provider */
+  $ai_provider = \Drupal::service('ai.provider');
+  $default = $ai_provider->getDefaultProviderForOperationType('chat');
+
+  if (empty($default['provider_id'])) {
+    \Drupal::messenger()->addWarning(t('CKEditor AI Agent requires an AI provider. Install a provider module (e.g. <a href="@dxpr">DXPR AI Provider</a> or <a href="@openai">OpenAI</a>) and select a default chat provider at <a href="@settings">Administration > Configuration > AI > Settings</a>.', [
+      '@dxpr' => 'https://www.drupal.org/project/ai_provider_dxpr',
+      '@openai' => 'https://www.drupal.org/project/ai_provider_openai',
+      '@settings' => Url::fromRoute('ai.settings_form')->toString(),
+    ]));
+  }
 }
 
 /**
@@ -274,31 +287,27 @@ function ckeditor_ai_agent_requirements($phase) {
   $requirements = [];
 
   if ($phase === 'runtime') {
-    $key_exists = \Drupal::moduleHandler()->moduleExists('key');
-    $key_service = \Drupal::service('ckeditor_ai_agent.key_service');
+    // The ai module is a hard dependency (info.yml), so it is always present
+    // at runtime. Check whether a default chat provider has been configured.
+    /** @var \Drupal\ai\AiProviderPluginManager $ai_provider */
+    $ai_provider = \Drupal::service('ai.provider');
+    $default = $ai_provider->getDefaultProviderForOperationType('chat');
 
-    if (!$key_exists) {
-      $requirements['ckeditor_ai_agent_key'] = [
+    if (empty($default['provider_id'])) {
+      $requirements['ckeditor_ai_agent_provider'] = [
         'title' => t('CKEditor AI Agent'),
-        'description' => t('The Key module is required but not installed. Please install and enable the <a href="@url">Key module</a>.', [
-          '@url' => 'https://www.drupal.org/project/key',
-        ]),
-        'severity' => REQUIREMENT_ERROR,
-      ];
-    }
-    elseif (!$key_service->getApiKey()) {
-      $requirements['ckeditor_ai_agent_key'] = [
-        'title' => t('CKEditor AI Agent'),
-        'description' => t('No API key has been configured. Please configure an API key in the <a href="@url">module settings</a>.', [
-          '@url' => Url::fromRoute('ckeditor_ai_agent.settings')->toString(),
+        'description' => t('No default AI chat provider is configured. Install an AI provider module (e.g. <a href="@dxpr">DXPR AI Provider</a> or <a href="@openai">OpenAI</a>) and select a default chat provider at <a href="@settings">AI settings</a>.', [
+          '@dxpr' => 'https://www.drupal.org/project/ai_provider_dxpr',
+          '@openai' => 'https://www.drupal.org/project/ai_provider_openai',
+          '@settings' => Url::fromRoute('ai.settings_form')->toString(),
         ]),
         'severity' => REQUIREMENT_ERROR,
       ];
     }
     else {
-      $requirements['ckeditor_ai_agent_key'] = [
+      $requirements['ckeditor_ai_agent_provider'] = [
         'title' => t('CKEditor AI Agent'),
-        'description' => t('API key is configured and stored securely.'),
+        'description' => t('AI provider is configured. Requests are routed server-side through the AI module.'),
         'severity' => REQUIREMENT_OK,
       ];
     }
