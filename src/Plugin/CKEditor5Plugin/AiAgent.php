@@ -19,6 +19,7 @@ use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\editor\EditorInterface;
 use Drupal\ckeditor_ai_agent\Form\AiAgentFormTrait;
 use Drupal\ckeditor_ai_agent\Form\ConfigSetterTrait;
@@ -94,6 +95,13 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   protected $messenger;
 
   /**
+   * The current user.
+   *
+   * @var \Drupal\Core\Session\AccountProxyInterface
+   */
+  protected AccountProxyInterface $currentUser;
+
+  /**
    * Constructs an AiAgent plugin instance.
    *
    * @param array $configuration
@@ -118,6 +126,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    *   The messenger.
    * @param \Drupal\Core\Access\CsrfTokenGenerator $csrf_token
    *   The CSRF token generator.
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   *   The current user.
    */
   public function __construct(
     array $configuration,
@@ -131,6 +141,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     UrlGeneratorInterface $url_generator,
     MessengerInterface $messenger,
     CsrfTokenGenerator $csrf_token,
+    AccountProxyInterface $current_user,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->configFactory = $config_factory;
@@ -141,6 +152,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     $this->urlGenerator = $url_generator;
     $this->messenger = $messenger;
     $this->csrfToken = $csrf_token;
+    $this->currentUser = $current_user;
   }
 
   /**
@@ -159,7 +171,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       $container->get('extension.path.resolver'),
       $container->get('url_generator'),
       $container->get('messenger'),
-      $container->get('csrf_token')
+      $container->get('csrf_token'),
+      $container->get('current_user')
     );
   }
 
@@ -206,11 +219,6 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   public function defaultConfiguration(): array {
     return [
       'aiAgent' => [
-        'apiKey' => NULL,
-        'engine' => NULL,
-        'model' => NULL,
-        'ollamaModel' => NULL,
-        'endpointUrl' => NULL,
         'contentScope' => NULL,
         'temperature' => NULL,
         'maxOutputTokens' => NULL,
@@ -273,20 +281,21 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    * @phpstan-return array<string, mixed>
    */
   public function getDynamicPluginConfig(array $static_plugin_config, EditorInterface $editor): array {
+    // Do not expose AI controls to users without the proxy permission.
+    if (!$this->currentUser->hasPermission('use ckeditor ai agent')) {
+      return [];
+    }
+
     $config = $this->configFactory->get('ckeditor_ai_agent.settings');
     $editor_config = $this->configuration['aiAgent'] ?? [];
 
     // Build configuration with proper fallback handling.
     $result = ['aiAgent' => []];
 
-    // Basic settings.
+    // Map remaining CKEditor-specific settings (provider/model/key are
+    // handled server-side by the AI module; they are not in this map).
     $settings_map = $this->getSettingsMap();
     foreach ($settings_map as $js_key => $drupal_key) {
-      // API keys are handled server-side; never expose them to the browser.
-      if ($js_key === 'apiKey') {
-        continue;
-      }
-
       // Only set if either editor config or global config has a non-null value.
       if (isset($editor_config[$js_key]) && !empty($editor_config[$js_key])) {
         $result['aiAgent'][$js_key] = $editor_config[$js_key];
@@ -299,12 +308,9 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     // Route requests through the Drupal proxy controller.
     $result['aiAgent']['endpointUrl'] = $this->getTokenizedProxyEndpointUrl();
     $result['aiAgent']['engine'] = 'dxai';
-    // Pass model through for the proxy to use.
-    $model = $result['aiAgent']['model'] ?? 'openai:gpt-4o';
-    if (str_contains($model, ':')) {
-      [, $model_name] = explode(':', $model, 2);
-      $result['aiAgent']['model'] = $model_name;
-    }
+    // Let the AI module's default provider/model win; do not send a model
+    // from legacy config unless the admin explicitly set a per-editor override.
+    unset($result['aiAgent']['model']);
 
     // Add taxonomy-based tones of voice if configured.
     $tone_vocabulary = $result['aiAgent']['toneOfVoiceVocabulary'] ?? '';

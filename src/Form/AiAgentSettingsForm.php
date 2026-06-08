@@ -147,10 +147,6 @@ class AiAgentSettingsForm extends ConfigFormBase {
     $form = $this->getCommonFormElements(FALSE, $config);
 
     // Set default values from config.
-    $form['basic_settings']['apiKey']['#default_value'] = $config->get('apiKey');
-    $form['basic_settings']['model']['#default_value'] = $config->get('model');
-    $form['basic_settings']['ollamaModel']['#default_value'] = $config->get('ollamaModel');
-    $form['basic_settings']['endpointUrl']['#default_value'] = $config->get('endpointUrl');
     $form['advanced_settings']['context']['contentScope']['#default_value'] = $config->get('contentScope');
 
     $form['advanced_settings']['temperature']['#default_value'] = $config->get('temperature');

@@ -124,11 +124,26 @@ class AiChatController extends ControllerBase {
       if (isset($data->providers) && is_array($data->providers)) {
         $config['providers'] = array_filter($data->providers, 'is_string');
       }
-      if (isset($data->allowed_html_tags) && is_string($data->allowed_html_tags)) {
-        $config['allowed_html_tags'] = $data->allowed_html_tags;
+      $string_fields = [
+        'allowed_html_tags',
+        'allowed_html_classes',
+        'allowed_html_styles',
+        'allowed_html_attributes',
+      ];
+      foreach ($string_fields as $field) {
+        if (isset($data->$field) && is_string($data->$field)) {
+          $config[$field] = $data->$field;
+        }
       }
-      if (isset($data->allowed_html_classes) && is_string($data->allowed_html_classes)) {
-        $config['allowed_html_classes'] = $data->allowed_html_classes;
+      $bool_fields = [
+        'allows_all_html_classes',
+        'allows_all_html_styles',
+        'allows_all_html_attributes',
+      ];
+      foreach ($bool_fields as $field) {
+        if (isset($data->$field) && $data->$field === TRUE) {
+          $config[$field] = TRUE;
+        }
       }
       if (isset($data->web_search) && $data->web_search === FALSE) {
         $config['web_search'] = FALSE;

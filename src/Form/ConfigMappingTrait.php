@@ -18,16 +18,7 @@ trait ConfigMappingTrait {
    */
   protected function getConfigMapping(bool $is_plugin = FALSE): array {
     $base_mapping = [
-      'basic_settings.apiKey' => [
-        'type' => 'string',
-      ],
-      'basic_settings.model' => [
-        'type' => 'string',
-      ],
-      'basic_settings.endpointUrl' => [
-        'type' => 'string',
-      ],
-      'basic_settings.contentScope' => [
+      'advanced_settings.context.contentScope' => [
         'type' => 'string',
       ],
       'advanced_settings.temperature' => [
@@ -119,10 +110,6 @@ trait ConfigMappingTrait {
    */
   protected function getSettingsMap(): array {
     return [
-      'apiKey' => 'key_provider',
-      'model' => 'model',
-      'ollamaModel' => 'ollamaModel',
-      'endpointUrl' => 'endpointUrl',
       'contentScope' => 'contentScope',
       'temperature' => 'temperature',
       'maxOutputTokens' => 'maxOutputTokens',

@@ -88,29 +88,6 @@ class AiAgentConfigurationManager {
     $config = $this->configFactory->get('ckeditor_ai_agent.settings');
     $result = [];
 
-    // Get basic settings.
-    $result['apiKey'] = $this->keyService->getApiKey();
-
-    // Handle engine/model.
-    $model = $config->get('model');
-    if ($model && str_contains($model, ':')) {
-      [$engine, $model_name] = explode(':', $model, 2);
-      $result['engine'] = $engine;
-      if ($engine === 'ollama') {
-        $result['model'] = $config->get('ollamaModel') ?: '';
-      }
-      else {
-        $result['model'] = $model_name;
-      }
-    }
-    else {
-      // Fallback for legacy configurations.
-      $result['engine'] = 'openai';
-      $result['model'] = $model ?: 'gpt-4o';
-    }
-
-    // Get other settings.
-    $result['endpointUrl'] = $config->get('endpointUrl');
     $result['contentScope'] = $config->get('contentScope');
     $result['temperature'] = $config->get('temperature');
     $result['maxOutputTokens'] = $config->get('maxOutputTokens');
@@ -125,7 +102,6 @@ class AiAgentConfigurationManager {
     $result['moderationEnable'] = $config->get('moderationEnable');
     $result['moderationKey'] = $config->get('moderationKey');
     $result['promptSettings'] = $config->get('promptSettings') ?: [];
-    $result['ollamaModel'] = $config->get('ollamaModel');
 
     return $result;
   }
@@ -145,8 +121,6 @@ class AiAgentConfigurationManager {
     // Structure the config to match the aiAgent JS configuration.
     $config = [
       'aiAgent' => [
-        'model' => $global_config->get('model'),
-        'ollamaModel' => $global_config->get('ollamaModel'),
         'contentScope' => $global_config->get('contentScope'),
         'temperature' => $global_config->get('temperature'),
         'maxOutputTokens' => $global_config->get('maxOutputTokens'),
@@ -169,11 +143,6 @@ class AiAgentConfigurationManager {
     // Route requests through the Drupal proxy controller.
     $config['aiAgent']['endpointUrl'] = $this->getTokenizedProxyEndpointUrl();
     $config['aiAgent']['engine'] = 'dxai';
-    $model = $global_config->get('model');
-    if ($model && str_contains($model, ':')) {
-      [, $model_name] = explode(':', $model, 2);
-      $config['aiAgent']['model'] = $model_name;
-    }
 
     // Properly populate prompt settings from configuration.
     foreach (['overrides', 'additions'] as $type) {

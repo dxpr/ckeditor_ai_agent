@@ -109,103 +109,39 @@ trait AiAgentFormTrait {
     // Helper function for formatting field names as titles.
     $formatMachineNameAsTitle = fn($title) => str_replace('_', ' ', ucfirst($title));
 
-    // Basic Settings.
-    $elements['basic_settings'] = [
+    // AI Provider status panel.
+    $elements['ai_provider_status'] = [
       '#type' => 'details',
-      '#title' => $this->t('Connection & Model Settings'),
+      '#title' => $this->t('AI Provider'),
       '#open' => TRUE,
-      '#ajax' => FALSE,
     ];
 
-    // Get available keys.
-    $key_options = [];
-    $key_storage = $this->getEntityTypeManager()->getStorage('key');
-    $keys = $key_storage->loadMultiple();
-    foreach ($keys as $key) {
-      $key_options[$key->id()] = $key->label();
-    }
-
-    $elements['basic_settings']['key_provider'] = [
-      '#type' => 'select',
-      '#title' => $this->t('API Key'),
-      '#description' => $is_plugin
-        ? $this->t('Select the key that contains your API credentials or use the <a href="@url">global settings</a>. <a href="@keys_url">Manage keys</a>', [
-          '@url' => $this->getUrlGenerator()->generateFromRoute('ckeditor_ai_agent.settings'),
-          '@keys_url' => '/admin/config/system/keys',
-        ])
-        : $this->t('Select the key that contains your API credentials. <a href="@url">Manage keys</a>', [
-          '@url' => '/admin/config/system/keys',
+    \Drupal::moduleHandler()->loadInclude('ckeditor_ai_agent', 'install');
+    $check = _ckeditor_ai_agent_check_ai_provider();
+    if ($check['severity'] === REQUIREMENT_OK) {
+      $elements['ai_provider_status']['status'] = [
+        '#type' => 'html_tag',
+        '#tag' => 'div',
+        '#value' => $this->t('Active provider: <strong>@provider</strong>. Change the provider at <a href="@settings">AI settings</a>.', [
+          '@provider' => $check['value'],
+          '@settings' => '/admin/config/ai/settings',
         ]),
-      '#options' => $is_plugin ? $getSelectOptions($key_options) : $key_options,
-      '#default_value' => $getConfigValue('key_provider'),
-      '#required' => !$is_plugin,
-      '#ajax' => FALSE,
-    ];
-
-    // Load supported models from JSON file.
-    $supported_models = [];
-    $json_path = $this->getExtensionPathResolver()->getPath('module', 'ckeditor_ai_agent') . '/js/ckeditor5_plugins/aiagent/src/SUPPORTED_MODELS.json';
-    if (file_exists($json_path)) {
-      $supported_models = json_decode(file_get_contents($json_path), TRUE) ?: [];
+        '#attributes' => ['class' => ['messages', 'messages--status']],
+      ];
     }
-
-    // Create model options grouped by engine.
-    $model_options = [];
-    foreach ($supported_models as $engine => $models) {
-      $model_options[$engine] = [];
-      foreach ($models as $model) {
-        $model_options[$engine][$engine . ':' . $model] = $model;
-      }
-    }
-
-    // Add ollama as a special case.
-    $model_options['ollama'] = ['ollama:custom' => $this->t('Custom Model')];
-
-    // Add DXAI as a new engine.
-    $model_options['dxai'] = [
-      'dxai:kavya-m1' => 'Kavya M1',
-      'dxai:kavya-m1-eu' => 'Kavya M1 European Union',
-    ];
-
-    ksort($model_options);
-
-    $elements['basic_settings']['model'] = [
-      '#type' => 'select',
-      '#title' => $this->t('AI Engine/Model'),
-      '#options' => $getSelectOptions($model_options),
-      '#description' => $this->t('@description', [
-        '@description' => 'Select AI engine and model' . ($is_plugin ? ' or use global settings.' : '.'),
-      ]),
-      '#default_value' => $getConfigValue('model'),
-      '#ajax' => FALSE,
-    ];
-
-    $elements['basic_settings']['ollamaModel'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Ollama Model Name'),
-      '#description' => $this->t('Enter the model name when using Ollama (e.g., llama2, mistral, codellama).'),
-      '#default_value' => $getConfigValue('ollamaModel'),
-      '#ajax' => FALSE,
-      '#states' => [
-        'visible' => [
-          ':input[name="editor[settings][plugins][ckeditor_ai_agent_ai_agent][aiAgent][model]"]' => ['value' => 'ollama:custom'],
+    else {
+      $elements['ai_provider_status']['status'] = [
+        '#type' => 'html_tag',
+        '#tag' => 'div',
+        '#value' => $check['description'],
+        '#attributes' => [
+          'class' => [
+            'messages',
+            $check['severity'] === REQUIREMENT_ERROR ? 'messages--error' : 'messages--warning',
+          ],
         ],
-      ],
-    ];
-
-    // For plugin context, ensure ollamaModel is saved under aiAgent.
-    if ($is_plugin) {
-      $elements['basic_settings']['ollamaModel']['#description'] = $this->t('Not available in plugin context due to ckeditor5 module limitations.');
-      $elements['basic_settings']['ollamaModel']['#disabled'] = TRUE;
+      ];
     }
-
-    $elements['basic_settings']['endpointUrl'] = [
-      '#type' => 'url',
-      '#title' => $this->t('API Endpoint URL'),
-      '#description' => $this->t('API endpoint URL. Only change if using a custom endpoint or proxy.'),
-      '#default_value' => $getConfigValue('endpointUrl'),
-      '#ajax' => FALSE,
-    ];
 
     // Add prompt settings.
     $this->addPromptSettings($elements, $getConfigValue);
