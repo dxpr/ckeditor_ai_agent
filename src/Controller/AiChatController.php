@@ -160,20 +160,26 @@ class AiChatController extends ControllerBase {
       if ($is_streamed && $response instanceof StreamedChatMessageIteratorInterface) {
         return new StreamedResponse(function () use ($response) {
           foreach ($response as $message) {
-            $metadata = $message->getMetadata();
-            if (!empty($metadata['choices'])) {
-              $chunk = $metadata;
+            $text = $message->getText();
+            if ($text === '') {
+              continue;
             }
-            else {
-              $chunk = [
-                'choices' => [
-                  [
-                    'delta' => [
-                      'content' => $message->getText(),
-                    ],
+            $chunk = [
+              'choices' => [
+                [
+                  'delta' => [
+                    'content' => $text,
                   ],
                 ],
-              ];
+              ],
+            ];
+            $raw = $message->getRaw();
+            if (is_array($raw)) {
+              foreach (['id', 'object', 'created', 'model', 'original_model', 'usage'] as $key) {
+                if (isset($raw[$key])) {
+                  $chunk[$key] = $raw[$key];
+                }
+              }
             }
 
             echo 'data: ' . json_encode($chunk) . "\n\n";
