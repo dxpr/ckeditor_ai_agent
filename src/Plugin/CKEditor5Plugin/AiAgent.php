@@ -258,6 +258,13 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       $prompt_settings = $this->processPromptSettings($values['promptSettings']);
       $this->configuration['aiAgent']['promptSettings'] = $prompt_settings;
     }
+
+    // Handle AI output security settings.
+    if (isset($values['security_settings']['allowedDomains'])) {
+      $this->configuration['aiAgent']['aiOutputSecurity'] = [
+        'allowedDomains' => $this->parseDomainsFromTextarea($values['security_settings']['allowedDomains']),
+      ];
+    }
   }
 
   /**

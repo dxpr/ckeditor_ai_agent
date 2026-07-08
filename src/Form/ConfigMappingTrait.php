@@ -57,9 +57,6 @@ trait ConfigMappingTrait {
       'commands.commandsVocabulary' => [
         'type' => 'string',
       ],
-      'security_settings.allowedDomains' => [
-        'type' => 'array',
-      ],
     ];
 
     $settings_mapping = [];
@@ -118,7 +115,6 @@ trait ConfigMappingTrait {
       'toneOfVoiceVocabulary' => 'toneOfVoiceVocabulary',
       'commandsVocabulary' => 'commandsVocabulary',
       'defaultToneOfVoice' => 'defaultToneOfVoice',
-      'allowedDomains' => 'aiOutputSecurity.allowedDomains',
     ];
   }
 
