@@ -343,6 +343,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
               $tone_item = [
                 'label' => $term->label(),
                 'tone' => $description,
+                'tid' => (int) $term->id(),
               ];
 
               $tones_dropdown[] = $tone_item;
