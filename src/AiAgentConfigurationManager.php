@@ -5,6 +5,7 @@ namespace Drupal\ckeditor_ai_agent;
 use Drupal\ai\AiProviderPluginManager;
 use Drupal\Core\Access\CsrfTokenGenerator;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -55,6 +56,13 @@ class AiAgentConfigurationManager {
   protected CsrfTokenGenerator $csrfToken;
 
   /**
+   * The entity repository.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
+
+  /**
    * Constructs a new AiAgentConfigurationManager.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -67,6 +75,8 @@ class AiAgentConfigurationManager {
    *   The logger channel.
    * @param \Drupal\Core\Access\CsrfTokenGenerator $csrf_token
    *   The CSRF token generator.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository.
    */
   public function __construct(
     ConfigFactoryInterface $config_factory,
@@ -74,12 +84,14 @@ class AiAgentConfigurationManager {
     EntityTypeManagerInterface $entity_type_manager,
     LoggerChannelInterface $logger,
     CsrfTokenGenerator $csrf_token,
+    EntityRepositoryInterface $entity_repository,
   ) {
     $this->configFactory = $config_factory;
     $this->aiProviderManager = $ai_provider_manager;
     $this->entityTypeManager = $entity_type_manager;
     $this->logger = $logger;
     $this->csrfToken = $csrf_token;
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -172,12 +184,14 @@ class AiAgentConfigurationManager {
 
           // Add each taxonomy term as a tone option.
           foreach ($terms as $term) {
+            $term = $this->entityRepository->getTranslationFromContext($term);
             $description = $term->getDescription();
             // Only add terms that have a description (tone)
             if (!empty($description)) {
               $tone_item = [
                 'label' => $term->label(),
                 'tone' => $description,
+                'tid' => (int) $term->id(),
               ];
 
               $tones_dropdown[] = $tone_item;
@@ -245,8 +259,10 @@ class AiAgentConfigurationManager {
 
           // Build the dropdown structure.
           foreach ($categories as $category_data) {
+            $category_term = $term_storage->load($category_data['term']->tid);
+            $category_term = $this->entityRepository->getTranslationFromContext($category_term);
             $command_group = [
-              'title' => $category_data['term']->name,
+              'title' => $category_term->label(),
               'items' => [],
             ];
 
@@ -254,6 +270,7 @@ class AiAgentConfigurationManager {
             foreach ($category_data['children'] as $command_tree_term) {
               // Load the full term to get description.
               $command_term = $term_storage->load($command_tree_term->tid);
+              $command_term = $this->entityRepository->getTranslationFromContext($command_term);
               $description = $command_term->getDescription();
 
               // Only add terms that have a description (command)

@@ -53,6 +53,7 @@ export interface AiAgentConfig {
     tonesDropdown?: Array<{
         label: string;
         tone: string;
+        tid?: number;
     }>;
     contentScope?: string;
     writesPerSecond?: WritesPerSecond;
