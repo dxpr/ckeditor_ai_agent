@@ -13,6 +13,7 @@ use Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
@@ -95,6 +96,13 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
   protected AccountProxyInterface $currentUser;
 
   /**
+   * The entity repository.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected EntityRepositoryInterface $entityRepository;
+
+  /**
    * Constructs an AiAgent plugin instance.
    *
    * @param array $configuration
@@ -119,6 +127,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
    *   The CSRF token generator.
    * @param \Drupal\Core\Session\AccountProxyInterface $current_user
    *   The current user.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository.
    */
   public function __construct(
     array $configuration,
@@ -132,6 +142,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     MessengerInterface $messenger,
     CsrfTokenGenerator $csrf_token,
     AccountProxyInterface $current_user,
+    EntityRepositoryInterface $entity_repository,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->configFactory = $config_factory;
@@ -142,6 +153,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
     $this->messenger = $messenger;
     $this->csrfToken = $csrf_token;
     $this->currentUser = $current_user;
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -160,7 +172,8 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
       $container->get('url_generator'),
       $container->get('messenger'),
       $container->get('csrf_token'),
-      $container->get('current_user')
+      $container->get('current_user'),
+      $container->get('entity.repository')
     );
   }
 
@@ -323,6 +336,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
           // Add each taxonomy term as a tone option.
           foreach ($terms as $term) {
+            $term = $this->entityRepository->getTranslationFromContext($term);
             $description = $term->getDescription();
             // Only add terms that have a description (tone)
             if (!empty($description)) {
@@ -393,8 +407,10 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
 
           // Build the dropdown structure.
           foreach ($categories as $category_data) {
+            $category_term = $term_storage->load($category_data['term']->tid);
+            $category_term = $this->entityRepository->getTranslationFromContext($category_term);
             $command_group = [
-              'title' => $category_data['term']->name,
+              'title' => $category_term->label(),
               'items' => [],
             ];
 
@@ -402,6 +418,7 @@ class AiAgent extends CKEditor5PluginDefault implements CKEditor5PluginConfigura
             foreach ($category_data['children'] as $command_tree_term) {
               // Load the full term to get description.
               $command_term = $term_storage->load($command_tree_term->tid);
+              $command_term = $this->entityRepository->getTranslationFromContext($command_term);
               $description = $command_term->getDescription();
 
               // Only add terms that have a description (command)
