@@ -1,0 +1,131 @@
+<p>This module is part of the <a href="https://www.drupal.org/project/ai">AI module</a> ecosystem and included in <a href="https://www.drupal.org/project/dxpr_cms">DXPR CMS</a>.</p>
+
+<blockquote>Transform CKEditor 5 into an AI-powered content creation platform with slash commands, real-time streaming, and support for 400+ AI models. Like ChatGPT but faster, and better at creating HTML content. Built on <a href="https://github.com/dxpr/ckeditor5-ai-agent">DXPR's CKEditor 5 AI plugin</a>.</blockquote>
+
+<a href="/files/ckeditor-ai-agent-generated.jpg"><img src="/files/ckeditor-ai-agent-generated.jpg" alt="CKEditor AI Agent generating a structured blog post with headings, paragraphs, and a Cancel Generation button visible in the editor" /></a>
+
+<h3>You need CKEditor AI Agent if</h3>
+<ul>
+  <li>You want AI-powered content generation directly within your text editor</li>
+  <li>Your content team needs faster, more efficient writing workflows</li>
+  <li>You want to integrate external web content seamlessly into your articles</li>
+  <li>You need support for multiple AI providers with automatic failover</li>
+  <li>You prefer intuitive slash commands over complex AI interfaces</li>
+</ul>
+
+<h2>How It Works</h2>
+<p>Type <code>/</code> in any CKEditor 5 field to open the AI command menu. Enter a prompt, press Enter, and watch content stream into the editor in real time. All requests are routed server-side through the <a href="https://www.drupal.org/project/ai">Drupal AI module</a>; API keys never reach the browser. The module works with any AI provider supported by the AI module: DXPR, OpenAI, Anthropic, Ollama, and more.</p>
+
+<a href="/files/ckeditor-ai-agent-menu.jpg"><img src="/files/ckeditor-ai-agent-menu.jpg" alt="CKEditor AI Agent dropdown menu showing AI editing commands including Edit or review, Polish Text, Improve Tone of Voice, Make Shorter, Make Longer, Simplify Language, and Generate from selection options" /></a>
+
+<h2>Features</h2>
+<ul>
+  <li><strong>Slash commands:</strong> Quickly trigger AI actions using intuitive commands like <code>/write blog about</code></li>
+  <li><strong>Real-time streaming:</strong> See AI-generated content appear instantly as it is written</li>
+  <li><strong>Web content integration:</strong> Include URLs in prompts to incorporate external content as reference material</li>
+  <li><strong>Context-aware writing:</strong> Automatically uses surrounding editor content to enhance response accuracy</li>
+  <li><strong>Selection-based edits:</strong> Select text to quickly revise, improve, or translate with AI</li>
+  <li><strong>400+ AI models support:</strong> Works with commercial and open source AI vendors via the <a href="https://www.drupal.org/project/ai">Drupal AI module</a></li>
+  <li><strong>Secure server-side proxy:</strong> AI requests are routed through Drupal; API keys are never exposed to the browser</li>
+  <li><strong>Smart formatting:</strong> Automatically ensures generated HTML matches your editor's allowed content</li>
+  <li><strong>Multilingual support:</strong> Fully supports Drupal's multilingual content features</li>
+  <li><strong>Simple menu options:</strong> Easily edit, review, fix errors, and adjust tone from dropdown menus</li>
+  <li><strong>Extensible API:</strong> Clearly defined API for integration with custom workflows or systems</li>
+</ul>
+
+<a href="/files/ckeditor-ai-agent-tone.jpg"><img src="/files/ckeditor-ai-agent-tone.jpg" alt="CKEditor AI Agent tone of voice dropdown showing options: Default tone, Professional, Educational, Persuasive, Approachable, Formal, and Inspirational" /></a>
+
+<h3>Keyboard Shortcuts</h3>
+<ul>
+  <li><code>/</code> : Open AI command menu in an empty field</li>
+  <li><code>Cmd/Ctrl + /</code> : Force insert slash command within text</li>
+  <li><code>Cmd/Ctrl + Backspace</code> : Cancel AI generation</li>
+  <li><code>Enter</code> : Execute command</li>
+  <li><code>Shift + Enter</code> : Add new line in command</li>
+</ul>
+
+<h2>Extended Content Capabilities</h2>
+<p><a href="https://www.drupal.org/project/ai_provider_dxpr">DXPR AI Provider</a> enables long-form content creation by automatically routing between multiple AI providers when limits are reached. Combined with CKEditor AI Agent, content teams can generate 1,000+ word articles with proper research and structure in a single prompt.</p>
+
+<h2>Getting Started</h2>
+<ol>
+  <li>Install with Composer:<br><code>composer require drupal/ckeditor_ai_agent</code></li>
+  <li>Enable the module and install an AI provider (e.g. <a href="https://www.drupal.org/project/ai_provider_dxpr">DXPR AI Provider</a>, <a href="https://www.drupal.org/project/ai_provider_openai">OpenAI</a>, or any other supported provider)</li>
+  <li>Configure a default Chat provider at <code>/admin/config/ai/settings</code></li>
+  <li>Grant the "Use CKEditor AI Agent" permission to roles that should have AI access</li>
+  <li>Edit your text format at <code>/admin/config/content/formats</code> and drag the "AI Agent" button into the CKEditor toolbar</li>
+  <li>Start using slash commands or the toolbar button for AI assistance</li>
+</ol>
+
+<a href="/files/ckeditor-ai-agent-config.jpg"><img src="/files/ckeditor-ai-agent-config.jpg" alt="CKEditor 5 toolbar configuration page showing AI Agent buttons in the Active toolbar and plugin settings sidebar" /></a>
+
+<div class="note-tip">
+  <h4>Prefer a turnkey demo site?</h4>
+  <p>Spin up <strong>DXPR CMS</strong>: Drupal pre-configured with DXPR Builder, DXPR Theme, CKEditor AI Agent module, and security best practices.</p>
+  <p><a href="https://www.drupal.org/project/dxpr_cms" title="DXPR CMS platform">Get DXPR CMS &raquo;</a></p>
+</div>
+
+<h3>Usage Examples</h3>
+<ul>
+  <li><strong>Content Creation:</strong> Type <code>/write</code> followed by your topic to generate new content</li>
+  <li><strong>Content Enhancement:</strong> Select text and use the AI menu to improve or modify it</li>
+  <li><strong>Reference Integration:</strong> Include URLs in prompts to incorporate external content</li>
+  <li><strong>Inline Assistance:</strong> Use <code>Cmd/Ctrl + /</code> to insert AI content mid-sentence</li>
+  <li><strong>Multilingual Content:</strong> Generate content in any language supported by your chosen AI model</li>
+</ul>
+
+<h3>Dependencies</h3>
+<ul>
+  <li><a href="https://www.drupal.org/project/ai">AI module</a> (<code>drupal/ai</code>): Required. Routes AI requests through Drupal server-side, keeping API keys secure. Works with any AI provider plugin.</li>
+</ul>
+
+<hr>
+
+<h2>FAQ</h2>
+<dl>
+  <dt>Does CKEditor AI Agent require a paid subscription?</dt>
+  <dd>
+    <p>The module itself is free and open source (GPL). You need an AI provider to process requests. DXPR AI Provider includes 10,000 free words and 10 images per month for all sites. Alternatively, use your own API keys with OpenAI, Anthropic, Ollama, or any other provider supported by the Drupal AI module.</p>
+  </dd>
+
+  <dt>How does CKEditor AI Agent keep API keys secure?</dt>
+  <dd>
+    <p>All AI requests are routed server-side through the Drupal AI module. API keys are stored in your Drupal configuration (or in the Key module for extra security) and never sent to the browser. The CKEditor plugin communicates only with your own Drupal backend, which then forwards requests to the AI provider.</p>
+  </dd>
+
+  <dt>Can CKEditor AI Agent generate long-form content like full blog posts?</dt>
+  <dd>
+    <p>Yes. When paired with DXPR AI Provider, the module supports long-form content creation by automatically routing between multiple AI providers when token limits are reached. Content teams can generate 1,000+ word articles with proper research and structure in a single prompt, including headings, lists, and formatted HTML.</p>
+  </dd>
+
+  <dt>Does CKEditor AI Agent work with existing content?</dt>
+  <dd>
+    <p>Yes. The module is context-aware and reads the surrounding editor content to produce relevant responses. You can also select existing text and use the AI menu to revise, translate, summarise, or adjust tone. All edits are inserted directly into CKEditor with full undo/redo support.</p>
+  </dd>
+
+  <dt>Which AI models are supported?</dt>
+  <dd>
+    <p>CKEditor AI Agent works with any chat model available through the Drupal AI module ecosystem: over 400 models from providers including OpenAI (GPT-4o, GPT-4), Anthropic (Claude), Google (Gemini), Mistral, XAI (Grok), and local models via Ollama. Switch models at any time without changing your content workflow.</p>
+  </dd>
+
+  <dt>Can I use CKEditor AI Agent inside DXPR Builder?</dt>
+  <dd>
+    <p>Yes. CKEditor AI Agent works inside DXPR Builder's text editing fields. When editing rich text elements in the page builder, all slash commands, streaming, and AI menu options are available. DXPR Builder also passes its security settings to the CKEditor 5 AI Agent plugin automatically.</p>
+  </dd>
+
+  <dt>Does the module support multilingual content?</dt>
+  <dd>
+    <p>Yes. CKEditor AI Agent uses the entity's language setting to generate content in the correct language and can translate selected text between languages directly in the editor.</p>
+<a href="/files/ckeditor-ai-agent-arabic_0.jpg"><img src="/files/ckeditor-ai-agent-arabic_0.jpg" alt="CKEditor AI Agent generating Arabic RTL content with heading and paragraph text in the CKEditor 5 editor" /></a>
+  </dd>
+</dl>
+
+<h3>Related Modules</h3>
+<ul>
+<li><a href="https://www.drupal.org/project/ai">AI module</a> - Required. Routes all AI requests server-side through Drupal; API keys never reach the browser</li>
+<li><a href="https://www.drupal.org/project/ai_provider_dxpr">DXPR AI Provider</a> - Compatible AI provider that enables long-form content creation with automatic failover between AI backends</li>
+<li><a href="https://www.drupal.org/project/dxpr_builder">DXPR Builder</a> - Drag-and-drop <a href="https://dxpr.com/c/drupal-layout-builder?ref=50701">Drupal page builder</a>. CKEditor AI Agent works inside DXPR Builder's text editing fields</li>
+<li><a href="https://www.drupal.org/project/webform">Webform</a> - Form builder with dedicated DXPR Builder block integration</li>
+</ul>
+
+<p>CKEditor AI Agent is part of the AI-powered content stack included in <a href="https://dxpr.com/c/marketing-cms?ref=50701">DXPR CMS</a>, a turnkey <a href="https://dxpr.com/c/marketing-cms?ref=50701">marketing CMS</a> for Drupal that combines AI content creation, a <a href="https://dxpr.com/c/premium-drupal-theme?ref=50701">premium Drupal theme</a>, and a <a href="https://dxpr.com/c/drupal-layout-builder?ref=50701">drag-and-drop layout builder</a>. See <a href="https://dxpr.com/c/marketing-cms?ref=50701">getting started</a> or explore <a href="https://dxpr.com/pricing?ref=50701">pricing</a>.</p>
