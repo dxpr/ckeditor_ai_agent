@@ -3,7 +3,6 @@
 namespace Drupal\ckeditor_ai_agent\Controller;
 
 use Drupal\ai\AiProviderPluginManager;
-use Drupal\ai_provider_dxpr\DxprHelper;
 use Drupal\ai\OperationType\Chat\ChatInput;
 use Drupal\ai\OperationType\Chat\ChatMessage;
 use Drupal\ai\OperationType\Chat\StreamedChatMessageIteratorInterface;
@@ -122,7 +121,7 @@ class AiChatController extends ControllerBase {
       // Site defaults are validated at save time in the ai_provider_dxpr form.
       if ($client_supplied_model && $this->moduleHandler()->moduleExists('ai_provider_dxpr')) {
         $allowed = $this->config('ai_provider_dxpr.settings')->get('allowed_models');
-        if (!DxprHelper::isModelAllowed($model, is_array($allowed) ? $allowed : NULL)) {
+        if (!empty($allowed) && is_array($allowed) && !in_array($model, $allowed, TRUE)) {
           return new Response(
             json_encode([
               'error' => [
