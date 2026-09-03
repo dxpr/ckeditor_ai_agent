@@ -108,11 +108,26 @@ class AiChatController extends ControllerBase {
       $is_streamed = !isset($data->stream) || !empty($data->stream);
       $input->setStreamedOutput($is_streamed);
 
-      $model = (!empty($default['model_id']) && is_string($default['model_id']))
+      $default_model = (!empty($default['model_id']) && is_string($default['model_id']))
         ? $default['model_id']
         : '';
+      $model = $default_model;
+      $client_supplied_model = FALSE;
       if (isset($data->model) && is_string($data->model) && preg_match('~^[a-zA-Z0-9._:/-]+$~', $data->model)) {
         $model = $data->model;
+        $client_supplied_model = TRUE;
+      }
+
+      // Fall back to the AI module's default when the client model is
+      // disallowed; this endpoint has no user model selector.
+      $restrictable = ['kavya-m1', 'kavya-m1-eu', 'kavya-m1-fast'];
+      if ($client_supplied_model
+        && in_array($model, $restrictable, TRUE)
+        && $this->moduleHandler()->moduleExists('ai_provider_dxpr')) {
+        $allowed = $this->config('ai_provider_dxpr.settings')->get('allowed_models');
+        if (!empty($allowed) && is_array($allowed) && !in_array($model, $allowed, TRUE)) {
+          $model = $default_model ?: $model;
+        }
       }
 
       $config = [];
