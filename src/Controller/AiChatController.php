@@ -3,6 +3,7 @@
 namespace Drupal\ckeditor_ai_agent\Controller;
 
 use Drupal\ai\AiProviderPluginManager;
+use Drupal\ai_provider_dxpr\DxprHelper;
 use Drupal\ai\OperationType\Chat\ChatInput;
 use Drupal\ai\OperationType\Chat\ChatMessage;
 use Drupal\ai\OperationType\Chat\StreamedChatMessageIteratorInterface;
@@ -111,18 +112,24 @@ class AiChatController extends ControllerBase {
       $model = (!empty($default['model_id']) && is_string($default['model_id']))
         ? $default['model_id']
         : '';
+      $client_supplied_model = FALSE;
       if (isset($data->model) && is_string($data->model) && preg_match('~^[a-zA-Z0-9._:/-]+$~', $data->model)) {
         $model = $data->model;
+        $client_supplied_model = TRUE;
       }
 
-      // Validate model against admin-configured allowed list.
-      // Only restrict kavya chat models; other providers' models pass through.
-      $restrictable = ['kavya-m1', 'kavya-m1-eu', 'kavya-m1-fast'];
-      if (in_array($model, $restrictable, TRUE) && $this->moduleHandler()->moduleExists('ai_provider_dxpr')) {
+      // Validate client-supplied model against admin-configured allowed list.
+      // Site defaults are validated at save time in the ai_provider_dxpr form.
+      if ($client_supplied_model && $this->moduleHandler()->moduleExists('ai_provider_dxpr')) {
         $allowed = $this->config('ai_provider_dxpr.settings')->get('allowed_models');
-        if (!empty($allowed) && is_array($allowed) && !in_array($model, $allowed, TRUE)) {
+        if (!DxprHelper::isModelAllowed($model, is_array($allowed) ? $allowed : NULL)) {
           return new Response(
-            json_encode(['error' => ['message' => 'The selected model is not allowed. Please refresh the page to update your model options.']]),
+            json_encode([
+              'error' => [
+                'code' => 'model_not_allowed',
+                'message' => 'The selected model is not allowed. Please refresh the page to update your model options.',
+              ],
+            ]),
             Response::HTTP_FORBIDDEN,
             ['Content-Type' => 'application/json']
           );
