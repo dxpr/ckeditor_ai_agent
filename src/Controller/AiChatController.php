@@ -115,6 +115,18 @@ class AiChatController extends ControllerBase {
         $model = $data->model;
       }
 
+      // Validate model against admin-configured allowed list.
+      if ($this->moduleHandler()->moduleExists('ai_provider_dxpr')) {
+        $allowed = $this->config('ai_provider_dxpr.settings')->get('allowed_models');
+        if (!empty($allowed) && is_array($allowed) && !in_array($model, $allowed, TRUE)) {
+          return new Response(
+            json_encode(['error' => ['message' => 'The selected model is not allowed by the administrator.']]),
+            Response::HTTP_FORBIDDEN,
+            ['Content-Type' => 'application/json']
+          );
+        }
+      }
+
       $config = [];
       $config['jsonrpc'] = FALSE;
 
