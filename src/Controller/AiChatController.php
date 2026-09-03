@@ -108,30 +108,27 @@ class AiChatController extends ControllerBase {
       $is_streamed = !isset($data->stream) || !empty($data->stream);
       $input->setStreamedOutput($is_streamed);
 
-      $model = (!empty($default['model_id']) && is_string($default['model_id']))
+      $default_model = (!empty($default['model_id']) && is_string($default['model_id']))
         ? $default['model_id']
         : '';
+      $model = $default_model;
       $client_supplied_model = FALSE;
       if (isset($data->model) && is_string($data->model) && preg_match('~^[a-zA-Z0-9._:/-]+$~', $data->model)) {
         $model = $data->model;
         $client_supplied_model = TRUE;
       }
 
-      // Validate client-supplied model against admin-configured allowed list.
-      // Site defaults are validated at save time in the ai_provider_dxpr form.
-      if ($client_supplied_model && $this->moduleHandler()->moduleExists('ai_provider_dxpr')) {
+      // When the client-supplied model is disallowed, fall back to the
+      // AI module's default rather than returning 403. This endpoint has
+      // no user model selector; the JS hardcodes kavya-m1 as a fallback,
+      // so a 403 would be unrecoverable for the user.
+      $restrictable = ['kavya-m1', 'kavya-m1-eu', 'kavya-m1-fast'];
+      if ($client_supplied_model
+        && in_array($model, $restrictable, TRUE)
+        && $this->moduleHandler()->moduleExists('ai_provider_dxpr')) {
         $allowed = $this->config('ai_provider_dxpr.settings')->get('allowed_models');
         if (!empty($allowed) && is_array($allowed) && !in_array($model, $allowed, TRUE)) {
-          return new Response(
-            json_encode([
-              'error' => [
-                'code' => 'model_not_allowed',
-                'message' => 'The selected model is not allowed. Please refresh the page to update your model options.',
-              ],
-            ]),
-            Response::HTTP_FORBIDDEN,
-            ['Content-Type' => 'application/json']
-          );
+          $model = $default_model ?: $model;
         }
       }
 
