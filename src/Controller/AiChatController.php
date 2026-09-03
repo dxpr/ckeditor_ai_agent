@@ -118,10 +118,8 @@ class AiChatController extends ControllerBase {
         $client_supplied_model = TRUE;
       }
 
-      // When the client-supplied model is disallowed, fall back to the
-      // AI module's default rather than returning 403. This endpoint has
-      // no user model selector; the JS hardcodes kavya-m1 as a fallback,
-      // so a 403 would be unrecoverable for the user.
+      // Fall back to the AI module's default when the client model is
+      // disallowed; this endpoint has no user model selector.
       $restrictable = ['kavya-m1', 'kavya-m1-eu', 'kavya-m1-fast'];
       if ($client_supplied_model
         && in_array($model, $restrictable, TRUE)
