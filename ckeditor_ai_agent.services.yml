@@ -1,7 +1,7 @@
 services:
   ckeditor_ai_agent.configuration_manager:
     class: Drupal\ckeditor_ai_agent\AiAgentConfigurationManager
-    arguments: ['@config.factory', '@ai.provider', '@entity_type.manager', '@logger.channel.ckeditor_ai_agent', '@csrf_token']
+    arguments: ['@config.factory', '@ai.provider', '@entity_type.manager', '@logger.channel.ckeditor_ai_agent', '@csrf_token', '@entity.repository']
   logger.channel.ckeditor_ai_agent:
     parent: logger.channel_base
     arguments: ['ckeditor_ai_agent']
