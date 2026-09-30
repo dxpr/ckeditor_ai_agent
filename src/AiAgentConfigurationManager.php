@@ -7,6 +7,7 @@ use Drupal\Core\Access\CsrfTokenGenerator;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
+use Drupal\Core\Extension\Requirement\RequirementSeverity;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
 use Drupal\editor\Entity\Editor;
@@ -298,7 +299,6 @@ class AiAgentConfigurationManager {
    *   'description' and 'value' keys.
    */
   public function checkAiProvider(): array {
-    include_once DRUPAL_ROOT . '/core/includes/install.inc';
     $settings_url = Url::fromRoute('ai.settings_form')->toString();
 
     $definitions = $this->aiProviderManager->getDefinitions();
@@ -311,7 +311,7 @@ class AiAgentConfigurationManager {
           '@anthropic' => 'https://www.drupal.org/project/ai_provider_anthropic',
           '@ollama' => 'https://www.drupal.org/project/ai_provider_ollama',
         ]),
-        'severity' => REQUIREMENT_ERROR,
+        'severity' => RequirementSeverity::Error,
       ];
     }
 
@@ -324,7 +324,7 @@ class AiAgentConfigurationManager {
           '@providers' => implode(', ', $installed_names),
           '@settings' => $settings_url,
         ]),
-        'severity' => REQUIREMENT_ERROR,
+        'severity' => RequirementSeverity::Error,
       ];
     }
 
@@ -338,7 +338,7 @@ class AiAgentConfigurationManager {
           '@providers' => implode(', ', $usable_names),
           '@settings' => $settings_url,
         ]),
-        'severity' => REQUIREMENT_WARNING,
+        'severity' => RequirementSeverity::Warning,
       ];
     }
 
@@ -353,7 +353,7 @@ class AiAgentConfigurationManager {
       'description' => $this->t('Requests are routed server-side through the AI module. Change the provider at <a href="@settings">AI settings</a>.', [
         '@settings' => $settings_url,
       ]),
-      'severity' => REQUIREMENT_OK,
+      'severity' => RequirementSeverity::OK,
     ];
   }
 

@@ -5,8 +5,9 @@
  * Install, update and uninstall functions for the CKEditor AI Agent module.
  */
 
-use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\Core\Extension\Requirement\RequirementSeverity;
 use Drupal\taxonomy\Entity\Term;
+use Drupal\taxonomy\Entity\Vocabulary;
 
 /**
  * Implements hook_install().
@@ -19,7 +20,7 @@ function ckeditor_ai_agent_install() {
   /** @var \Drupal\ckeditor_ai_agent\AiAgentConfigurationManager $config_manager */
   $config_manager = \Drupal::service('ckeditor_ai_agent.configuration_manager');
   $check = $config_manager->checkAiProvider();
-  if ($check['severity'] !== REQUIREMENT_OK) {
+  if ($check['severity'] !== RequirementSeverity::OK) {
     \Drupal::messenger()->addWarning($check['description']);
   }
 }

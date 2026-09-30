@@ -2,12 +2,13 @@
 
 namespace Drupal\ckeditor_ai_agent\Form;
 
-use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
-use Drupal\Core\Routing\UrlGeneratorInterface;
-use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Extension\Requirement\RequirementSeverity;
 use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\Core\Routing\UrlGeneratorInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Provides common form elements for AI Agent configuration.
@@ -119,7 +120,7 @@ trait AiAgentFormTrait {
     /** @var \Drupal\ckeditor_ai_agent\AiAgentConfigurationManager $config_manager */
     $config_manager = \Drupal::service('ckeditor_ai_agent.configuration_manager');
     $check = $config_manager->checkAiProvider();
-    if ($check['severity'] === REQUIREMENT_OK) {
+    if ($check['severity'] === RequirementSeverity::OK) {
       $elements['ai_provider_status']['status'] = [
         '#type' => 'html_tag',
         '#tag' => 'div',
@@ -138,7 +139,7 @@ trait AiAgentFormTrait {
         '#attributes' => [
           'class' => [
             'messages',
-            $check['severity'] === REQUIREMENT_ERROR ? 'messages--error' : 'messages--warning',
+            $check['severity'] === RequirementSeverity::Error ? 'messages--error' : 'messages--warning',
           ],
         ],
       ];
