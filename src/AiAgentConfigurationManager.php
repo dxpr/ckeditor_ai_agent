@@ -178,6 +178,7 @@ class AiAgentConfigurationManager {
               $tone_item = [
                 'label' => $term->label(),
                 'tone' => $description,
+                'tid' => (int) $term->id(),
               ];
 
               $tones_dropdown[] = $tone_item;
