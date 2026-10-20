@@ -24,7 +24,7 @@ class AiChatController extends ControllerBase {
   /**
    * Backend response keys forwarded to the browser, streamed or not.
    */
-  const FORWARDED_METADATA_KEYS = ['id', 'object', 'created', 'model', 'original_model', 'usage'];
+  private const FORWARDED_METADATA_KEYS = ['id', 'object', 'created', 'model', 'original_model', 'usage'];
 
   private const ALLOWED_ROLES = ['system', 'user', 'assistant'];
 
@@ -179,9 +179,8 @@ class AiChatController extends ControllerBase {
 
       if ($is_streamed && $response instanceof StreamedChatMessageIteratorInterface) {
         return new StreamedResponse(function () use ($response) {
-          // The AI module buffers streamed text, so a message can carry text
-          // without raw data (for example the final flush of a short reply).
-          // Fall back to the last raw data seen.
+          // The AI module buffers text, so a short reply arrives in a final
+          // flush with no raw data. Fall back to the last raw data seen.
           $last_raw = NULL;
           foreach ($response as $message) {
             $raw = $message->getRaw();
@@ -247,15 +246,15 @@ class AiChatController extends ControllerBase {
   }
 
   /**
-   * Copies the forwarded backend metadata keys into a response body.
+   * Adds the forwarded metadata keys from the raw backend data to a body.
    *
    * @param array $body
    *   The response body or stream chunk.
    * @param mixed $raw
-   *   The raw backend data, ignored unless it is an array.
+   *   The raw backend data.
    *
    * @return array
-   *   The body with the available metadata keys added.
+   *   The body with the metadata added.
    */
   protected function forwardMetadata(array $body, mixed $raw): array {
     if (is_array($raw)) {
