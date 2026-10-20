@@ -21,6 +21,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class AiChatController extends ControllerBase {
 
+  /**
+   * Backend response keys forwarded to the browser, streamed or not.
+   */
+  private const FORWARDED_METADATA_KEYS = ['id', 'object', 'created', 'model', 'original_model', 'usage'];
+
   private const ALLOWED_ROLES = ['system', 'user', 'assistant'];
 
   /**
@@ -174,7 +179,14 @@ class AiChatController extends ControllerBase {
 
       if ($is_streamed && $response instanceof StreamedChatMessageIteratorInterface) {
         return new StreamedResponse(function () use ($response) {
+          // The AI module buffers text, so a short reply arrives in a final
+          // flush with no raw data. Fall back to the last raw data seen.
+          $last_raw = NULL;
           foreach ($response as $message) {
+            $raw = $message->getRaw();
+            if (is_array($raw)) {
+              $last_raw = $raw;
+            }
             $text = $message->getText();
             if ($text === '') {
               continue;
@@ -188,14 +200,7 @@ class AiChatController extends ControllerBase {
                 ],
               ],
             ];
-            $raw = $message->getRaw();
-            if (is_array($raw)) {
-              foreach (['id', 'object', 'created', 'model', 'original_model', 'usage'] as $key) {
-                if (isset($raw[$key])) {
-                  $chunk[$key] = $raw[$key];
-                }
-              }
-            }
+            $chunk = $this->forwardMetadata($chunk, $last_raw);
 
             echo 'data: ' . json_encode($chunk) . "\n\n";
             if (ob_get_level() > 0) {
@@ -216,7 +221,7 @@ class AiChatController extends ControllerBase {
       }
       else {
         $content = $response->getText();
-        return new Response(json_encode([
+        $body = [
           'choices' => [
             [
               'message' => [
@@ -225,7 +230,9 @@ class AiChatController extends ControllerBase {
               ],
             ],
           ],
-        ]), 200, ['Content-Type' => 'application/json']);
+        ];
+        $body = $this->forwardMetadata($body, $output->getRawOutput());
+        return new Response(json_encode($body), 200, ['Content-Type' => 'application/json']);
       }
     }
     catch (\Exception $e) {
@@ -236,6 +243,28 @@ class AiChatController extends ControllerBase {
         ['Content-Type' => 'application/json']
       );
     }
+  }
+
+  /**
+   * Adds the forwarded metadata keys from the raw backend data to a body.
+   *
+   * @param array $body
+   *   The response body or stream chunk.
+   * @param mixed $raw
+   *   The raw backend data.
+   *
+   * @return array
+   *   The body with the metadata added.
+   */
+  protected function forwardMetadata(array $body, mixed $raw): array {
+    if (is_array($raw)) {
+      foreach (self::FORWARDED_METADATA_KEYS as $key) {
+        if (isset($raw[$key])) {
+          $body[$key] = $raw[$key];
+        }
+      }
+    }
+    return $body;
   }
 
 }
