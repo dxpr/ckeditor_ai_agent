@@ -16,8 +16,9 @@ export default class AiAgentToneCommand extends Command {
         const defaultTones = getDefaultAiAgentToneDropdownMenu(editor);
         const configTonesDropdown = config?.tonesDropdown?.map(item => ({
             label: item.label,
-            key: item.label.toLowerCase().replace(/ /g, '_'),
-            tone: item.tone
+            key: item.tid ? String(item.tid) : item.label.toLowerCase().replace(/ /g, '_'),
+            tone: item.tone,
+            tid: item.tid
         }));
         this.availableTones = configTonesDropdown ?
             [defaultTones[0], ...configTonesDropdown] :
@@ -32,15 +33,10 @@ export default class AiAgentToneCommand extends Command {
      *
      * @param options - An object containing the tone value to set.
      */
-    async execute({ value }) {
-        // Set the value directly, replacing any previous tone
+    async execute({ value, key }) {
         this.value = value;
         this.fire('change:value', { value });
-        // Find the label for the selected tone value and persist it to localStorage
-        const selectedTone = this.availableTones.find(item => item.tone === value);
-        if (selectedTone) {
-            this.saveToneSelection(selectedTone.key);
-        }
+        this.saveToneSelection(key);
     }
     saveToneSelection(toneKey) {
         const key = `${STORAGE_PREFIX}:${this.STORAGE_KEY}`;

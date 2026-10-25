@@ -14,8 +14,9 @@ export default class AiAgentToneCommand extends Command {
      *
      * @param options - An object containing the tone value to set.
      */
-    execute({ value }: {
+    execute({ value, key }: {
         value: string;
+        key: string;
     }): Promise<void>;
     private saveToneSelection;
     private loadToneSelection;

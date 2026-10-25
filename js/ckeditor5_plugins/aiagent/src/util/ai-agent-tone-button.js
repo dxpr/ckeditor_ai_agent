@@ -9,8 +9,9 @@ export function addAiAgentToneButton(editor) {
     const defaultTones = getDefaultAiAgentToneDropdownMenu(editor);
     const configTonesDropdown = config?.tonesDropdown?.map(item => ({
         label: item.label,
-        key: item.label.toLowerCase().replace(/ /g, '_'),
-        tone: item.tone
+        key: item.tid ? String(item.tid) : item.label.toLowerCase().replace(/ /g, '_'),
+        tone: item.tone,
+        tid: item.tid
     }));
     const tonesDropdown = configTonesDropdown ?
         [defaultTones[0], ...configTonesDropdown] :
@@ -45,7 +46,7 @@ export function addAiAgentToneButton(editor) {
                 content: checkIcon
             });
             checkIconView.isVisible = false;
-            toneItems.push({ tone: item.tone, checkIcon: checkIconView });
+            toneItems.push({ key: item.key, checkIcon: checkIconView });
             const spanView = new View(locale);
             spanView.setTemplate({
                 tag: 'span',
@@ -69,7 +70,8 @@ export function addAiAgentToneButton(editor) {
                 });
                 checkIconView.isVisible = true;
                 editor.execute('aiAgentTone', {
-                    value: item.tone
+                    value: item.tone,
+                    key: item.key
                 });
                 editor.editing.view.focus();
             });
@@ -79,10 +81,8 @@ export function addAiAgentToneButton(editor) {
         dropdownView.on('change:isOpen', () => {
             if (dropdownView.isOpen) {
                 const storedToneKey = localStorage.getItem(`${STORAGE_PREFIX}:tone`);
-                const matchingTone = tonesDropdown.find(item => item.key === storedToneKey);
-                const currentToneValue = matchingTone?.tone || '';
                 toneItems.forEach(item => {
-                    item.checkIcon.isVisible = item.tone === currentToneValue;
+                    item.checkIcon.isVisible = item.key === storedToneKey;
                 });
             }
         });
