@@ -2,6 +2,8 @@
 
 namespace Drupal\ckeditor_ai_agent\Form;
 
+use Drupal\Core\Extension\Requirement\RequirementSeverity;
+
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
@@ -119,7 +121,7 @@ trait AiAgentFormTrait {
     /** @var \Drupal\ckeditor_ai_agent\AiAgentConfigurationManager $config_manager */
     $config_manager = \Drupal::service('ckeditor_ai_agent.configuration_manager');
     $check = $config_manager->checkAiProvider();
-    if ($check['severity'] === REQUIREMENT_OK) {
+    if ($check['severity'] === (enum_exists(RequirementSeverity::class) ? RequirementSeverity::OK : REQUIREMENT_OK)) {
       $elements['ai_provider_status']['status'] = [
         '#type' => 'html_tag',
         '#tag' => 'div',
@@ -138,7 +140,7 @@ trait AiAgentFormTrait {
         '#attributes' => [
           'class' => [
             'messages',
-            $check['severity'] === REQUIREMENT_ERROR ? 'messages--error' : 'messages--warning',
+            $check['severity'] === (enum_exists(RequirementSeverity::class) ? RequirementSeverity::Error : REQUIREMENT_ERROR) ? 'messages--error' : 'messages--warning',
           ],
         ],
       ];

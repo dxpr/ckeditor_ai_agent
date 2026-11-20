@@ -2,6 +2,8 @@
 
 namespace Drupal\ckeditor_ai_agent;
 
+use Drupal\Core\Extension\Requirement\RequirementSeverity;
+
 use Drupal\ai\AiProviderPluginManager;
 use Drupal\Core\Access\CsrfTokenGenerator;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -311,7 +313,7 @@ class AiAgentConfigurationManager {
           '@anthropic' => 'https://www.drupal.org/project/ai_provider_anthropic',
           '@ollama' => 'https://www.drupal.org/project/ai_provider_ollama',
         ]),
-        'severity' => REQUIREMENT_ERROR,
+        'severity' => (enum_exists(RequirementSeverity::class) ? RequirementSeverity::Error : REQUIREMENT_ERROR),
       ];
     }
 
@@ -324,7 +326,7 @@ class AiAgentConfigurationManager {
           '@providers' => implode(', ', $installed_names),
           '@settings' => $settings_url,
         ]),
-        'severity' => REQUIREMENT_ERROR,
+        'severity' => (enum_exists(RequirementSeverity::class) ? RequirementSeverity::Error : REQUIREMENT_ERROR),
       ];
     }
 
@@ -338,7 +340,7 @@ class AiAgentConfigurationManager {
           '@providers' => implode(', ', $usable_names),
           '@settings' => $settings_url,
         ]),
-        'severity' => REQUIREMENT_WARNING,
+        'severity' => (enum_exists(RequirementSeverity::class) ? RequirementSeverity::Warning : REQUIREMENT_WARNING),
       ];
     }
 
@@ -353,7 +355,7 @@ class AiAgentConfigurationManager {
       'description' => $this->t('Requests are routed server-side through the AI module. Change the provider at <a href="@settings">AI settings</a>.', [
         '@settings' => $settings_url,
       ]),
-      'severity' => REQUIREMENT_OK,
+      'severity' => (enum_exists(RequirementSeverity::class) ? RequirementSeverity::OK : REQUIREMENT_OK),
     ];
   }
 

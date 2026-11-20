@@ -5,7 +5,8 @@
  * Contains ckeditor_ai_agent.module.
  */
 
-use Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition;
+use Drupal\Core\Hook\Attribute\LegacyHook;
+use Drupal\ckeditor_ai_agent\Hook\CkeditorAiAgentHooks;
 use Drupal\Core\Routing\RouteMatchInterface;
 
 /**
@@ -13,69 +14,43 @@ use Drupal\Core\Routing\RouteMatchInterface;
  *
  * @phpstan-param \Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition[] $plugin_definitions
  */
+#[LegacyHook]
 function ckeditor_ai_agent_ckeditor5_plugin_info_alter(array &$plugin_definitions): void {
-  if (isset($plugin_definitions['ckeditor_ai_agent_ai_agent'])) {
-    /** @var \Drupal\ckeditor_ai_agent\AiAgentConfigurationManager $config_manager */
-    $config_manager = \Drupal::service('ckeditor_ai_agent.configuration_manager');
-
-    /** @var \Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition $definition */
-    $definition = $plugin_definitions['ckeditor_ai_agent_ai_agent'];
-    $plugin_config = $definition->toArray();
-
-    // Get existing config or initialize empty array.
-    $config = $plugin_config['ckeditor5']['config'] ?? [];
-
-    // Get the current editor entity from the route.
-    $route_match = \Drupal::routeMatch();
-    $editor = $route_match->getParameter('editor');
-
-    // Get our configuration.
-    $our_config = $config_manager->getCKEditorConfig($editor);
-
-    // Merge with our configuration.
-    $config = array_merge($config, $our_config);
-
-    // Update the plugin configuration.
-    $plugin_config['ckeditor5']['config'] = $config;
-
-    // Create new definition with updated config.
-    $plugin_definitions['ckeditor_ai_agent_ai_agent'] = new CKEditor5PluginDefinition($plugin_config);
-  }
+  \Drupal::service(CkeditorAiAgentHooks::class)->ckeditor5PluginInfoAlter($plugin_definitions);
 }
 
 /**
  * Implements hook_ai_brand_voice_alter().
  */
+#[LegacyHook]
 function ckeditor_ai_agent_ai_brand_voice_alter(string &$brand_voice) {
-  $config = \Drupal::config('ckeditor_ai_agent.settings');
-  $tone_override = $config->get('promptSettings.overrides.tone');
-  $tone_additions = $config->get('promptSettings.additions.tone');
-
-  if (!empty($tone_override)) {
-    $brand_voice = $tone_override;
-    if (!empty($tone_additions)) {
-      $brand_voice .= "\n\n" . $tone_additions;
-    }
-  }
+  \Drupal::service(CkeditorAiAgentHooks::class)->aiBrandVoiceAlter($brand_voice);
 }
 
 /**
  * Implements hook_help().
  */
+#[LegacyHook]
 function ckeditor_ai_agent_help($route_name, RouteMatchInterface $route_match) {
-  switch ($route_name) {
-    case 'help.page.ckeditor_ai_agent':
-      $output = '';
-      $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The CKEditor AI Agent module adds AI-powered content generation capabilities to CKEditor 5.') . '</p>';
-      return $output;
-  }
+  return \Drupal::service(CkeditorAiAgentHooks::class)->help($route_name, $route_match);
 }
 
 /**
  * Implements hook_page_attachments_alter().
  */
+#[LegacyHook]
 function ckeditor_ai_agent_page_attachments_alter(array &$attachments) {
-  // This implementation is no longer needed as we're handling tones directly
-  // in the AiAgent plugin.
+  \Drupal::service(CkeditorAiAgentHooks::class)->pageAttachmentsAlter($attachments);
+}
+
+/**
+ * Implements hook_runtime_requirements().
+ */
+function ckeditor_ai_agent_runtime_requirements(): array {
+  // Drupal 11.2 still invokes the legacy requirements hook.
+  if (version_compare(\Drupal::VERSION, '11.3.0', '<')) {
+    return [];
+  }
+  \Drupal::moduleHandler()->loadInclude('ckeditor_ai_agent', 'install');
+  return ckeditor_ai_agent_requirements('runtime');
 }

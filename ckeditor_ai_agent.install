@@ -5,6 +5,7 @@
  * Install, update and uninstall functions for the CKEditor AI Agent module.
  */
 
+use Drupal\Core\Hook\Attribute\LegacyRequirementsHook;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\taxonomy\Entity\Term;
 
@@ -322,6 +323,7 @@ function ckeditor_ai_agent_update_9001(): void {
 /**
  * Implements hook_requirements().
  */
+#[LegacyRequirementsHook]
 function ckeditor_ai_agent_requirements($phase) {
   $requirements = [];
 
