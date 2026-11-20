@@ -4,9 +4,9 @@
  * @file
  * Contains ckeditor_ai_agent.module.
  */
+
 use Drupal\Core\Hook\Attribute\LegacyHook;
 use Drupal\ckeditor_ai_agent\Hook\CkeditorAiAgentHooks;
-use Drupal\ckeditor5\Plugin\CKEditor5PluginDefinition;
 use Drupal\Core\Routing\RouteMatchInterface;
 
 /**
@@ -23,9 +23,8 @@ function ckeditor_ai_agent_ckeditor5_plugin_info_alter(array &$plugin_definition
  * Implements hook_ai_brand_voice_alter().
  */
 #[LegacyHook]
-function ckeditor_ai_agent_ai_brand_voice_alter(string &$brand_voice)
-{
-    \Drupal::service(CkeditorAiAgentHooks::class)->aiBrandVoiceAlter($brand_voice);
+function ckeditor_ai_agent_ai_brand_voice_alter(string &$brand_voice) {
+  \Drupal::service(CkeditorAiAgentHooks::class)->aiBrandVoiceAlter($brand_voice);
 }
 
 /**
@@ -42,4 +41,16 @@ function ckeditor_ai_agent_help($route_name, RouteMatchInterface $route_match) {
 #[LegacyHook]
 function ckeditor_ai_agent_page_attachments_alter(array &$attachments) {
   \Drupal::service(CkeditorAiAgentHooks::class)->pageAttachmentsAlter($attachments);
+}
+
+/**
+ * Implements hook_runtime_requirements().
+ */
+function ckeditor_ai_agent_runtime_requirements(): array {
+  // Drupal 11.2 still invokes the legacy requirements hook.
+  if (version_compare(\Drupal::VERSION, '11.3.0', '<')) {
+    return [];
+  }
+  \Drupal::moduleHandler()->loadInclude('ckeditor_ai_agent', 'install');
+  return ckeditor_ai_agent_requirements('runtime');
 }
